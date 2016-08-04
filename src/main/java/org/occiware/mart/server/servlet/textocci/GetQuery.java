@@ -118,11 +118,9 @@ public class GetQuery extends AbstractGetQuery {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    
-    // @Consumes("*/*")
-    // @Produces(MediaType.TEXT_PLAIN)
+    // With well known method.
     @Override
-  //  @Path("-")
+    @Path("/.well-known/org/ogf/occi/-/")
     public Response getQueryInterface(@Context HttpHeaders headers) {
         Response response;
 

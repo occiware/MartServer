@@ -90,6 +90,11 @@ public class ConfigurationManager {
     protected static Map<String, String> userMixinLocationMap = new HashMap<>();
 
     /**
+     * key: uuid, value: entity relative path.
+     */
+    protected static Map<String, String> entitiesRelativePath = new HashMap<>();
+    
+    /**
      * Obtain the factory to create OCCI objects.
      */
     protected static OCCIFactory occiFactory = OCCIFactory.eINSTANCE;
@@ -155,10 +160,11 @@ public class ConfigurationManager {
      * occi.network.label=private, occi.network.address=10.1.0.0/16,
      * occi.network.gateway=10.1.255.254})
      * @param owner
+     * @param relativePath (ex: compute/myuuid
      * @throws org.occiware.mart.server.servlet.exception.EntityAddException
      */
     public static void addResourceToConfiguration(String id, String kind, List<String> mixins,
-            Map<String, String> attributes, String owner) throws EntityAddException {
+            Map<String, String> attributes, String owner, String relativePath) throws EntityAddException {
 
         if (owner == null || owner.isEmpty()) {
             // Assume if owner is not used to a default user uuid "anonymous".
@@ -220,6 +226,9 @@ public class ConfigurationManager {
             LOGGER.info("Added Resource " + resource.getId() + " to configuration object.");
         }
         updateVersion(owner, id);
+        // Add the entity to relative path map.
+        entitiesRelativePath.put(id, relativePath);
+        
     }
 
     /**
@@ -233,10 +242,11 @@ public class ConfigurationManager {
      * @param target
      * @param attributes
      * @param owner
+     * @param relativePath
      * @throws org.occiware.mart.server.servlet.exception.EntityAddException
      */
     public static void addLinkToConfiguration(String id, String kind, java.util.List<String> mixins, String src,
-            String target, Map<String, String> attributes, String owner) throws EntityAddException {
+            String target, Map<String, String> attributes, String owner, String relativePath) throws EntityAddException {
 
         if (owner == null || owner.isEmpty()) {
             // Assume if owner is not used to a default user uuid "anonymous".
@@ -333,6 +343,7 @@ public class ConfigurationManager {
         } else {
             LOGGER.info("link " + id + " added to configuration !");
         }
+        entitiesRelativePath.put(id, relativePath);
 
     }
 
@@ -471,7 +482,7 @@ public class ConfigurationManager {
         }
 
         config.getResources().remove(resource);
-
+        entitiesRelativePath.remove(resource.getId());
     }
 
     /**
@@ -494,6 +505,7 @@ public class ConfigurationManager {
                 mixin.getEntities().remove(link);
             }
         }
+        entitiesRelativePath.remove(link.getId());
 
     }
 
@@ -1905,8 +1917,14 @@ public class ConfigurationManager {
         return entities;
     }
     
-    
-    
+    /**
+     * Get the relative path from entity registered, null else.
+     * @param uuid
+     * @return 
+     */
+    public static String getEntityRelativePath(String uuid) {
+        return entitiesRelativePath.get(uuid);
+    } 
 
     // TODO : rebuild etag number method...
 //    /**

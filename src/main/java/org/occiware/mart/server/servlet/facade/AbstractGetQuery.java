@@ -18,14 +18,12 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
-import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 
 /**
@@ -72,31 +70,31 @@ public abstract class AbstractGetQuery implements IGetQuery {
         if (response != null) {
             return response;
         }
-        if (isUriListContentTypeUsed(headers)) {
+        if (Utils.isUriListContentTypeUsed(headers)) {
             // We must here return a bad request.
             throw new BadRequestException("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/");
         }
-        
-        
+
         return response;
     }
-    
+
     /**
-     * Query interface client. This give all supported on extension to the client.
-     * Concrete Implementation class give the output media type.
+     * Query interface client. This give all supported on extension to the
+     * client. Concrete Implementation class give the output media type.
+     *
      * @param headers
-     * @return 
+     * @return
      */
     @Override
     public Response getQueryInterface(HttpHeaders headers) {
         System.out.println("getQueryInterface method.");
-        Response response;        
+        Response response;
         // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
         response = Utils.checkClientOCCIVersion(headers);
         if (response != null) {
             return response;
         }
-        if (isUriListContentTypeUsed(headers)) {
+        if (Utils.isUriListContentTypeUsed(headers)) {
             // We must here return a bad request.
             throw new BadRequestException("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/");
         }
@@ -121,27 +119,8 @@ public abstract class AbstractGetQuery implements IGetQuery {
         return response;
     }
 
-    /**
-     * Check if text/uri-list is used.  
-     * @param headers
-     * @return true if this content-type is an uri-list otherwise false.
-     */
-    private boolean isUriListContentTypeUsed(HttpHeaders headers) {
-        boolean result = false;
-        // Find media type produce as Content-Type: text/uri-list.
-        List<String> vals = Utils.getFromValueFromHeaders(headers, Constants.HEADER_CONTENT_TYPE);
-        
-        for (String val : vals) {
-            if (val.toLowerCase().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
-                result = true;
-            }
-        }
-        return result;
-    }
-
     protected UriInfo getUri() {
         return uri;
     }
-    
-    
+
 }

@@ -76,6 +76,23 @@ public class Utils {
         return null;
     }
     /**
+     * Check if text/uri-list is used.  
+     * @param headers
+     * @return true if this content-type is an uri-list otherwise false.
+     */
+    public static boolean isUriListContentTypeUsed(HttpHeaders headers) {
+        boolean result = false;
+        // Find media type produce as Content-Type: text/uri-list.
+        List<String> vals = Utils.getFromValueFromHeaders(headers, Constants.HEADER_CONTENT_TYPE);
+        
+        for (String val : vals) {
+            if (val.toLowerCase().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+                result = true;
+            }
+        }
+        return result;
+    }
+    /**
      * Get a list of values for a header key.
      * @param headers
      * @param key

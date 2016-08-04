@@ -22,6 +22,7 @@ public class Constants {
     public static final String CATEGORY = "Category";
     public static final String X_OCCI_LOCATION = "X-OCCI-Location";
 
+    public static final String URN_UUID_PREFIX = "urn:uuid:";
     public static final String OCCI_CORE_ID = "occi.core.id";
     public static final String OCCI_CORE_SOURCE = "occi.core.source";
     public static final String OCCI_CORE_TARGET = "occi.core.target";
