@@ -324,7 +324,7 @@ public class Utils {
     }
 
     /**
-     * Search for UUID on a String or attribute occi.core.id.
+     * Search for UUID on a entityId String before attribute occi.core.id.
      *
      * @param id
      * @param attr
@@ -341,7 +341,17 @@ public class Utils {
                 break;
             }
         }
-        String occiCoreId = attr.get("occi.core.id");
+        if (uuidToReturn != null) {
+            return uuidToReturn;
+        }
+        
+        // Check with occi.core.id attribute.
+        String occiCoreId = attr.get(Constants.OCCI_CORE_ID);
+        if (occiCoreId == null) {
+            return null;
+        }
+        occiCoreId = occiCoreId.replace(Constants.URN_UUID_PREFIX, "");
+        
         if (!match && occiCoreId != null && !occiCoreId.isEmpty()) {
             String[] spls = {"/", ":"};
             for (String spl : spls) {

@@ -36,7 +36,13 @@ public abstract class AbstractGetQuery implements IGetQuery {
     protected UriInfo uri;
 
     @Override
+    public abstract Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet);
+
+    @Override
     public abstract Response getMixin(String mixinKind);
+
+    @Override
+    public abstract Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
 
     @Override
     public Response getEntityCollection(String path, HttpHeaders headers, HttpServletRequest request) {

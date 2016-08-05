@@ -21,13 +21,12 @@ package org.occiware.mart.server.servlet.facade;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import org.occiware.clouddesigner.occi.Mixin;
 
 /**
  *
  * @author Christophe Gourdin
  */
-public interface IPutQuery {
+public interface IPutQuery extends IEntryPoint {
     
     public Response createEntity(String path, String entityId, HttpHeaders httpHeaders, HttpServletRequest request);
     

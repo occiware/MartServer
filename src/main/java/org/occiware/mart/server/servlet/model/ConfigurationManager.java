@@ -16,7 +16,7 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.servlet;
+package org.occiware.mart.server.servlet.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -198,8 +198,6 @@ public class ConfigurationManager {
                 // Add a new kind to resource (title, scheme, term).
                 // if occiKind is null, this will give a default kind parent.
                 resource.setKind(occiKind);
-                // occiKind.getEntities().add(resource);
-
                 // Add the attributes...
                 updateAttributesToEntity(resource, attributes);
 

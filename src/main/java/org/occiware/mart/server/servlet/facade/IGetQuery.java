@@ -26,7 +26,7 @@ import javax.ws.rs.core.Response;
  *
  * @author Christophe Gourdin
  */
-public interface IGetQuery {
+public interface IGetQuery extends IEntryPoint {
     
     
     /**

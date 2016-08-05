@@ -30,6 +30,15 @@ import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
 public class DeleteQuery extends AbstractDeleteQuery {
 
     @Override
+    public Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    @Override
+    public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    @Override
     public Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
@@ -43,5 +52,8 @@ public class DeleteQuery extends AbstractDeleteQuery {
     public Response deleteEntity(String kind, String entityId, HttpHeaders headers, HttpServletRequest request) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+
+    
+
     
 }

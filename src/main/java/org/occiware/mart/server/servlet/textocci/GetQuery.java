@@ -26,7 +26,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.occiware.mart.server.servlet.facade.AbstractGetQuery;
 import org.occiware.mart.server.servlet.utils.Constants;
@@ -42,6 +41,40 @@ public class GetQuery extends AbstractGetQuery {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetQuery.class);
 
+    
+    @Override
+    public Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    @Path("{path:.*}/")
+    @GET
+    @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
+    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
+    @Override
+    public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        Response response;
+        LOGGER.info("Get method in inputQuery() for path: " + path);
+        
+        // Query interface check.
+        if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/")) {
+            return getQueryInterface(headers);
+        }
+        
+        // Get entity check.
+        
+        
+        // Get Mixin definition check.
+        
+        
+        
+        // Get Collection check like compute/*
+        
+        
+        
+        return Response.ok().build();
+    }
+    
     /**
      *
      * @param path
@@ -52,10 +85,10 @@ public class GetQuery extends AbstractGetQuery {
      * @return
      */
     @Override
-    @Path("{path}/{id}") // {a}/{b}/{id}
-    @GET
-    @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
-    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
+//    @Path("{path}/{id}") // {a}/{b}/{id}
+//    @GET
+//    @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
+//    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
     public Response getEntity(@PathParam("path") String path, @PathParam("id") String entityId, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         
 //        if (path.equals("collections")) {
@@ -120,8 +153,8 @@ public class GetQuery extends AbstractGetQuery {
 
     // With well known method.
     @Override
-    @Path("/.well-known/org/ogf/occi/-/")
-    public Response getQueryInterface(@Context HttpHeaders headers) {
+    // @Path("/.well-known/org/ogf/occi/-/")
+    public Response getQueryInterface(HttpHeaders headers) {
         Response response;
 
         response = super.getQueryInterface(headers);
@@ -136,5 +169,9 @@ public class GetQuery extends AbstractGetQuery {
                 header("Server", Constants.OCCI_SERVER_HEADER).build();
         return response;
     }
+
+    
+
+    
 
 }

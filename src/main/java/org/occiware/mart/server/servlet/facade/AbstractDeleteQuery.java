@@ -33,6 +33,12 @@ public abstract class AbstractDeleteQuery implements IDeleteQuery {
    protected UriInfo uri;
 
     @Override
+    public abstract Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet);
+
+    @Override
+    public abstract Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
+
+    @Override
     public abstract Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request);
 
     @Override
@@ -40,8 +46,6 @@ public abstract class AbstractDeleteQuery implements IDeleteQuery {
 
     @Override
     public abstract Response deleteEntity(String kind, String entityId, HttpHeaders headers, HttpServletRequest request);
-    
-    
     
     protected UriInfo getUri() {
         return uri;

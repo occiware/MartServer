@@ -36,6 +36,12 @@ public abstract class AbstractPutQuery implements IPutQuery {
     protected UriInfo uri;
 
     @Override
+    public abstract Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet);
+
+    @Override
+    public abstract Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
+
+    @Override
     public abstract Response createMixin(String mixinKind, HttpHeaders headers, HttpServletRequest request);
 
     @Override

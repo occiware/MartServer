@@ -26,7 +26,7 @@ import javax.ws.rs.core.Response;
  * 
  * @author Christophe Gourdin
  */
-public interface IDeleteQuery {
+public interface IDeleteQuery extends IEntryPoint {
     
     /**
      * Remove an entity.
