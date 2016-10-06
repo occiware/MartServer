@@ -62,8 +62,9 @@ public interface IGetQuery extends IEntryPoint {
     
     /**
      * on path /-/
+     * @param path
      * @param headers
      * @return 
      */
-     public Response getQueryInterface(HttpHeaders headers);
+     public Response getQueryInterface(String path, HttpHeaders headers);
 }

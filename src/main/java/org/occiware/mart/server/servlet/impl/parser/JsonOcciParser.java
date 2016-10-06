@@ -16,44 +16,46 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.servlet.textocci;
+package org.occiware.mart.server.servlet.impl.parser;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
+import org.occiware.mart.server.servlet.exception.AttributeParseException;
+import org.occiware.mart.server.servlet.exception.CategoryParseException;
+import org.occiware.mart.server.servlet.exception.ResponseParseException;
+import org.occiware.mart.server.servlet.facade.AbstractRequestParser;
 
 /**
  *
- * @author Christophe Gourdin
+ * @author cgourdin
  */
-public class DeleteQuery extends AbstractDeleteQuery {
+public class JsonOcciParser extends AbstractRequestParser {
 
     @Override
-    public Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-    
-    @Override
-    public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-    @Override
-    public Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request) {
+    public void parseOcciCategories(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Response deleteEntityCollection(String path, HttpHeaders headers, HttpServletRequest request) {
+    public void parseOcciAttributes(HttpHeaders headers, HttpServletRequest request) throws AttributeParseException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Response deleteEntity(String kind, String entityId, HttpHeaders headers, HttpServletRequest request) {
+    public Response parseResponse(Object object) throws ResponseParseException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    
+    @Override
+    public String getEntityUUID() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
-    
+    @Override
+    public Response getInterface(String categoryFilter, String user) {
+        return super.getInterface(categoryFilter, user); //To change body of generated methods, choose Tools | Templates.
+    }
+
+   
 }

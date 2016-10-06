@@ -21,6 +21,7 @@ package org.occiware.mart.server.servlet.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,8 +29,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EAttribute;
+import org.eclipse.emf.ecore.EDataType;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.occiware.clouddesigner.occi.Action;
+import org.occiware.clouddesigner.occi.Attribute;
 import org.occiware.clouddesigner.occi.AttributeState;
+import org.occiware.clouddesigner.occi.Category;
 import org.occiware.clouddesigner.occi.Configuration;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Extension;
@@ -39,11 +45,13 @@ import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.OCCIFactory;
 import org.occiware.clouddesigner.occi.OCCIRegistry;
 import org.occiware.clouddesigner.occi.Resource;
+import org.occiware.clouddesigner.occi.util.Occi2Ecore;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.MART;
 import org.occiware.mart.server.servlet.exception.EntityAddException;
 import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
+import org.occiware.mart.server.servlet.utils.Utils;
 
 // import org.ow2.erocci.backend.impl.CollectionFilter;
 // import org.ow2.erocci.backend.impl.Utils;
@@ -198,10 +206,12 @@ public class ConfigurationManager {
                 // Add a new kind to resource (title, scheme, term).
                 // if occiKind is null, this will give a default kind parent.
                 resource.setKind(occiKind);
-                // Add the attributes...
-                updateAttributesToEntity(resource, attributes);
 
                 addMixinsToEntity(resource, mixins, owner, false);
+                
+                // Add the attributes...
+                updateAttributesToEntity(resource, attributes);
+                
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + id);
             	
@@ -210,9 +220,11 @@ public class ConfigurationManager {
         } else {
             LOGGER.info("resource already exist, overwriting...");
             resourceOverwrite = true;
-            updateAttributesToEntity(resource, attributes);
+            
             // Add the mixins if any.
             addMixinsToEntity(resource, mixins, owner, true);
+            
+            updateAttributesToEntity(resource, attributes);
 
         }
 
@@ -281,22 +293,10 @@ public class ConfigurationManager {
                 // Add a new kind to resource (title, scheme, term).
                 link.setKind(occiKind);
 
-                // Check if occi.core.target.kind is set.
-//                // Remove "undefined" attributes, specific to Erocci.
-//                Iterator<Map.Entry<String,String>> it = attributes.entrySet().iterator(); 
-//                String val;
-//                String key;
-//                while (it.hasNext()) {
-//                    Map.Entry<String, String> itmap = it.next();
-//                    val = itmap.getValue();
-//                    key = itmap.getKey();
-//                    if (val != null && val.equals("undefined")) {
-//                        it.remove();
-//                    }
-//                }
-                updateAttributesToEntity(link, attributes);
-
                 addMixinsToEntity(link, mixins, owner, false);
+                
+                updateAttributesToEntity(link, attributes);
+                
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + id);
                 throw new EntityAddException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
@@ -304,28 +304,11 @@ public class ConfigurationManager {
         } else {
             // Link exist upon our configuration, we update it.
             
-        	// Check if occi.core.target.kind is set.
-            // Remove "undefined" attributes, specific to Erocci.
-            Iterator<Map.Entry<String,String>> it = attributes.entrySet().iterator(); 
-            String val;
-            String key;
-            while (it.hasNext()) {
-            	Map.Entry<String, String> itmap = it.next();
-            	val = itmap.getValue();
-            	key = itmap.getKey();
-            	if (val != null && val.equals("undefined")) {
-            		it.remove();
-            	}
-            }
-        	// Check if occi.core.target.kind is set.
-//            if (attributes.get("occi.core.target.kind") != null
-//                    && attributes.get("occi.core.target.kind").equals("undefined")) {
-//                attributes.remove("occi.core.target.kind"); // It's an erocci workaround.
-//            }
-            updateAttributesToEntity(link, attributes);
             overwrite = true;
 
             addMixinsToEntity(link, mixins, owner, true);
+            
+            updateAttributesToEntity(link, attributes);
         }
 
         link.setSource(resourceSrc);
@@ -346,6 +329,72 @@ public class ConfigurationManager {
     }
 
     /**
+	 * Get all the attributes of an Entity instance.
+	 * @param entity the given Entity instance.
+	 * @return all the attributes of the given instance.
+	 */
+	public static Collection<Attribute> getAllAttributes(final Entity entity)
+	{
+		List<Attribute> attributes = new ArrayList<>();
+		Kind entityKind = entity.getKind();
+		if(entityKind != null) {
+            addAllAttributes(attributes, entityKind);
+		}
+		for(Mixin mixin : entity.getMixins()) {
+			addAllAttributes(attributes, mixin);
+		}	
+		return attributes;
+	}
+    /**
+	 * Add all the attributes of a given Kind instance and all its parent kinds.
+	 *
+	 * @param attributes the collection where attributes will be added.
+	 * @param kind the given Kind instance.
+	 */
+	public static void addAllAttributes(final Collection<Attribute> attributes, final Kind kind)
+	{
+		Kind kindParent = kind.getParent();
+		if (kindParent != null) {
+			addAllAttributes(attributes, kindParent);
+		}
+		attributes.addAll(kind.getAttributes());
+	}
+
+	/**
+	 * Add all the attributes of a given Mixin instance and all its depend mixins.
+	 *
+	 * @param attributes the collection where attributes will be added.
+	 * @param mixin the given Mixin instance.
+	 */
+	public static void addAllAttributes(final Collection<Attribute> attributes, final Mixin mixin) {
+        boolean found;
+		for(Mixin md : mixin.getDepends()) {
+			addAllAttributes(attributes, md);
+		}
+        // Compare with attributes on entity.
+        List<Attribute> mixinAttrs = mixin.getAttributes();
+        if (!attributes.isEmpty()) {
+            
+            for (Attribute attrMixin : mixinAttrs) {
+                found = false;
+                // Check if we can add it. avoid doublon. cf CRTP : mixin medium :> resource_tpl. for example.
+                for (Attribute attrKind : attributes) {
+                    if (attrKind.getName().equals(attrMixin.getName())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Add the mixin attribute.
+                    attributes.add(attrMixin);
+                }
+            } 
+        } else {
+            attributes.addAll(mixin.getAttributes());
+        }
+        
+	}
+    /**
      * Update / add attributes to entity.
      *
      * @param entity
@@ -360,17 +409,115 @@ public class ConfigurationManager {
         }
         String attrName;
         String attrValue;
+        
+        // Ensure that all attributes are in the entity AttributeState list object.
+        addAllAttributes(entity);
+        
+        // Collection<Attribute> occiAttrs = getAllAttributes(entity);
+        
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
             attrName = entry.getKey();
             attrValue = entry.getValue();
             if (!attrName.isEmpty()
                     && !attrName.equals("occi.core.id") && !attrName.equals("occi.core.target") && !attrName.equals("occi.core.source")) {
+                LOGGER.info("Attribute set value : " + attrValue);
+                
+                
                 OcciHelper.setAttribute(entity, attrName, attrValue);
+                
+                AttributeState attrState = getAttributeStateObject(entity, attrName);
+                if (attrState != null) {
+                    String attrStateValue = attrState.getValue();
+                    if (attrStateValue != null && !attrStateValue.equals(attrValue)) {
+                        // update the attribute value.
+                        attrState.setValue(attrValue);
+                        
+                    } else if (attrValue != null) {
+                        attrState.setValue(attrValue);
+                    }
+                    
+                    LOGGER.info("Attribute : "+ attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
+                }
             }
         }
         
+        // Check attributes.
+        LOGGER.info("Entity :--> ");
+        Utils.printEntity(entity);
+        
         return entity;
     }
+    /**
+	 * Add all attributes not already present.
+     * @param entity
+	 */
+	public static void addAllAttributes(Entity entity) {
+		// Compute already present attribute names.
+		List<AttributeState> attributeStates = entity.getAttributes();
+		HashSet<String> attributeNames = new HashSet<>();
+		// Iterate over all attribute state instances.
+		for(AttributeState attributeState : attributeStates) {
+			attributeNames.add(attributeState.getName());
+		}
+        Collection<Attribute> attribs = getAllAttributes(entity);
+		// Iterate over all attributes.
+		for(Attribute attribute : attribs) {
+			String attributeName = attribute.getName();
+			if (!attributeNames.contains(attributeName)) {
+				// If not already present create it.
+				AttributeState attributeState = OCCIFactory.eINSTANCE.createAttributeState();
+				attributeState.setName(attributeName);
+				String attributeDefault = attribute.getDefault();
+				if(attributeDefault != null) {
+					// if default set then set value.
+					attributeState.setValue(attributeDefault);
+				}
+				// Add it to attribute states of this entity.
+				attributeStates.add(attributeState);
+			}
+		}
+	}
+    /**
+	 * Set an attribute of an OCCI entity, patched from OcciHelper.
+	 * @param entity the given entity.
+	 * @param attributeName the attribute name.
+	 * @param attributeValue the attribute value.
+	 * @throws java.lang.IllegalArgumentException Thrown when the attribute name is unknown or the attribute value is invalid.
+	 */
+	private static void setAttributeFromOcciHelper(Entity entity, String attributeName, String attributeValue) {
+		// Check that attribute name exists from this entity.
+		OcciHelper.getAttribute(entity, attributeName);
+
+		// Search the Ecore structural feature associated to the OCCI attribute.
+		String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attributeName);
+		
+        final EStructuralFeature eStructuralFeature = entity.eClass().getEStructuralFeature(eAttributeName);
+
+        if (eStructuralFeature == null) {
+            // Create the attribute state and update it, if none, create it.
+            AttributeState attrState = getAttributeStateObject(entity, attributeName);
+            if (attrState == null) {
+                // Create the attribute.
+                attrState = createAttributeState(attributeName, attributeValue);
+                entity.getAttributes().add(attrState);
+            }
+            
+            return;
+			// throw new IllegalArgumentException("Ecore structural feature '" + eAttributeName + "' not found!");
+		}
+		if(!(eStructuralFeature instanceof EAttribute)) {
+			throw new IllegalArgumentException("Ecore structural feature '" + eAttributeName + "' is not an Ecore attribute!");
+		}
+
+		// Obtain the attribute type.
+		EDataType eAttributeType = ((EAttribute)eStructuralFeature).getEAttributeType();
+
+		// Convert the attribute value according to the attribute type.
+		Object eAttributeValue = eAttributeType.getEPackage().getEFactoryInstance().createFromString(eAttributeType, attributeValue);
+
+		// Set the Ecore attribute.
+		entity.eSet(eStructuralFeature, eAttributeValue);
+	}
 
     /**
      * Remove an entity (resource or link) from the configuration on overall
@@ -1281,19 +1428,39 @@ public class ConfigurationManager {
                 Mixin mixin = findMixinOnExtension(owner, mixinStr);
 
                 if (mixin == null) {
+                    LOGGER.info("Mixin not found on extensions, searching on referenced entities: --> Term : " + mixinStr);
                     // Search the mixin on entities.
                     mixin = findMixinOnEntities(owner, mixinStr);
 
                     if (mixin == null) {
+                        LOGGER.info("Create the mixin : --> Term : " + mixinStr);
                         mixin = createMixin(mixinStr);
                     }
 
+                } else {
+                    LOGGER.info("Mixin found on used extensions : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
                 }
+                
+                LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                LOGGER.info("Mixin attributes : ");
+                
+                Collection<Attribute> attrs = mixin.getAttributes();
+                if (attrs != null && !attrs.isEmpty()) {
+                    LOGGER.info("Attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                    for (Attribute attr : attrs) {
+                        LOGGER.info("Attribute : " + attr.getName() + " --> " + attr.getDescription());
+                    }
+                } else {
+                    LOGGER.warn("No attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                }
+                
+                
                 entity.getMixins().add(mixin);
                 result = true;
+                
                 // mixin.getEntities().add(entity);
-                LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-
+                
+                
             }
         }
         return result;
@@ -1941,8 +2108,120 @@ public class ConfigurationManager {
 //        return Utils.createEtagNumber(id, owner, version);
 //    }
 
-    
+    /**
+	 * Create an attribute without add this to the entity object.
+	 * 
+	 * @param name
+	 * @param value
+	 * @return AttributeState object.
+	 */
+	private static AttributeState createAttributeState(final String name, final String value) {
+		AttributeState attr = OCCIFactory.eINSTANCE.createAttributeState();
+		attr.setName(name);
+		attr.setValue(value);
+		return attr;
+	}
 
+	/**
+	 * Get an attribute state object for key parameter.
+	 * 
+	 * @param key
+	 *            ex: occi.core.title.
+	 * @return an AttributeState object, if attribute doesnt exist, null value
+	 *         is returned.
+	 */
+	private static AttributeState getAttributeStateObject(Entity entity, final String key) {
+		AttributeState attr = null;
+		if (key == null) {
+			return attr;
+		}
+		// Load the corresponding attribute state.
+		for (AttributeState attrState : entity.getAttributes()) {
+			if (attrState.getName().equals(key)) {
+				attr = attrState;
+				break;
+			}
+		}
+
+		return attr;
+	}
+
+    public static void useAllExtensionForConfigurationInClasspath(String owner) {
+        Configuration config = getConfigurationForOwner(owner);
+        Extension ext;
+        List<Extension> extensions = new LinkedList<>();
+        Collection<String> extReg = OCCIRegistry.getInstance().getRegisteredExtensions();
+        LOGGER.info("Collection: " + extReg);
+        boolean coreAdded = false;
+        for (String extScheme : extReg) {
+            // Load the extension and register, include the core as well...
+        	LOGGER.info("Loading model extension : " + extScheme);
+        	ext = OcciHelper.loadExtension(extScheme);
+            if (ext.getName().equals("core")) {
+            	extensions.add(0, ext); // Add on first infrastructure extension.
+                coreAdded = true;
+            } else if (ext.getName().equals("infrastructure")) {
+            	if (coreAdded && extensions.size() > 1) {
+                    extensions.add(1, ext);
+                } else {
+                    extensions.add(0, ext);
+                }
+            } else {
+                extensions.add(ext);
+            }
+        }
+        
+        for (Extension extension : extensions) {
+            LOGGER.info("Extension : " + extension.getName() + " added to user configuration.");
+            config.getUse().add(extension);
+        }
+    }
+    
+    
+    public static String getLocation(Category category) {
+		return '/' + category.getTerm() + '/';
+	}
+
+    
+	public static String getLocation(Entity entity) {
+		if (entity == null || entitiesRelativePath == null) {
+            return null;
+        }
+        String location = entitiesRelativePath.get(entity.getId());
+        // return getLocation(entity.getKind()) + entity.getId();
+        return location;
+	}
+
+    /**
+     * Get all kinds for the configuration used extensions.
+     * @param user
+     * @return 
+     */
+    public static List<Kind> getAllConfigurationKind(String user) {
+        Configuration config = getConfigurationForOwner(user);
+        List<Extension> exts = config.getUse();
+        List<Kind> allKinds = new LinkedList<>();
+        for (Extension ext : exts) {
+            allKinds.addAll(ext.getKinds());
+        }
+        return allKinds;
+    }
+    /**
+     * Get all mixins for the configuration used extensions.
+     * @param user
+     * @return 
+     */
+    public static List<Mixin> getAllConfigurationMixins(String user) {
+        Configuration config = getConfigurationForOwner(user);
+        List<Extension> exts = config.getUse();
+        List<Mixin> allMixins = new LinkedList<>();
+        for (Extension ext : exts) {
+            allMixins.addAll(ext.getMixins());
+        }
+        return allMixins;
+    }
+    
+    
     
 }
 

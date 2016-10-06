@@ -16,24 +16,28 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.servlet.facade;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+package org.occiware.mart.server.servlet.exception;
 
 /**
- * This describe method for server first entry, one point method to redirect. All the query interface extends that interface.
- * @author Christophe Gourdin
+ *
+ * @author cgourdin
  */
-public interface IEntryPoint {
+public class ResponseParseException extends Exception {
+
     /**
-     * All queries inputs here. for relative path without setting a category on path.
-     * @param path
-     * @param headers
-     * @param request
-     * @return 
+     * Creates a new instance of <code>ResponseParseException</code> without
+     * detail message.
      */
-    public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
-    
+    public ResponseParseException() {
+    }
+
+    /**
+     * Constructs an instance of <code>ResponseParseException</code> with the
+     * specified detail message.
+     *
+     * @param msg the detail message.
+     */
+    public ResponseParseException(String msg) {
+        super(msg);
+    }
 }

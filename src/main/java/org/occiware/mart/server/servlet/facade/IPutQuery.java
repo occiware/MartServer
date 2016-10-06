@@ -18,6 +18,8 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -28,7 +30,7 @@ import javax.ws.rs.core.Response;
  */
 public interface IPutQuery extends IEntryPoint {
     
-    public Response createEntity(String path, String entityId, HttpHeaders httpHeaders, HttpServletRequest request);
+    public Response createEntity(final String path, String entityId, final String kind, final List<String> mixins, final Map<String, String> attributes);
     
     public Response createMixin(String mixinKind, HttpHeaders httpHeaders, HttpServletRequest request);
 }

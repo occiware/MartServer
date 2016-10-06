@@ -28,15 +28,7 @@ import javax.ws.rs.core.UriInfo;
  *
  * @author cgourdin
  */
-public abstract class AbstractDeleteQuery implements IDeleteQuery {
-   @Context
-   protected UriInfo uri;
-
-    @Override
-    public abstract Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet);
-
-    @Override
-    public abstract Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
+public abstract class AbstractDeleteQuery extends AbstractEntryPoint implements IDeleteQuery {
 
     @Override
     public abstract Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request);
@@ -47,7 +39,4 @@ public abstract class AbstractDeleteQuery implements IDeleteQuery {
     @Override
     public abstract Response deleteEntity(String kind, String entityId, HttpHeaders headers, HttpServletRequest request);
     
-    protected UriInfo getUri() {
-        return uri;
-    }
 }

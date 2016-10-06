@@ -18,53 +18,39 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import org.occiware.mart.server.servlet.utils.Utils;
 
 /**
  *
  * @author Christophe Gourdin
  */
-public abstract class AbstractPutQuery implements IPutQuery {
-
-    @Context
-    protected UriInfo uri;
-
-    @Override
-    public abstract Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet);
-
-    @Override
-    public abstract Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
+public abstract class AbstractPutQuery extends AbstractEntryPoint implements IPutQuery {
 
     @Override
     public abstract Response createMixin(String mixinKind, HttpHeaders headers, HttpServletRequest request);
 
     @Override
-    public Response createEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request) {
-        System.out.println("createEntity method.");
-        Response response;
-        String contextRoot = getUri().getBaseUri().toString();
-        String uriPath = getUri().getPath();
-        System.out.println("Context root : " + contextRoot);
-        System.out.println("URI relative path: " + uriPath);
-        // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
-        response = Utils.checkClientOCCIVersion(headers);
-        if (response != null) {
-            return response;
-        }
-        if (Utils.isUriListContentTypeUsed(headers)) {
+    public abstract Response createEntity(final String path, String entityId, final String kind, final List<String> mixins, final Map<String, String> attributes);
+
+    @Override
+    public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
+        Response response = super.inputQuery(path, headers, request);
+        
+        if (response == null && Utils.isUriListContentTypeUsed(headers)) {
             // We must here return a bad request.
             throw new BadRequestException("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/");
         }
+        
         return response;
+        
     }
-
-    protected UriInfo getUri() {
-        return uri;
-    }
+    
+    
+    
 }

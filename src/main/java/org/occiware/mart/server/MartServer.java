@@ -44,6 +44,7 @@ public class MartServer {
         context.addServlet(servlet, "/*");
         
         ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
+        ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
         
         try {
             

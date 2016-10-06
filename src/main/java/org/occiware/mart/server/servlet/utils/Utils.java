@@ -27,15 +27,17 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for rest queries.
+ *
  * @author cgourdin
  */
 public class Utils {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Utils.class);
     public static final String REGEX_CONTROL_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
-    
-    
+
     /**
      * Client OCCI user agent version control.
+     *
      * @param headers
      * @return null if no response, not null if failed response.
      */
@@ -50,7 +52,7 @@ public class Utils {
                     int index = val.indexOf("OCCI/") + 5;
                     String versionStr = val.substring(index);
                     if (!versionStr.isEmpty()) {
-                        
+
                         // Check version number.
                         try {
                             Float version = Float.valueOf(versionStr);
@@ -60,13 +62,11 @@ public class Utils {
                         } catch (NumberFormatException ex) {
                             // Version is unparseable.
                         }
-                        
-                        
+
                     }
-                    
-                    
+
                 }
-            } 
+            }
         }
         if (!result) {
             System.out.println("Version is not compliant, max: OCCI v1.2");
@@ -75,8 +75,10 @@ public class Utils {
         }
         return null;
     }
+
     /**
-     * Check if text/uri-list is used.  
+     * Check if text/uri-list is used.
+     *
      * @param headers
      * @return true if this content-type is an uri-list otherwise false.
      */
@@ -84,7 +86,7 @@ public class Utils {
         boolean result = false;
         // Find media type produce as Content-Type: text/uri-list.
         List<String> vals = Utils.getFromValueFromHeaders(headers, Constants.HEADER_CONTENT_TYPE);
-        
+
         for (String val : vals) {
             if (val.toLowerCase().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                 result = true;
@@ -92,11 +94,46 @@ public class Utils {
         }
         return result;
     }
+    
+    /**
+     * Return the Content-type from http header.
+     * @param headers
+     * @return 
+     */
+    public static String findContentTypeFromHeader(HttpHeaders headers) {
+        List<String> vals = Utils.getFromValueFromHeaders(headers, Constants.HEADER_CONTENT_TYPE);
+        String contentType = null;
+        for (String val : vals) {
+            if (val != null && !val.isEmpty()) {
+                contentType = val;
+                break;
+            }
+        }
+        return contentType;
+    }
+    /**
+     * Return the accept media type from header.
+     * @param headers
+     * @return 
+     */
+    public static String findAcceptTypeFromHeader(HttpHeaders headers) {
+        List<String> vals = Utils.getFromValueFromHeaders(headers, Constants.HEADER_ACCEPT);
+        String contentType = null;
+        for (String val : vals) {
+            if (val != null && !val.isEmpty()) {
+                contentType = val;
+                break;
+            }
+        }
+        return contentType;
+    }
+
     /**
      * Get a list of values for a header key.
+     *
      * @param headers
      * @param key
-     * @return 
+     * @return
      */
     public static List<String> getFromValueFromHeaders(HttpHeaders headers, String key) {
         MultivaluedMap<String, String> headersVal = headers.getRequestHeaders();
@@ -148,7 +185,7 @@ public class Utils {
                 /* ignore */ }
         }
     }
-    
+
     public static void closeQuietly(BufferedReader br) {
         if (br != null) {
             try {
@@ -168,8 +205,7 @@ public class Utils {
             }
         }
     }
-    
-    
+
     /**
      * Close quietly an outputstream without exception thrown.
      *
@@ -344,14 +380,14 @@ public class Utils {
         if (uuidToReturn != null) {
             return uuidToReturn;
         }
-        
+
         // Check with occi.core.id attribute.
         String occiCoreId = attr.get(Constants.OCCI_CORE_ID);
         if (occiCoreId == null) {
             return null;
         }
         occiCoreId = occiCoreId.replace(Constants.URN_UUID_PREFIX, "");
-        
+
         if (!match && occiCoreId != null && !occiCoreId.isEmpty()) {
             String[] spls = {"/", ":"};
             for (String spl : spls) {
@@ -456,48 +492,28 @@ public class Utils {
 
     }
 
+    /**
+     * Check if the path contains a category referenced on extensions used by configuration.
+     * @param path
+     * @return a category term if found on configuration.
+     */
+    public static String getCategoryFilter(final String path, final String user) {
+        String category = null;
+        
+        
+        
+        return category;
+    }
+    
+    
     private static int uniqueInt = 1;
 
     public static synchronized int getUniqueInt() {
         return uniqueInt++;
     }
-    
-    /**
-     * Get the kind on header, for text/occi.
-     * @param headers
-     * @return 
-     */
-    public static String getKindFromHeader(HttpHeaders headers) {
-        String kind = null;
-        
-        List<String> kindsVal = getFromValueFromHeaders(headers, Constants.CATEGORY);
-        // Search for Class="kind" value.
-        String[] vals;
-        boolean kindVal;
-        for (String line : kindsVal) {
-            kindVal = false;
-            vals = line.split(";");
-            // Check class="kind".
-            for (String val : vals) {
-                if (val.contains("class=\"" + Constants.CLASS_KIND + "\"")) {
-                    kindVal = true;
-                }
-            }
-            if (kindVal) {
-                // Get the kind value.
-                for (String val : vals) {
-                    if (val.contains(Constants.CATEGORY)) {
-                        String category = val.trim();
-                        
-                        // Get the value.
-                        kind = category.split(":")[1];
-                        LOGGER.info("Kind value is : " + kind);
-                    }
-                }
-            }
-        }
-        return kind;
-    }
+
     
     
+   
+
 }

@@ -30,76 +30,36 @@ import org.occiware.mart.server.servlet.utils.Utils;
  *
  * @author cgourdin
  */
-public abstract class AbstractGetQuery implements IGetQuery {
-
-    @Context
-    protected UriInfo uri;
-
-    @Override
-    public abstract Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet);
+public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGetQuery {
 
     @Override
     public abstract Response getMixin(String mixinKind);
 
     @Override
-    public abstract Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
-
-    @Override
-    public Response getEntityCollection(String path, HttpHeaders headers, HttpServletRequest request) {
-        System.out.println("getEntityCollection method.");
-        Response response;
-        String contextRoot = getUri().getBaseUri().toString();
-        String uriPath = getUri().getPath();
-        System.out.println("Context root : " + contextRoot);
-        System.out.println("URI relative path: " + uriPath);
-
-        // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
-        response = Utils.checkClientOCCIVersion(headers);
-        if (response != null) {
-            return response;
-        }
-
-        return response;
-    }
+    public abstract Response getEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
 
     @Override
     public Response getEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request) {
-        System.out.println("getEntity method.");
-        Response response;
-        String contextRoot = getUri().getBaseUri().toString();
-        String uriPath = getUri().getPath();
-        System.out.println("Context root : " + contextRoot);
-        System.out.println("URI relative path: " + uriPath);
-
-        // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
-        response = Utils.checkClientOCCIVersion(headers);
-        if (response != null) {
-            return response;
-        }
         if (Utils.isUriListContentTypeUsed(headers)) {
             // We must here return a bad request.
             throw new BadRequestException("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/");
         }
 
-        return response;
+        return null;
     }
 
     /**
      * Query interface client. This give all supported on extension to the
      * client. Concrete Implementation class give the output media type.
      *
+     * @param path
      * @param headers
      * @return
      */
     @Override
-    public Response getQueryInterface(HttpHeaders headers) {
+    public Response getQueryInterface(String path, HttpHeaders headers) {
         System.out.println("getQueryInterface method.");
-        Response response;
-        // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
-        response = Utils.checkClientOCCIVersion(headers);
-        if (response != null) {
-            return response;
-        }
+       
         if (Utils.isUriListContentTypeUsed(headers)) {
             // We must here return a bad request.
             throw new BadRequestException("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/");
@@ -108,25 +68,6 @@ public abstract class AbstractGetQuery implements IGetQuery {
     }
 
     @Override
-    public Response getEntityUriListing(String path, HttpHeaders headers, HttpServletRequest request) {
-        Response response;
-        String contextRoot = getUri().getBaseUri().toString();
-        String uriPath = getUri().getPath();
-        System.out.println("GetEntityUriListing method.");
-        System.out.println("Context root : " + contextRoot);
-        System.out.println("URI relative path: " + uriPath);
-
-        // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
-        response = Utils.checkClientOCCIVersion(headers);
-        if (response != null) {
-            return response;
-        }
-
-        return response;
-    }
-
-    protected UriInfo getUri() {
-        return uri;
-    }
+    public abstract Response getEntityUriListing(String path, HttpHeaders headers, HttpServletRequest request);
 
 }

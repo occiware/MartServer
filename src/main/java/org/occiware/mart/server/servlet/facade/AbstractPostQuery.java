@@ -29,17 +29,8 @@ import org.occiware.clouddesigner.occi.Mixin;
  *
  * @author Christophe Gourdin
  */
-public abstract class AbstractPostQuery implements IPostQuery {
-   @Context
-   protected UriInfo uri;
-
-    @Override
-    public abstract Response inputQuery(String path, String entityId, HttpHeaders headers, HttpServletRequest servlet);
-
-    @Override
-    public abstract Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
-
-
+public abstract class AbstractPostQuery extends AbstractEntryPoint implements IPostQuery {
+  
     @Override
     public abstract Response updateEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
 
@@ -49,9 +40,4 @@ public abstract class AbstractPostQuery implements IPostQuery {
     @Override
     public abstract Response updateMixin(String mixinKind, HttpHeaders headers, HttpServletRequest request);
 
-
-    
-    protected UriInfo getUri() {
-        return uri;
-    }
 }
