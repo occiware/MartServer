@@ -47,7 +47,6 @@ public class MartServer {
         ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
         
         try {
-            
             server.start();
             server.join();
         } catch (Exception ex) {

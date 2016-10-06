@@ -168,9 +168,9 @@ public abstract class AbstractRequestParser implements IRequestParser {
                 }
             }
             while (itMix.hasNext()) {
-                Mixin mixinTmp = (Mixin) it.next();
+                Mixin mixinTmp = (Mixin) itMix.next();
                 if (!mixinTmp.getTerm().equalsIgnoreCase(categoryFilter)) {
-                    it.remove();
+                    itMix.remove();
                 }
             }
         }

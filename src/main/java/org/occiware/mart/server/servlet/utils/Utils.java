@@ -20,8 +20,11 @@ import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.AttributeState;
 import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Link;
+import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.Resource;
+import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -495,14 +498,36 @@ public class Utils {
     /**
      * Check if the path contains a category referenced on extensions used by configuration.
      * @param path
-     * @return a category term if found on configuration.
+     * @return a category term if found on configuration, if not found return null.
      */
     public static String getCategoryFilter(final String path, final String user) {
-        String category = null;
+        List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(user);
+        List<Mixin> mixins = ConfigurationManager.getAllConfigurationMixins(user);
+        String term;
         
+        for (Kind kind : kinds) {
+            for (Action action : kind.getActions()) {
+                term = action.getTerm();
+                if (path.contains(term) || path.contains(term.toLowerCase())) {
+                    return term;
+                    
+                }
+            }
+            
+            term = kind.getTerm();
+            if (path.contains(term) || path.contains(term.toLowerCase())) {
+                return term;
+            }
+            
+        }
+        for (Mixin mixin : mixins) {
+            term = mixin.getTerm();
+            if (path.contains(term) || path.contains(term.toLowerCase())) {
+                return term;
+            }
+        }
         
-        
-        return category;
+        return null;
     }
     
     

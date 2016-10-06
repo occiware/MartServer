@@ -164,7 +164,7 @@ public class GetQuery extends AbstractGetQuery {
             return response;
         }
         // Check if we need to filter for a category like /compute/-/
-        String categoryFilter = Utils.getCategoryFilter(ConfigurationManager.DEFAULT_OWNER, path);
+        String categoryFilter = Utils.getCategoryFilter(path, ConfigurationManager.DEFAULT_OWNER);
         
         response = inputParser.getInterface(categoryFilter, ConfigurationManager.DEFAULT_OWNER);
         return response;
