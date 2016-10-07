@@ -50,7 +50,7 @@ Development Status values :
     </tr>
     <tr>
         <td align="center">Get query interface (/-/ and category/-/ filter)</td>
-        <td align="center">Get an entity via GET Method, <a href="https://github.com/cgourdin/MartServer/issues/5">feature #16</a></td>
+        <td align="center">Query interface with filter like compute/-/ (kind, mixin, action), <a href="https://github.com/cgourdin/MartServer/issues/5">feature #16</a></td>
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>

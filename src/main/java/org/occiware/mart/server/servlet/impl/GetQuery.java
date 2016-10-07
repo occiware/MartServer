@@ -18,15 +18,21 @@
  */
 package org.occiware.mart.server.servlet.impl;
 
+import java.util.HashMap;
+import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractGetQuery;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Constants;
@@ -46,8 +52,8 @@ public class GetQuery extends AbstractGetQuery {
     
     @Path("{path:.*}/")
     @GET
-    @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
-    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
+    // @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
+    // @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
     @Override
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         Response response;
@@ -64,15 +70,46 @@ public class GetQuery extends AbstractGetQuery {
             return getQueryInterface(path, headers);
         }
         
+        Entity entity = null;
+        String entityId = null;
+        // Get one entity check.
+            // path with category/kind : http://localhost:8080/compute/uuid
+            // custom location: http://localhost:8080/foo/bar/myvm/uuid
+        if (Utils.isEntityUUIDProvided(path, inputParser.getOcciAttributes()) && !getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+            // Retrieve entity uuid.
+            entityId = Utils.getUUIDFromPath(path, new HashMap<>());
+            // Search for path..
+            entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+            if (entity == null) {
+                try {
+                    response = outputParser.parseResponse("resource " + path + " not found");
+                    response.status(Response.Status.NOT_FOUND);
+                } catch (ResponseParseException ex) {
+                    throw new NotFoundException(ex);
+                }
+                return response;
+            } else {
+                // Entity is found, we must parse the result (on accept type media if defined in header of the query) to a response ok --> 200 object
+                //   AND the good rendering output (text/occi, application/json etc.).
+                try {
+                    response = outputParser.parseResponse(entity);
+                } catch (ResponseParseException ex) {
+                    // This must never go here. If that's the case this is an error.
+                    throw new InternalServerErrorException();
+                }
+                return response;
+            }
+        }
         
-        // Get entity check.
-        
-        
-        // Get Mixin definition check.
-        
-        
+        // Get collection based only on location and Accept = text/uri-list.
         
         // Get Collection check like compute/*
+        
+        
+        // Get Mixin Tag definition check.
+        
+        
+        
         
         
         
@@ -89,11 +126,7 @@ public class GetQuery extends AbstractGetQuery {
      * @return
      */
     @Override
-//    @Path("{path}/{id}") // {a}/{b}/{id}
-//    @GET
-//    @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
-//    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
-    public Response getEntity(@PathParam("path") String path, @PathParam("id") String entityId, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+    public Response getEntity(String path, String entityId, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         
 //        if (path.equals("collections")) {
 //            return getEntityCollection(entityId, headers, request);

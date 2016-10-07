@@ -42,8 +42,9 @@ public class JsonOcciParser extends AbstractRequestParser {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    
     @Override
-    public Response parseResponse(Object object) throws ResponseParseException {
+    public Response parseResponse(Object object, Response.Status status) throws ResponseParseException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -55,6 +56,11 @@ public class JsonOcciParser extends AbstractRequestParser {
     @Override
     public Response getInterface(String categoryFilter, String user) {
         return super.getInterface(categoryFilter, user); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Response parseResponse(Object object) throws ResponseParseException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
    

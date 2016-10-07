@@ -36,4 +36,8 @@ public interface IEntryPoint {
      */
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
     
+    public String getContentType();
+    
+    public String getAcceptType();
+    
 }

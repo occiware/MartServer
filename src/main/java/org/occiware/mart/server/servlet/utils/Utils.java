@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -18,12 +19,14 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Action;
+import org.occiware.clouddesigner.occi.Attribute;
 import org.occiware.clouddesigner.occi.AttributeState;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.Resource;
+import org.occiware.mart.server.servlet.exception.MixinNotFoundOnModelException;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,11 +100,12 @@ public class Utils {
         }
         return result;
     }
-    
+
     /**
      * Return the Content-type from http header.
+     *
      * @param headers
-     * @return 
+     * @return
      */
     public static String findContentTypeFromHeader(HttpHeaders headers) {
         List<String> vals = Utils.getFromValueFromHeaders(headers, Constants.HEADER_CONTENT_TYPE);
@@ -114,10 +118,12 @@ public class Utils {
         }
         return contentType;
     }
+
     /**
      * Return the accept media type from header.
+     *
      * @param headers
-     * @return 
+     * @return
      */
     public static String findAcceptTypeFromHeader(HttpHeaders headers) {
         List<String> vals = Utils.getFromValueFromHeaders(headers, Constants.HEADER_ACCEPT);
@@ -327,7 +333,7 @@ public class Utils {
     /**
      * Check if an UUID is provided on a String or attribute occi.core.id.
      *
-     * @param id
+     * @param id, an uuid or a path like foo/bar/myuuid
      * @param attr
      * @return true if provided or false if not provided
      */
@@ -365,12 +371,12 @@ public class Utils {
     /**
      * Search for UUID on a entityId String before attribute occi.core.id.
      *
-     * @param id
+     * @param path
      * @param attr
      * @return the UUID provided may return null if uuid not found.
      */
-    public static String getUUIDFromId(final String id, final Map<String, String> attr) {
-        String[] uuids = id.split("/");
+    public static String getUUIDFromPath(final String path, final Map<String, String> attr) {
+        String[] uuids = path.split("/");
         String uuidToReturn = null;
         boolean match = false;
 
@@ -496,29 +502,32 @@ public class Utils {
     }
 
     /**
-     * Check if the path contains a category referenced on extensions used by configuration.
+     * Check if the path contains a category referenced on extensions used by
+     * configuration.
+     *
      * @param path
-     * @return a category term if found on configuration, if not found return null.
+     * @return a category term if found on configuration, if not found return
+     * null.
      */
     public static String getCategoryFilter(final String path, final String user) {
         List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(user);
         List<Mixin> mixins = ConfigurationManager.getAllConfigurationMixins(user);
         String term;
-        
+
         for (Kind kind : kinds) {
             for (Action action : kind.getActions()) {
                 term = action.getTerm();
                 if (path.contains(term) || path.contains(term.toLowerCase())) {
                     return term;
-                    
+
                 }
             }
-            
+
             term = kind.getTerm();
             if (path.contains(term) || path.contains(term.toLowerCase())) {
                 return term;
             }
-            
+
         }
         for (Mixin mixin : mixins) {
             term = mixin.getTerm();
@@ -526,19 +535,97 @@ public class Utils {
                 return term;
             }
         }
-        
+
         return null;
     }
+
+    /**
+     * 
+     * @param mixins
+     * @param kind
+     * @return true if all mixins applied.
+     */
+    public static boolean checkIfMixinAppliedToKind(List<Mixin> mixins, Kind kind) {
+        boolean result = true;
+        if (mixins.isEmpty()) {
+            return true;
+        }
+        for (Mixin mixin : mixins) {
+            if (!mixin.getApplies().contains(kind)) {
+                // one or more mixin doesnt apply to this kind. 
+                result = false;
+            }
+        }
+        return result;
+    }
     
+    /**
+     * Load a list of mixin from used extensions models.
+     * @param mixins
+     * @return
+     * @throws MixinNotFoundOnModelException 
+     */
+    public static List<Mixin> loadMixinFromSchemeTerm(List<String> mixins) throws MixinNotFoundOnModelException {
+        List<Mixin> mixinModel = new LinkedList<>();
+        
+        Mixin mixinTmp;
+        for (String mixinId : mixins) {
+            mixinTmp = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, mixinId);
+            if (mixinTmp == null) {
+                throw new MixinNotFoundOnModelException("Mixin : " + mixinId + " not found on used extensions models");
+            } else {
+                mixinModel.add(mixinTmp);
+            }
+        }
+        return mixinModel;
+    }
     
+    /**
+     * 
+     * @param occiAttributes
+     * @param kind
+     * @return true if all attributes are referenced on kind /and/or mixins.
+     */
+    public static boolean checkIfAttributesExistOnKindMixin(Map<String, String> occiAttributes, Kind kind, List<Mixin> mixins) {
+        List<Attribute> attrsKind = kind.getAttributes();
+        List<Attribute> attrsMixin;
+        boolean resultOnKind = true;
+        String attrName;
+        boolean result = true;
+        if (occiAttributes.isEmpty()) {
+            return true;
+        }
+        for (Attribute attr : attrsKind) {
+            attrName = attr.getName();
+            if (!occiAttributes.containsKey(attrName)) {
+                resultOnKind = false;
+            }
+        }
+        if (!resultOnKind) {
+            // Check the applied mixins.
+            for (Mixin mixin : mixins) {
+                attrsMixin = mixin.getAttributes();
+                for (Attribute attr : attrsMixin) {
+                    attrName = attr.getName();
+                    if (!occiAttributes.containsKey(attrName)) {
+                        result = false;
+                        break;
+                    }
+                }
+                if (!result) {
+                    break;
+                }
+                
+            }
+        }
+        
+        return result;
+    }
+
     private static int uniqueInt = 1;
 
     public static synchronized int getUniqueInt() {
         return uniqueInt++;
     }
-
-    
-    
-   
 
 }

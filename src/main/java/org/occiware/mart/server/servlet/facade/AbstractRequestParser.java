@@ -108,6 +108,9 @@ public abstract class AbstractRequestParser implements IRequestParser {
     public abstract Response parseResponse(Object object) throws ResponseParseException;
 
     @Override
+    public abstract Response parseResponse(Object object, Response.Status status) throws ResponseParseException;
+
+    @Override
     public String getEntityUUID() {
         if (!getOcciAttributes().isEmpty()) {
             entityUUID = attrs.get(Constants.OCCI_CORE_ID);

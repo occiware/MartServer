@@ -90,9 +90,12 @@ public interface IRequestParser {
     /**
      * Parse the Object to a valid response with accept media type output.
      * @param object, if object is instance of Response, this must be not parsed.
+     * @param status, Response.Status code representation, useful if object parameter is a Response object or if there was a String object.
      * @return a response object to return to client.
      * @throws ResponseParseException
      */
+    public Response parseResponse(Object object, Response.Status status) throws ResponseParseException;
+    
     public Response parseResponse(Object object) throws ResponseParseException;
     
     /**

@@ -30,6 +30,7 @@ import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Attribute;
 import org.occiware.clouddesigner.occi.Category;
+import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
@@ -66,7 +67,6 @@ public class TextOcciParser extends AbstractRequestParser {
                 // As it may have kind and mixins, the value return will be a kind class before.
                 // Example of value: 
                 // compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind";
-                String temporaryValue = null;
 
                 for (String value : values) {
                     String line = Constants.CATEGORY + ": " + value;
@@ -127,10 +127,28 @@ public class TextOcciParser extends AbstractRequestParser {
         }
         setOcciAttributes(attrs);
     }
-
+    
     @Override
-    public Response parseResponse(Object object) throws ResponseParseException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Response parseResponse(Object object, Response.Status status) throws ResponseParseException {
+        Response response = null;
+        if (object instanceof Response) {
+            response = (Response)object;
+        } 
+        if (object instanceof String) {
+            response = Response.status(status).entity((String)object).build();
+        }
+        if (object instanceof Entity) {
+            // Build an object response from entity occiware object model.
+            // TODO...
+            
+        }
+        
+        if (response == null) {
+            throw new ResponseParseException("Cannot parse the object to text/occi representation.");
+        }
+        
+        return response;
+        
     }
 
     @Override
@@ -322,6 +340,17 @@ public class TextOcciParser extends AbstractRequestParser {
             }
         }
         return kind;
+    }
+
+    /**
+     * Default with response status ok.
+     * @param object
+     * @return
+     * @throws ResponseParseException 
+     */
+    @Override
+    public Response parseResponse(Object object) throws ResponseParseException {
+        return parseResponse(object, Response.Status.OK);
     }
 
 }

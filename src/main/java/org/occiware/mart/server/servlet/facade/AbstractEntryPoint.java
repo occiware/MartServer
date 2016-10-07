@@ -18,15 +18,22 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.util.LinkedList;
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import org.occiware.clouddesigner.occi.Kind;
+import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
+import org.occiware.mart.server.servlet.exception.MixinNotFoundOnModelException;
+import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.impl.parser.ParserFactory;
+import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,16 +81,92 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
             outputParser = ParserFactory.build(acceptType);
             try {
                 inputParser.parseInputQuery(headers, request);
+                
+                // Check if attributes are in configuration model for kind and mixins.
+                if (!inputParser.getOcciAttributes().isEmpty()) {
+                    // if there are attributes so there is a kind / mixins.
+                    // Check on configuration and used extension.
+                    boolean checkAttrs = false;
+                    boolean hasError = false;
+                    String error = null;
+                    
+                    Kind kindModel = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, inputParser.getKind());
+                    if (kindModel == null) {
+                        error = "The kind : " + inputParser.getKind() + " doesnt exist on referenced extensions";
+                        hasError = true;
+                    }
+                    List<Mixin> mixinsModel = new LinkedList<>();
+                    try {
+                        mixinsModel = Utils.loadMixinFromSchemeTerm(inputParser.getMixins());
+                    } catch (MixinNotFoundOnModelException ex) {
+                        
+                        if (error != null) {
+                             error += " \n ";
+                        }
+                        error += "Mixin model error cause : " + ex.getMessage();
+                        hasError = true;
+                    }
+                    
+                    if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
+                        if (error != null) {
+                             error += " \n ";
+                        }
+                        error += "Some mixins doesnt apply to kind : " + inputParser.getKind();
+                        hasError = true;
+                    }
+                    
+                    if (!hasError) {
+                        
+                        if (!Utils.checkIfAttributesExistOnKindMixin(inputParser.getOcciAttributes(), kindModel, mixinsModel)) {
+                            if (error != null) {
+                             error += " \n ";
+                            }
+                            error += "Some attributes doesnt exist on kind and mixins : " + inputParser.getKind();
+                            hasError = true;
+                        }
+                        
+                    }
+                    
+                    
+                    if (hasError) {
+                        LOGGER.error(error);
+                        try {
+                            response = outputParser.parseResponse(error, Response.Status.BAD_REQUEST);
+                        } catch (ResponseParseException e) {
+                            throw new BadRequestException();
+                        }
+                        throw new BadRequestException("Error while parsing input query, some attributes doesnt exist on used extensions.");
+                    }
+                    
+                }
+                
+                
             } catch (AttributeParseException | CategoryParseException ex) {
                 LOGGER.error(ex.getMessage());
+                try {
+                    response = outputParser.parseResponse("Error while parsing input query", Response.Status.BAD_REQUEST);
+                } catch (ResponseParseException e) {
+                    throw new BadRequestException();
+                }
             }
         }
+        
         
         return response;
     }
     
     protected UriInfo getUri() {
         return uri;
+    }
+
+    @Override
+    public String getAcceptType() {
+        return acceptType;
+    }
+
+    @Override
+    public String getContentType() {
+        return contentType;
     }
     
 }
