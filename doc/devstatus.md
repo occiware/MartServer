@@ -61,7 +61,7 @@ Development Status values :
     <tr>
         <td align="center">Get a collection via GET Method</td>
         <td align="center">Get a collection of entity, get a list of locations, <a href="https://github.com/cgourdin/MartServer/issues/8">feature #8</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Manage filter on Get request</td>

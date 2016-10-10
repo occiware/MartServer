@@ -21,6 +21,7 @@ package org.occiware.mart.server.servlet.impl;
 import java.util.HashMap;
 import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
@@ -75,7 +76,8 @@ public class GetQuery extends AbstractGetQuery {
         // Get one entity check.
             // path with category/kind : http://localhost:8080/compute/uuid
             // custom location: http://localhost:8080/foo/bar/myvm/uuid
-        if (Utils.isEntityUUIDProvided(path, inputParser.getOcciAttributes()) && !getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+        boolean isEntityUUIDProvided = Utils.isEntityUUIDProvided(path, inputParser.getOcciAttributes());
+        if (isEntityUUIDProvided && !getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
             // Retrieve entity uuid.
             entityId = Utils.getUUIDFromPath(path, new HashMap<>());
             // Search for path..
@@ -100,11 +102,22 @@ public class GetQuery extends AbstractGetQuery {
                 }
                 
             }
+        } else if (isEntityUUIDProvided && getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+            // To be compliant with occi specification (text/rendering and all others), it must check if uri-list is used with entity request, if this is the case ==> badrequest.
+            try {
+                response = outputParser.parseResponse("you must not use the accept type " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " in this way.", Response.Status.BAD_REQUEST);
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException();
+            }
+            return response;
+            
         }
+        
         
         // Get collection based only on location and Accept = text/uri-list.
         
-        // Get Collection check like compute/*
+        
+        // Get category collection check like compute/* for accept type text/uri-list.
         
         
         // Get Mixin Tag definition check.
