@@ -33,6 +33,14 @@ import org.occiware.mart.server.servlet.facade.AbstractRequestParser;
 public class JsonOcciParser extends AbstractRequestParser {
 
     @Override
+    public void parseInputQuery(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException, AttributeParseException {
+        // TODO: Parse json input body.
+        super.parseInputQuery(headers, request); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    
+    
+    @Override
     public void parseOcciCategories(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }

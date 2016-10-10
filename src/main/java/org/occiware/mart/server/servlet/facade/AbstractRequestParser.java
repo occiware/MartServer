@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,12 +64,18 @@ public abstract class AbstractRequestParser implements IRequestParser {
     protected List<Kind> kindsConf = null;
     protected List<Mixin> mixinsConf = null;
     
+    /**
+     * Uri of the server.
+     */
+    protected URI serverURI;
+    
     @Override
     public void parseInputQuery(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException, AttributeParseException {
         // get the kind and mixins from query.
         parseOcciCategories(headers, request);
         // Get the occi attributes defined in query.
         parseOcciAttributes(headers, request);
+        
     }
 
     @Override
@@ -197,6 +204,18 @@ public abstract class AbstractRequestParser implements IRequestParser {
         return kindsConf;
         
     }
+
+    @Override
+    public URI getServerURI() {
+        return serverURI;
+    }
+
+    @Override
+    public void setServerURI(URI uri) {
+        this.serverURI = uri;
+    }
+
+    
 
     
     

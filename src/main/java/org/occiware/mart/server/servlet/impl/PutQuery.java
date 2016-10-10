@@ -31,7 +31,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.mart.server.servlet.exception.EntityAddException;
 import org.occiware.mart.server.servlet.exception.EntityConflictException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -136,7 +135,7 @@ public class PutQuery extends AbstractPutQuery {
         // Check the attribute map if attr contains occi.core.source or
         // occi.core.target, this is a link !
         isResource = ConfigurationManager.checkIfEntityIsResourceOrLinkFromAttributes(attributes);
-        location = getUri().getAbsolutePath().toString();
+        location = getUri().getPath();
         if (entityId == null) {
             location += entityId;
         }
@@ -201,7 +200,7 @@ public class PutQuery extends AbstractPutQuery {
                         throw new BadRequestException(message);
                     }
                 }
-                
+
                 attributes.put("occi.core.id", coreId);
                 ConfigurationManager.addLinkToConfiguration(entityId, kind, mixins, src, target, attributes, owner, location);
             }

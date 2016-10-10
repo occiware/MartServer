@@ -18,11 +18,13 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
@@ -131,4 +133,14 @@ public interface IRequestParser {
     
     public List<Kind> getKindsConf();
     public List<Mixin> getMixinsConf();
+    /**
+     * Assign the base uri to parser (for absolute path links).
+     * @param uri
+     */
+    public void setServerURI(URI uri);
+    /**
+     * Get base server uri.
+     * @return 
+     */
+    public URI getServerURI();
 }

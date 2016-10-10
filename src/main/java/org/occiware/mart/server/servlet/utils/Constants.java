@@ -21,6 +21,7 @@ public class Constants {
     public static final String MEDIA_TYPE_JSON = "application/json";
     
     public static final String CATEGORY = "Category";
+    public static final String LINK = "Link";
     public static final String X_OCCI_LOCATION = "X-OCCI-Location";
 
     public static final String URN_UUID_PREFIX = "urn:uuid:";

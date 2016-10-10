@@ -70,8 +70,8 @@ public class GetQuery extends AbstractGetQuery {
             return getQueryInterface(path, headers);
         }
         
-        Entity entity = null;
-        String entityId = null;
+        Entity entity;
+        String entityId;
         // Get one entity check.
             // path with category/kind : http://localhost:8080/compute/uuid
             // custom location: http://localhost:8080/foo/bar/myvm/uuid
@@ -82,22 +82,23 @@ public class GetQuery extends AbstractGetQuery {
             entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
             if (entity == null) {
                 try {
-                    response = outputParser.parseResponse("resource " + path + " not found");
-                    response.status(Response.Status.NOT_FOUND);
+                    response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+                    return response;
                 } catch (ResponseParseException ex) {
-                    throw new NotFoundException(ex);
+                    throw new NotFoundException();
                 }
-                return response;
+                
             } else {
-                // Entity is found, we must parse the result (on accept type media if defined in header of the query) to a response ok --> 200 object
+                // Entity is found, we must parse the result (on accept type media if defined in header of the query elsewhere this will be text/occi) to a response ok --> 200 object
                 //   AND the good rendering output (text/occi, application/json etc.).
                 try {
                     response = outputParser.parseResponse(entity);
+                    return response;
                 } catch (ResponseParseException ex) {
-                    // This must never go here. If that's the case this is an error.
+                    // This must never go here. If that's the case this is a bug in parser.
                     throw new InternalServerErrorException();
                 }
-                return response;
+                
             }
         }
         

@@ -79,9 +79,10 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
             acceptType = Utils.findAcceptTypeFromHeader(headers);
             inputParser = ParserFactory.build(contentType);
             outputParser = ParserFactory.build(acceptType);
+            inputParser.setServerURI(uri.getBaseUri());
+            outputParser.setServerURI(uri.getBaseUri());
             try {
                 inputParser.parseInputQuery(headers, request);
-                
                 // Check if attributes are in configuration model for kind and mixins.
                 if (!inputParser.getOcciAttributes().isEmpty()) {
                     // if there are attributes so there is a kind / mixins.
