@@ -1,18 +1,18 @@
-/*
- * Copyright 2016 cgourdin.
+/**
+ * Copyright (c) 2015-2017 Inria
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
@@ -20,6 +20,7 @@ package org.occiware.mart.server.servlet.impl.parser;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -184,8 +185,55 @@ public class TextOcciParser extends AbstractRequestParser {
             // Build an object response from entity occiware object model.
             Entity entity = (Entity) object;
             response = renderEntityResponse(entity, status);
-
         }
+        
+        if (object instanceof List) {
+            LOGGER.info("Collection to render.");
+           List<Object> objects = (List<Object>) object;
+           List<String> locations = new LinkedList<>();
+           List<Entity> entities = new LinkedList<>();
+           String tmp;
+           Entity entityTmp;
+           // To determine if location or if entities to render..
+           for (Object objectTmp : objects) {
+               if (objectTmp instanceof String) {
+                   // List of locations.
+                   tmp = (String) objectTmp;
+                   locations.add(tmp);
+                   
+               } else if (objectTmp instanceof Entity) {
+                   // List of entities to render.
+                   entityTmp = (Entity) objectTmp;
+                   entities.add(entityTmp);
+                   
+               } else {
+                   throw new ResponseParseException("unknown datatype collection.");
+               }
+           }
+           
+           if (!locations.isEmpty()) {
+               Response.ResponseBuilder responseBuilder = Response.status(status)
+                       .header("Server", Constants.OCCI_SERVER_HEADER)
+                       .entity("OK \n")
+                       .type(Constants.MEDIA_TYPE_TEXT_OCCI);
+               for (String location : locations) {
+                   
+                   responseBuilder.header("link", location);
+               }
+               response = responseBuilder.build();
+           } 
+           if (!entities.isEmpty()) {
+               
+               for (Entity entity : entities) {
+                   response = renderEntityResponse(entity, status);
+                   // We render only the first entity found, cause to limit size of header.
+                   break;
+               }
+               
+           }
+            
+        }
+        
 
         if (response == null) {
             throw new ResponseParseException("Cannot parse the object to text/occi representation.");
@@ -203,7 +251,7 @@ public class TextOcciParser extends AbstractRequestParser {
     /**
      * Build interface /-/ for accept type : text/occi.
      *
-     * @param categoryFilter
+     * @param categoryFilter (category Term)
      * @param user
      * @return interface to set in header.
      */
@@ -437,25 +485,6 @@ public class TextOcciParser extends AbstractRequestParser {
                 .entity("OK")
                 .links(links)
                 .build();
-
-//        PrintWriter out = response.getWriter();
-//		response.setContentType(TEXT_PLAIN);
-//		out.println(CATEGORY + ": " + asCategory(entity.getKind(), false));
-//		for(Mixin mixin : entity.getMixins()) {
-//			out.println(CATEGORY + ": " + asCategory(mixin, false));
-//		}
-//		out.println(X_OCCI_ATTRIBUTE + ": " + OCCI_CORE_ID + "=\"" + entity.getId() + '\"');
-//		if(entity instanceof Link) {
-//			Link link = (Link)entity;
-//			out.println(X_OCCI_ATTRIBUTE + ": " + OCCI_CORE_SOURCE + "=\"" + getLocation(link.getSource()) + '\"');
-//			out.println(X_OCCI_ATTRIBUTE + ": " + OCCI_CORE_TARGET + "=\"" + getLocation(link.getTarget()) + '\"');
-//		}		
-//		for(AttributeState attribute : entity.getAttributes()) {
-//			String value = attribute.getValue();
-//			// TODO: add " " only for string and enum attributes.
-//			value = "\"" + value + "\"";
-//			out.println(X_OCCI_ATTRIBUTE + ": " + attribute.getName() + '=' + value);
-//		}
         return response;
     }
 

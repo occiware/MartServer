@@ -1,7 +1,20 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (c) 2015-2017 Inria
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.utils;
 
@@ -12,7 +25,16 @@ import java.util.regex.Pattern;
  * @author cgourdin
  */
 public class Constants {
-
+    
+    // Filters and pagination constants.
+    public static final int DEFAULT_NUMBER_ITEMS_PER_PAGE = 20;
+    public static final String NUMBER_ITEMS_PER_PAGE_KEY = "number";
+    public static final String CURRENT_PAGE_KEY = "page";
+    public static final int DEFAULT_CURRENT_PAGE = 1;
+    public static final int DEFAULT_OPERATOR_VAL = 0; // operator equal by default if 1 : like mode.
+    public static final String OPERATOR_KEY = "operator";
+    public static final String CATEGORY_KEY = "category";
+    
     public static final String PATH_SEPARATOR = "/";
 
     public static final String MEDIA_TYPE_TEXT_OCCI = "text/occi";

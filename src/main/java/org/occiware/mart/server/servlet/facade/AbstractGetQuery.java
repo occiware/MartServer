@@ -20,10 +20,8 @@ package org.occiware.mart.server.servlet.facade;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import org.occiware.mart.server.servlet.utils.Utils;
 
 /**
@@ -59,7 +57,7 @@ public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGe
     @Override
     public Response getQueryInterface(String path, HttpHeaders headers) {
         System.out.println("getQueryInterface method.");
-       
+
         if (Utils.isUriListContentTypeUsed(headers)) {
             // We must here return a bad request.
             throw new BadRequestException("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/");

@@ -1,18 +1,18 @@
-/*
- * Copyright 2016 cgourdin.
+/**
+ * Copyright (c) 2015-2017 Inria
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
@@ -45,33 +45,32 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractEntryPoint implements IEntryPoint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractEntryPoint.class);
-    
+
     @Context
     protected UriInfo uri;
     protected IRequestParser inputParser;
-    
+
     private String contentType = "text/occi";
-    
+
     private String acceptType = "text/occi";
-    
+
     protected IRequestParser outputParser;
-    
-    
+
     @Override
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
-        
+
         Response response;
         String contextRoot = getUri().getBaseUri().toString();
         String uriPath = getUri().getPath();
-        System.out.println("Context root : " + contextRoot);
-        System.out.println("URI relative path: " + uriPath);
-        
+        LOGGER.info("Context root : " + contextRoot);
+        LOGGER.info("URI relative path: " + uriPath);
+
         // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
         response = Utils.checkClientOCCIVersion(headers);
         if (response != null) {
             return response;
         }
-        
+
         if (response == null) {
             // Load the parsers.
             // check content-type header.
@@ -83,6 +82,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
             outputParser.setServerURI(uri.getBaseUri());
             try {
                 inputParser.parseInputQuery(headers, request);
+
                 // Check if attributes are in configuration model for kind and mixins.
                 if (!inputParser.getOcciAttributes().isEmpty()) {
                     // if there are attributes so there is a kind / mixins.
@@ -90,7 +90,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
                     boolean checkAttrs = false;
                     boolean hasError = false;
                     String error = null;
-                    
+
                     Kind kindModel = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, inputParser.getKind());
                     if (kindModel == null) {
                         error = "The kind : " + inputParser.getKind() + " doesnt exist on referenced extensions";
@@ -100,35 +100,34 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
                     try {
                         mixinsModel = Utils.loadMixinFromSchemeTerm(inputParser.getMixins());
                     } catch (MixinNotFoundOnModelException ex) {
-                        
+
                         if (error != null) {
-                             error += " \n ";
+                            error += " \n ";
                         }
                         error += "Mixin model error cause : " + ex.getMessage();
                         hasError = true;
                     }
-                    
+
                     if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
                         if (error != null) {
-                             error += " \n ";
+                            error += " \n ";
                         }
                         error += "Some mixins doesnt apply to kind : " + inputParser.getKind();
                         hasError = true;
                     }
-                    
+
                     if (!hasError) {
-                        
+
                         if (!Utils.checkIfAttributesExistOnKindMixin(inputParser.getOcciAttributes(), kindModel, mixinsModel)) {
                             if (error != null) {
-                             error += " \n ";
+                                error += " \n ";
                             }
                             error += "Some attributes doesnt exist on kind and mixins : " + inputParser.getKind();
                             hasError = true;
                         }
-                        
+
                     }
-                    
-                    
+
                     if (hasError) {
                         LOGGER.error(error);
                         try {
@@ -138,10 +137,9 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
                         }
                         throw new BadRequestException("Error while parsing input query, some attributes doesnt exist on used extensions.");
                     }
-                    
+
                 }
-                
-                
+
             } catch (AttributeParseException | CategoryParseException ex) {
                 LOGGER.error(ex.getMessage());
                 try {
@@ -151,11 +149,10 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
                 }
             }
         }
-        
-        
+
         return response;
     }
-    
+
     protected UriInfo getUri() {
         return uri;
     }
@@ -169,5 +166,5 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
     public String getContentType() {
         return contentType;
     }
-    
+
 }

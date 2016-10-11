@@ -52,9 +52,6 @@ import org.occiware.mart.server.servlet.exception.EntityAddException;
 import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
-
-// import org.ow2.erocci.backend.impl.CollectionFilter;
-// import org.ow2.erocci.backend.impl.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1010,25 +1007,34 @@ public class ConfigurationManager {
      * entity list and it's not used here.
      *
      * @param owner
-     * @param categoryId
      * @param startIndex
      * @param number (number max of entities to return).
      * @param filters (List of entity attribute to filter).
      * @return a list of entities (key: owner, value : List of entities).
      */
-    public static List<Entity> findAllEntitiesForCategoryId(final String owner, final String categoryId, final int startIndex, final int number, final List<CollectionFilter> filters) {
+    public static List<Entity> findAllEntities(final String owner, final int startIndex, final int number, final List<CollectionFilter> filters) {
         List<Entity> entities = new LinkedList<>();
 
         if (configurations.isEmpty() || owner == null || owner.isEmpty()) {
             return entities;
         }
-        // Load all entities for the category..
-        entities.addAll(findAllEntitiesForKind(owner, categoryId));
-        entities.addAll(findAllEntitiesForMixin(owner, categoryId));
-        entities.addAll(findAllEntitiesForAction(owner, categoryId));
 
+        String categoryId = null;
+        for (CollectionFilter filter : filters) {
+            if (filter.getCategoryFilter() != null) {
+                categoryId = filter.getCategoryFilter();
+            }
+
+        }
+
+        // Load all entities and after filter them.
+        entities.addAll(findAllEntitiesOwner(owner));
+
+//        entities.addAll(findAllEntitiesForKind(owner, categoryId));
+//        entities.addAll(findAllEntitiesForMixin(owner, categoryId));
+//        entities.addAll(findAllEntitiesForAction(owner, categoryId));
         // TODO : Order list by entityId, if entities not empty.
-        entities = filterEntities(startIndex, number, filters, entities);
+        entities = filterEntities(startIndex, number, filters, entities, owner);
 
         return entities;
     }
@@ -1171,24 +1177,6 @@ public class ConfigurationManager {
             }
         }
 
-        return entities;
-    }
-
-    /**
-     * Find all entities referenced for an owner.
-     *
-     * @param owner
-     * @param startIndex
-     * @param number
-     * @param filters
-     * @return a filtered list of entities.
-     */
-    public static List<Entity> findAllEntitiesOwner(final String owner, final int startIndex, final int number, List<CollectionFilter> filters) {
-        List<Entity> entities = new ArrayList<>();
-        List<String> usedKinds = getAllUsedKind();
-        for (String kind : usedKinds) {
-            entities.addAll(findAllEntitiesForCategoryId(owner, kind, startIndex, number, filters));
-        }
         return entities;
     }
 
@@ -1383,24 +1371,6 @@ public class ConfigurationManager {
     }
 
     /**
-     * Find all entities for a relative path and filters if any.
-     *
-     * @param owner
-     * @param relativePath
-     * @param startIndex
-     * @param number
-     * @param filters
-     * @return
-     */
-    public static List<Entity> findAllEntitiesOwnerForRelativePath(final String owner, final String relativePath, final int startIndex, final int number, final List<CollectionFilter> filters) {
-        List<Entity> entities;
-        entities = findAllEntitiesLikePartialId(owner, relativePath);
-        entities = filterEntities(startIndex, number, filters, entities);
-
-        return entities;
-    }
-
-    /**
      * Destroy all configurations for all owners.
      */
     public static void resetAll() {
@@ -1417,6 +1387,7 @@ public class ConfigurationManager {
      * @param owner
      * @param updateMode (if updateMode is true, reset existing and replace with
      * new ones)
+     * @return
      */
     public static boolean addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) {
         boolean result = false;
@@ -2004,10 +1975,37 @@ public class ConfigurationManager {
      * @param sources
      * @return a filtered list of entities.
      */
-    private static List<Entity> filterEntities(final int startIndex, final int number, final List<CollectionFilter> filters, List<Entity> sources) {
+    private static List<Entity> filterEntities(final int startIndex, final int number, final List<CollectionFilter> filters, List<Entity> sources, final String user) {
         List<Entity> entities = sources;
-        // Filter the lists if filter is set.
+        // Filter the lists if filter are set.
         if (!filters.isEmpty() && !entities.isEmpty()) {
+            String categoryFilter = null;
+            // Check category filter.
+            for (CollectionFilter filter : filters) {
+                if (filter.getCategoryFilter() != null && !filter.getCategoryFilter().isEmpty()) {
+                    // We dont know here if category filter has only the term or has scheme+term, so we must check if there is only the term.
+                    categoryFilter = filter.getCategoryFilter();
+                    break;
+                }
+            }
+            if (categoryFilter != null && !categoryFilter.isEmpty()) {
+                // Check if this is a term or a scheme + term
+                if (!Utils.checkIfCategorySchemeTerm(categoryFilter, user)) {
+                    // this category is a term.
+                    categoryFilter = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, ConfigurationManager.DEFAULT_OWNER);
+                }
+            }
+
+            String filterOnPath = null;
+            boolean hasFilterOnPath = false;
+            for (CollectionFilter filter : filters) {
+                filterOnPath = filter.getFilterOnPath();
+                if (filterOnPath != null && !filterOnPath.isEmpty()) {
+                    hasFilterOnPath = true;
+                    break;
+                }
+            }
+
             Iterator<Entity> it = entities.iterator();
             boolean control = false;
             String constraintValue;
@@ -2043,6 +2041,52 @@ public class ConfigurationManager {
                         break;
                     }
                 } // end for each entity attributes.
+
+                if (categoryFilter != null && !categoryFilter.isEmpty()) {
+                    // Must filter on this category.
+                    String kindId = entity.getKind().getScheme() + entity.getKind().getTerm();
+                    String actionId;
+                    boolean categoryFound = false;
+                    if (kindId.equals(categoryFilter)) {
+                        categoryFound = true;
+                    }
+                    if (!categoryFound) {
+                        // Search after if this is an action category.
+                        for (Action action : entity.getKind().getActions()) {
+                            actionId = action.getScheme() + action.getTerm();
+                            if (actionId.equals(categoryFilter)) {
+                                categoryFound = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!categoryFound) {
+                        // Search on mixins.
+                        String mixinId;
+                        for (Mixin mixin : entity.getMixins()) {
+                            mixinId = mixin.getScheme() + mixin.getTerm();
+                            if (mixinId.equals(categoryFilter)) {
+                                categoryFound = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!categoryFound) {
+                        control = false;
+                    }
+
+                }
+
+                if (hasFilterOnPath) {
+                    String relativeLocation = getEntityRelativePath(entity.getId());
+
+                    if (relativeLocation == null || relativeLocation.isEmpty()) {
+                        control = false;
+                    } else if (!filterOnPath.contains(relativeLocation)) {
+                        control = false;
+                    }
+                } // endif has a filter on relative path.
+
                 if (!control) {
                     it.remove(); // remove this entity from collection, the entity doesnt respect constraints attrib and value.
                 }
@@ -2239,6 +2283,51 @@ public class ConfigurationManager {
         }
 
         return eDataType;
+    }
+
+    /**
+     * Find category id from category term value for a user configuration.
+     *
+     * @param categoryTerm
+     * @param user
+     * @return a String, scheme + term or null if not found on configuration.
+     */
+    public static String findCategorySchemeTermFromTerm(String categoryTerm, String user) {
+        List<Kind> kinds = getAllConfigurationKind(user);
+        List<Mixin> mixins = getAllConfigurationMixins(user);
+        String term;
+        String scheme;
+        String id;
+        for (Kind kind : kinds) {
+            for (Action action : kind.getActions()) {
+                term = action.getTerm();
+                scheme = action.getScheme();
+                id = scheme + term;
+                if (categoryTerm.equalsIgnoreCase(term)) {
+                    return id;
+                }
+            }
+
+            term = kind.getTerm();
+            scheme = kind.getScheme();
+            id = scheme + term;
+            if (categoryTerm.equalsIgnoreCase(term)) {
+                return id;
+            }
+
+        }
+        for (Mixin mixin : mixins) {
+
+            term = mixin.getTerm();
+            scheme = mixin.getScheme();
+            id = scheme + term;
+            if (categoryTerm.equalsIgnoreCase(term)) {
+                return id;
+            }
+        }
+
+        return null;
+
     }
 
 }

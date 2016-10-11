@@ -1,3 +1,21 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.server.servlet.utils;
 
 import java.io.BufferedReader;
@@ -506,6 +524,7 @@ public class Utils {
      * configuration.
      *
      * @param path
+     * @param user
      * @return a category term if found on configuration, if not found return
      * null.
      */
@@ -537,6 +556,98 @@ public class Utils {
         }
 
         return null;
+    }
+    /**
+     * Check if the path contains a category referenced on extensions used by
+     * configuration.
+     *
+     * @param path
+     * @param user
+     * @return a category term if found on configuration, if not found return
+     * null.
+     */
+    public static String getCategoryFilterSchemeTerm(final String path, final String user) {
+        List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(user);
+        List<Mixin> mixins = ConfigurationManager.getAllConfigurationMixins(user);
+        String term;
+        String scheme;
+        String id;
+        for (Kind kind : kinds) {
+            for (Action action : kind.getActions()) {
+                term = action.getTerm();
+                scheme = action.getScheme();
+                id = scheme + term;
+                if (path.contains(term) || path.contains(term.toLowerCase())) {
+                    return id;
+
+                }
+            }
+
+            term = kind.getTerm();
+            scheme = kind.getScheme();
+            id = scheme + term;
+            if (path.contains(term) || path.contains(term.toLowerCase())) {
+                return id;
+            }
+
+        }
+        for (Mixin mixin : mixins) {
+            
+            term = mixin.getTerm();
+            scheme = mixin.getScheme();
+            id = scheme + term;
+            if (path.contains(term) || path.contains(term.toLowerCase())) {
+                return id;
+            }
+        }
+
+        return null;
+    }
+    /**
+     * Return true if categoryFilter is a scheme + term.
+     * @param categoryFilter
+     * @param user
+     * @return 
+     */
+    public static boolean checkIfCategorySchemeTerm(String categoryFilter, String user) {
+        boolean result = false;
+        List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(user);
+        List<Mixin> mixins = ConfigurationManager.getAllConfigurationMixins(user);
+        String term;
+        String scheme;
+        String id;
+        for (Kind kind : kinds) {
+            // Check actions.
+            for (Action action : kind.getActions()) {
+                term = action.getTerm();
+                scheme = action.getScheme();
+                id = scheme + term;
+                if (categoryFilter.equalsIgnoreCase(id)) {
+                    return true;
+
+                }
+            }
+
+            term = kind.getTerm();
+            scheme = kind.getScheme();
+            id = scheme + term;
+            if (categoryFilter.equalsIgnoreCase(id)) {
+                return true;
+            }
+
+        }
+        for (Mixin mixin : mixins) {
+            
+            term = mixin.getTerm();
+            scheme = mixin.getScheme();
+            id = scheme + term;
+            if (categoryFilter.equalsIgnoreCase(id)) {
+                return true;
+            }
+        }
+        
+        
+        return result;
     }
 
     /**
@@ -627,5 +738,7 @@ public class Utils {
     public static synchronized int getUniqueInt() {
         return uniqueInt++;
     }
+
+    
 
 }
