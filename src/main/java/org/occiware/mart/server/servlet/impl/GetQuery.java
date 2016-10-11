@@ -22,13 +22,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -189,7 +187,7 @@ public class GetQuery extends AbstractGetQuery {
                 // No filter defined, this may be an uri filter on category or a custom path defined here.
 
                 // Check category uri.
-                String categoryId = Utils.getCategoryFilterSchemeTerm(ConfigurationManager.DEFAULT_OWNER, path);
+                String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
                 if (categoryId != null) {
                     CollectionFilter filter = new CollectionFilter();
                     filter.setOperator(operator);
@@ -261,41 +259,39 @@ public class GetQuery extends AbstractGetQuery {
         return response;
     }
 
-    @Override
-    @Path("collections/{kind}") // {a}/{b}/{id}
-    @GET
-    @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
-    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
-    public Response getEntityCollection(@PathParam("kind") String kind, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        Response response;
-
-        String pathMsg = "Collections kind given : " + Constants.PATH_SEPARATOR + "collections/" + kind + "\n ";
-        response = Response.ok().
-                entity(pathMsg).
-                header("Server", Constants.OCCI_SERVER_HEADER).build();
-        return response;
-    }
-
-    @Override
-    @Path("{path}")
-    @GET
-    @Produces(Constants.MEDIA_TYPE_TEXT_URI_LIST)
-    public Response getEntityUriListing(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-
-        Response response = null;
-
-        // Manage /-/ relative path for listing the full query interface.
-        if (super.getUri().getPath().equals("-/")) {
-            return getQueryInterface(path, headers);
-        }
-
-        String msg = "ok";
-        response = Response.ok().
-                entity(msg).
-                header("Server", Constants.OCCI_SERVER_HEADER).build();
-        return response;
-    }
-
+//    @Override
+//    @Path("collections/{kind}") // {a}/{b}/{id}
+//    @GET
+//    @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
+//    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
+//    public Response getEntityCollection(@PathParam("kind") String kind, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+//        Response response;
+//
+//        String pathMsg = "Collections kind given : " + Constants.PATH_SEPARATOR + "collections/" + kind + "\n ";
+//        response = Response.ok().
+//                entity(pathMsg).
+//                header("Server", Constants.OCCI_SERVER_HEADER).build();
+//        return response;
+//    }
+//    @Override
+//    @Path("{path}")
+//    @GET
+//    @Produces(Constants.MEDIA_TYPE_TEXT_URI_LIST)
+//    public Response getEntityUriListing(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+//
+//        Response response = null;
+//
+//        // Manage /-/ relative path for listing the full query interface.
+//        if (super.getUri().getPath().equals("-/")) {
+//            return getQueryInterface(path, headers);
+//        }
+//
+//        String msg = "ok";
+//        response = Response.ok().
+//                entity(msg).
+//                header("Server", Constants.OCCI_SERVER_HEADER).build();
+//        return response;
+//    }
     @Override
     public Response getMixin(String mixinKind) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.

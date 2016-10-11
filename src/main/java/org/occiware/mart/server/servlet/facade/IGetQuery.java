@@ -39,24 +39,24 @@ public interface IGetQuery extends IEntryPoint {
      */
     public Response getEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request);
     
-    /**
-     * Get entity collection (list) with valid path like : /compute/ or /mixinkind/
-     * @param path
-     * @param headers
-     * @param request
-     * @return 
-     */
-    public Response getEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
+//    /**
+//     * Get entity collection (list) with valid path like : /compute/ or /mixinkind/
+//     * @param path
+//     * @param headers
+//     * @param request
+//     * @return 
+//     */
+//    public Response getEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
     
-    /**
-     * Get a list of uri location, only for accept: text/uri-list media type.
-     * @param path
-     * @param headers
-     * @param request
-     * @return 
-     */
-    public Response getEntityUriListing(String path, HttpHeaders headers, HttpServletRequest request);
-    
+//    /**
+//     * Get a list of uri location, only for accept: text/uri-list media type.
+//     * @param path
+//     * @param headers
+//     * @param request
+//     * @return 
+//     */
+//    public Response getEntityUriListing(String path, HttpHeaders headers, HttpServletRequest request);
+//    
     
     public Response getMixin(String mixinKind);
     

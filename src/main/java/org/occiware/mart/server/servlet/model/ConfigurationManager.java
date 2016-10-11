@@ -2073,6 +2073,8 @@ public class ConfigurationManager {
                     }
                     if (!categoryFound) {
                         control = false;
+                    } else {
+                        control = true;
                     }
 
                 }
@@ -2082,8 +2084,10 @@ public class ConfigurationManager {
 
                     if (relativeLocation == null || relativeLocation.isEmpty()) {
                         control = false;
-                    } else if (!filterOnPath.contains(relativeLocation)) {
-                        control = false;
+                    } else if (filterOnPath.contains(relativeLocation) || relativeLocation.contains(filterOnPath)) {
+                        control = true;
+                    } else {
+                        control = true;
                     }
                 } // endif has a filter on relative path.
 
@@ -2091,7 +2095,7 @@ public class ConfigurationManager {
                     it.remove(); // remove this entity from collection, the entity doesnt respect constraints attrib and value.
                 }
             }
-
+            
         } // has filters and has entities.
 
         // Position the start index if > 0.
@@ -2100,6 +2104,7 @@ public class ConfigurationManager {
             int currentIndex = 0;
             Iterator<Entity> it = entities.iterator();
             while (it.hasNext()) {
+                Entity entity = it.next();
                 LOGGER.info("currentIndex=" + currentIndex + ", startIndex=" + startIndex);
                 if (currentIndex < (startIndex - 1)) {
                     it.remove();
@@ -2113,6 +2118,7 @@ public class ConfigurationManager {
             int count = 0;
             Iterator<Entity> it = entities.iterator();
             while (it.hasNext()) {
+                Entity entity = it.next();
                 count++;
                 if (count <= number) {
 

@@ -33,8 +33,8 @@ public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGe
     @Override
     public abstract Response getMixin(String mixinKind);
 
-    @Override
-    public abstract Response getEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
+//    @Override
+//    public abstract Response getEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
 
     @Override
     public Response getEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request) {
@@ -65,7 +65,7 @@ public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGe
         return null;
     }
 
-    @Override
-    public abstract Response getEntityUriListing(String path, HttpHeaders headers, HttpServletRequest request);
+//    @Override
+//    public abstract Response getEntityUriListing(String path, HttpHeaders headers, HttpServletRequest request);
 
 }

@@ -37,6 +37,7 @@ import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
+import org.occiware.clouddesigner.occi.Resource;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -217,8 +218,8 @@ public class TextOcciParser extends AbstractRequestParser {
                        .entity("OK \n")
                        .type(Constants.MEDIA_TYPE_TEXT_OCCI);
                for (String location : locations) {
-                   
-                   responseBuilder.header("link", location);
+                   String absLocation = getServerURI().toString() + location;
+                   responseBuilder.header(Constants.X_OCCI_LOCATION, absLocation);
                }
                response = responseBuilder.build();
            } 
@@ -461,9 +462,9 @@ public class TextOcciParser extends AbstractRequestParser {
     private Response renderEntityResponse(Entity entity, Response.Status status) {
 
         Response response;
-
+        
         String categories = renderCategory(entity.getKind(), false);
-
+        
         // if entity as mixins, update categories as expected.
         List<Mixin> mixinsTmp = entity.getMixins();
         for (Mixin mixin : mixinsTmp) {
@@ -476,7 +477,7 @@ public class TextOcciParser extends AbstractRequestParser {
 
         // Convert all actions to links.
         javax.ws.rs.core.Link[] links = renderActionsLink(entity, absoluteEntityLocation);
-
+        
         response = Response.status(status)
                 .header("Server", Constants.OCCI_SERVER_HEADER)
                 .header(Constants.CATEGORY, categories)
@@ -578,18 +579,8 @@ public class TextOcciParser extends AbstractRequestParser {
                         .build();
                 links[current] = actionLink;
                 current++;
-//                
-//                tmp = "<" + location + "?action=" + action.getTerm() + ">; \\ ";
-//                rel = "\"" + action.getScheme() + action.getTerm() + "\";";
-//                sb.append(tmp);
-//                sb.append(rel);
             }
         }
-//        location = "<" + location + ">;";
-//        if (sb.toString().isEmpty()) {
-//            sb.append(location);
-//        }
-//       return sb.toString();
 
         return links;
     }
@@ -603,9 +594,7 @@ public class TextOcciParser extends AbstractRequestParser {
      * @return
      */
     private String renderXOCCILocationAttr(final Entity entity) {
-        StringBuilder sb = new StringBuilder();
         String location = ConfigurationManager.getLocation(entity);
-
         String absoluteLocation = getServerURI().toString() + location;
         return absoluteLocation;
     }
