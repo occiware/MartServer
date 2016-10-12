@@ -19,10 +19,13 @@
 package org.occiware.mart.server.servlet.impl;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Delete entity (or entities), delete mixin tag, remove mixin association.
@@ -30,10 +33,21 @@ import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
  */
 @Path("/")
 public class DeleteQuery extends AbstractDeleteQuery {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeleteQuery.class);
+    
+    @Path("{path:.*}")
+    @DELETE
     @Override
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        LOGGER.info("--> Call DELETE method input query for relative path mode --> " + path);
+        // Check header, load parser, and check occi version.
+        Response response = super.inputQuery(path, headers, request);
+        if (response != null) {
+            // There was a badrequest, the headers are maybe malformed..
+            return response;
+        }
+        
+        return response;
     }
 
     @Override

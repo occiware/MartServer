@@ -19,9 +19,11 @@
 package org.occiware.mart.server.servlet.facade;
 
 
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.occiware.clouddesigner.occi.Entity;
 
 /**
  *
@@ -30,17 +32,53 @@ import javax.ws.rs.core.Response;
 public interface IPostQuery extends IEntryPoint {
     
     /**
-     * Create a new entity.
+     * Update the entity attributes and call occiUpdate().
      * @param path
-     * @param entityId
-     * @param headers
-     * @param request
+     * @param entity
      * @return 
      */
-    public Response updateEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request);
+    public Response updateEntity(String path, Entity entity);
     
-    public Response updateEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
+    /**
+     * Update the entities attributes and call occiUpdate() for each entity.
+     * @param path
+     * @param entities
+     * @return 
+     */
+    public Response updateEntityCollection(String path, List<Entity> entities);
     
-    public Response updateMixin(String mixinKind, HttpHeaders httpHeaders, HttpServletRequest request);
+    /**
+     * Define a mixin tag on a location
+     * @param mixinTagKind
+     * @param relativeLocationApply
+     * @return 
+     */
+    public Response defineMixinTag(String mixinTagKind, String relativeLocationApply);
+    
+    /**
+     * Update mixin tag association location.
+     * @param mixinTagKind
+     * @param relativeLocationApply
+     * @return 
+     */
+    public Response updateMixinTagAssociation(String mixinTagKind, String relativeLocationApply);
+    
+    
+    
+    /**
+     * Execute an action on an entity.
+     * @param actionKind
+     * @param entity
+     * @return a response builder to build a response after calling this method.
+     */
+    public Response.ResponseBuilder executeAction(String actionKind, Entity entity);
+    
+    /**
+     * Same as executeAction but on a list of entities.
+     * @param actionKind
+     * @param entity
+     * @return 
+     */
+    public Response executeActionsOnEntities(String actionKind, List<Entity> entity);
     
 }

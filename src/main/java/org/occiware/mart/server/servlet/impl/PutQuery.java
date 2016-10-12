@@ -66,7 +66,7 @@ public class PutQuery extends AbstractPutQuery {
 //    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
 
-        LOGGER.info("--> Call method input query for relative path mode --> " + path);
+        LOGGER.info("--> Call CREATE method input query for relative path mode --> " + path);
         // Check header, load parser, and check occi version.
         Response response = super.inputQuery(path, headers, request);
         if (response != null) {
@@ -92,9 +92,7 @@ public class PutQuery extends AbstractPutQuery {
 
         if (kind != null) {
             response = createEntity(path, entityId, kind, mixins, inputParser.getOcciAttributes());
-        } else {
-            // TODO : response = createMixin(mixins, headers, request);
-        }
+        } 
 
         return response;
 

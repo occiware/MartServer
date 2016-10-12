@@ -76,17 +76,17 @@ Development Status values :
     <tr>
         <td align="center">Update an attribute of entity collection</td>
         <td align="center">Update entities, <a href="https://github.com/cgourdin/MartServer/issues/9">feature #9</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Action on entity</td>
         <td align="center">Action query (ex: start an instance), <a href="https://github.com/cgourdin/MartServer/issues/31">feature #31</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Action on entities collection</td>
         <td align="center">Action query (ex: start an instance) on collections, <a href="https://github.com/cgourdin/MartServer/issues/32">feature #32</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Create a mixin tag on entity</td>
@@ -100,7 +100,7 @@ Development Status values :
     </tr>
     
     <tr>
-        <td align="center">Update mixin tag assignation</td>
+        <td align="center">Update mixin tag association</td>
         <td align="center">Update mixin tag, <a href="https://github.com/cgourdin/MartServer/issues/13">feature #13</a></td>
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
     </tr>

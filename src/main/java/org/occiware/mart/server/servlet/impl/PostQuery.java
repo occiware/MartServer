@@ -18,11 +18,16 @@
  */
 package org.occiware.mart.server.servlet.impl;
 
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.facade.AbstractPostQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * execute actions, update attributes on entities, update mixin tag associations etc.
@@ -30,24 +35,60 @@ import org.occiware.mart.server.servlet.facade.AbstractPostQuery;
  */
 @Path("/")
 public class PostQuery extends AbstractPostQuery {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostQuery.class);
+    
+    @Path("{path:.*}")
+    @POST
     @Override
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
+        LOGGER.info("--> Call POST method input query for relative path mode --> " + path);
+        // Check header, load parser, and check occi version.
+        Response response = super.inputQuery(path, headers, request);
+        if (response != null) {
+            // There was a badrequest, the headers are maybe malformed..
+            return response;
+        }
+        
+        // Determine if: 
+        //  - update an entity, 
+        //  - update a collection of entities 
+        //  - Define a new mixin tag
+        //  - update a mixin association (mixin tag included) 
+        //  - execute an action on entity
+        //  - execute an action on entity collection
+        
+        
+        
+        return response;
+    }
+
+    @Override
+    public Response updateEntity(String path, Entity entity) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Response updateEntityCollection(String path, HttpHeaders headers, HttpServletRequest request) {
+    public Response updateEntityCollection(String path, List<Entity> entities) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Response updateEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request) {
+    public Response defineMixinTag(String mixinTagKind, String relativeLocationApply) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Response updateMixin(String mixinKind, HttpHeaders headers, HttpServletRequest request) {
+    public Response updateMixinTagAssociation(String mixinTagKind, String relativeLocationApply) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Response.ResponseBuilder executeAction(String actionKind, Entity entity) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Response executeActionsOnEntities(String actionKind, List<Entity> entity) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

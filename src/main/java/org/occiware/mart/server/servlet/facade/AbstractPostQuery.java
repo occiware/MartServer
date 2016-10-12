@@ -18,26 +18,34 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
+import java.util.List;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import org.occiware.clouddesigner.occi.Mixin;
+import org.occiware.clouddesigner.occi.Entity;
 
 /**
  *
  * @author Christophe Gourdin
  */
-public abstract class AbstractPostQuery extends AbstractEntryPoint implements IPostQuery {
+public abstract class AbstractPostQuery extends AbstractEntryPoint implements IPostQuery {   
+
+    @Override
+    public abstract Response executeActionsOnEntities(String actionKind, List<Entity> entity);
+
+    @Override
+    public abstract Response.ResponseBuilder executeAction(String actionKind, Entity entity);
+
+    @Override
+    public abstract Response updateMixinTagAssociation(String mixinTagKind, String relativeLocationApply);
+
+    @Override
+    public abstract Response defineMixinTag(String mixinTagKind, String relativeLocationApply);
+
+    @Override
+    public abstract Response updateEntityCollection(String path, List<Entity> entities);
+
+    @Override
+    public abstract Response updateEntity(String path, Entity entity);
   
-    @Override
-    public abstract Response updateEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
-
-    @Override
-    public abstract Response updateEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request);
-
-    @Override
-    public abstract Response updateMixin(String mixinKind, HttpHeaders headers, HttpServletRequest request);
-
+    
+    
 }

@@ -56,7 +56,7 @@ public class GetQuery extends AbstractGetQuery {
     @Override
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         Response response;
-        LOGGER.info("Get method in inputQuery() for path: " + path);
+        LOGGER.info("Call GET method in inputQuery() for path: " + path);
         response = super.inputQuery(path, headers, request);
         if (response != null) {
             // May have a malformed query.
