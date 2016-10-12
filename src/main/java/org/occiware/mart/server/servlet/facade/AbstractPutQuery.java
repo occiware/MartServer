@@ -33,9 +33,6 @@ import org.occiware.mart.server.servlet.utils.Utils;
 public abstract class AbstractPutQuery extends AbstractEntryPoint implements IPutQuery {
 
     @Override
-    public abstract Response createMixin(String mixinKind, HttpHeaders headers, HttpServletRequest request);
-
-    @Override
     public abstract Response createEntity(final String path, String entityId, final String kind, final List<String> mixins, final Map<String, String> attributes);
 
     @Override
@@ -50,6 +47,9 @@ public abstract class AbstractPutQuery extends AbstractEntryPoint implements IPu
         return response;
         
     }
+
+    @Override
+    public abstract Response defineMixinTag(String mixinTagKind, String relativeLocationApply);
     
     
     

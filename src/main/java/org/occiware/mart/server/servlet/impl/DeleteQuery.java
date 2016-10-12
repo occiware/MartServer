@@ -19,6 +19,7 @@
 package org.occiware.mart.server.servlet.impl;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.HttpHeaders;
@@ -40,11 +41,16 @@ public class DeleteQuery extends AbstractDeleteQuery {
     @Override
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
         LOGGER.info("--> Call DELETE method input query for relative path mode --> " + path);
-        // Check header, load parser, and check occi version.
+        // Check header, load parsers, and check occi version.
         Response response = super.inputQuery(path, headers, request);
         if (response != null) {
             // There was a badrequest, the headers are maybe malformed..
             return response;
+        }
+        
+        // Check if the query is not on interface query, this path is used only on GET method.
+        if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
+            throw new BadRequestException("Cant use interface on POST method.");
         }
         
         return response;

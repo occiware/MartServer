@@ -67,11 +67,15 @@ public class PutQuery extends AbstractPutQuery {
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
 
         LOGGER.info("--> Call CREATE method input query for relative path mode --> " + path);
-        // Check header, load parser, and check occi version.
+        // Check header, load parsers, and check occi version.
         Response response = super.inputQuery(path, headers, request);
         if (response != null) {
             // There was a badrequest, the headers are maybe malformed..
             return response;
+        }
+        // Check if the query is not on interface query, this path is used only on GET method.
+        if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
+            throw new BadRequestException("Cant use interface on PUT method.");
         }
 
         if (inputParser.getAction() != null) {
@@ -83,7 +87,13 @@ public class PutQuery extends AbstractPutQuery {
         if (kind == null && mixins == null) {
             throw new BadRequestException("No category provided !");
         }
-
+        
+        // TODO : Check if the query is a create mixin definition.
+        // if (kind == null && mixins != null && ConfigurationManager.checkIfMixinsExist(mixins)) {
+            // TODO: create mixin method then return response.
+        //        }
+        
+        
         String entityId = inputParser.getEntityUUID();
         if (entityId == null) {
             entityId = Utils.getUUIDFromPath(path, inputParser.getOcciAttributes());
@@ -121,11 +131,12 @@ public class PutQuery extends AbstractPutQuery {
         String location;
         // Link or resource ?
         boolean isResource;
-
+        boolean hasCreatedUUID = false;
         // Check if entityId is null or there is a uuid on path, if this is not the case, generate the uuid and add it to location.
         if (entityId == null || entityId.trim().isEmpty()) {
             // Create a new uuid.
             entityId = Utils.createUUID();
+            hasCreatedUUID = true;
         }
 
         // String relativePath = getUri().getPath();
@@ -134,10 +145,10 @@ public class PutQuery extends AbstractPutQuery {
         // occi.core.target, this is a link !
         isResource = ConfigurationManager.checkIfEntityIsResourceOrLinkFromAttributes(attributes);
         location = getUri().getPath();
-        if (entityId == null) {
+        if (hasCreatedUUID) {
             location += entityId;
         }
-
+        
         // Add location attribute.
 //        attrs.put(Constants.X_OCCI_LOCATION, location);
         LOGGER.info("Create entity with location: " + location);
@@ -236,17 +247,11 @@ public class PutQuery extends AbstractPutQuery {
         }
 
     }
-
-    /**
-     * Create a mixin tag.
-     *
-     * @param mixinKind
-     * @param headers
-     * @param request
-     * @return
-     */
+    
+    
     @Override
-    public Response createMixin(String mixinKind, HttpHeaders headers, HttpServletRequest request) {
+    public Response defineMixinTag(String mixinTagKind, String relativeLocationApply) {
+        // TODO : Implement this.
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

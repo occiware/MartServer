@@ -821,7 +821,26 @@ public class ConfigurationManager {
      * @return true if entity exist or false if it doesnt exist.
      */
     public static boolean isEntityExist(final String owner, final String id) {
-        return findEntity(owner, id) != null;
+        if (Utils.isEntityUUIDProvided(id, new HashMap<>())) {
+            return findEntity(owner, id) != null;
+        } else {
+            // UUID not provided, search on relative path and check if one entity is found.
+            String path;
+            boolean found = false;
+            for (Map.Entry<String, String> entry : entitiesRelativePath.entrySet()) {
+                path = entry.getValue();
+                if (path.equals(id)) {
+                    // There is an entity on this relative path.
+                    found = true;
+                    break;
+                }
+                
+            }
+            return found;
+        }
+        
+        
+    
     }
 
     /**

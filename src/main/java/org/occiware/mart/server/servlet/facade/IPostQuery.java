@@ -20,8 +20,6 @@ package org.occiware.mart.server.servlet.facade;
 
 
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
 
@@ -47,13 +45,7 @@ public interface IPostQuery extends IEntryPoint {
      */
     public Response updateEntityCollection(String path, List<Entity> entities);
     
-    /**
-     * Define a mixin tag on a location
-     * @param mixinTagKind
-     * @param relativeLocationApply
-     * @return 
-     */
-    public Response defineMixinTag(String mixinTagKind, String relativeLocationApply);
+    
     
     /**
      * Update mixin tag association location.
@@ -71,7 +63,7 @@ public interface IPostQuery extends IEntryPoint {
      * @param entity
      * @return a response builder to build a response after calling this method.
      */
-    public Response.ResponseBuilder executeAction(String actionKind, Entity entity);
+    public Response executeAction(String action, Entity entity);
     
     /**
      * Same as executeAction but on a list of entities.

@@ -20,8 +20,6 @@ package org.occiware.mart.server.servlet.facade;
 
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 /**
@@ -30,7 +28,23 @@ import javax.ws.rs.core.Response;
  */
 public interface IPutQuery extends IEntryPoint {
     
+    /**
+     * Create a new entity.
+     * @param path
+     * @param entityId
+     * @param kind
+     * @param mixins
+     * @param attributes
+     * @return 
+     */
     public Response createEntity(final String path, String entityId, final String kind, final List<String> mixins, final Map<String, String> attributes);
     
-    public Response createMixin(String mixinKind, HttpHeaders httpHeaders, HttpServletRequest request);
+    
+    /**
+     * Define a mixin tag on a location
+     * @param mixinTagKind
+     * @param relativeLocationApply
+     * @return 
+     */
+    public Response defineMixinTag(String mixinTagKind, String relativeLocationApply);
 }

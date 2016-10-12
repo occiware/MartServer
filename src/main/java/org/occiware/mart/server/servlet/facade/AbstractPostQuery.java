@@ -32,13 +32,10 @@ public abstract class AbstractPostQuery extends AbstractEntryPoint implements IP
     public abstract Response executeActionsOnEntities(String actionKind, List<Entity> entity);
 
     @Override
-    public abstract Response.ResponseBuilder executeAction(String actionKind, Entity entity);
+    public abstract Response executeAction(String action, Entity entity);
 
     @Override
     public abstract Response updateMixinTagAssociation(String mixinTagKind, String relativeLocationApply);
-
-    @Override
-    public abstract Response defineMixinTag(String mixinTagKind, String relativeLocationApply);
 
     @Override
     public abstract Response updateEntityCollection(String path, List<Entity> entities);
