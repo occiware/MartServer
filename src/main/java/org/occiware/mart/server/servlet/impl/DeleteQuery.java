@@ -25,7 +25,7 @@ import javax.ws.rs.core.Response;
 import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
 
 /**
- *
+ * Delete entity (or entities), delete mixin tag, remove mixin association.
  * @author cgourdin
  */
 @Path("/")

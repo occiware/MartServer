@@ -25,8 +25,8 @@ import javax.ws.rs.core.Response;
 import org.occiware.mart.server.servlet.facade.AbstractPostQuery;
 
 /**
- *
- * @author cgourdin
+ * execute actions, update attributes on entities, update mixin tag associations etc.
+ * @author Christophe Gourdin
  */
 @Path("/")
 public class PostQuery extends AbstractPostQuery {

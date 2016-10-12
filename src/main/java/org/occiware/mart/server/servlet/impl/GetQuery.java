@@ -89,6 +89,8 @@ public class GetQuery extends AbstractGetQuery {
                 }
 
             } else {
+                // Retrieve entity informations from provider.
+                entity.occiRetrieve();
                 // Entity is found, we must parse the result (on accept type media if defined in header of the query elsewhere this will be text/occi) to a response ok --> 200 object
                 //   AND the good rendering output (text/occi, application/json etc.).
                 try {
@@ -220,8 +222,13 @@ public class GetQuery extends AbstractGetQuery {
                     response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
                     return response;
                 }
-
-                response = outputParser.parseResponse(entities);
+                List<Entity> entitiesInf = new LinkedList<>();
+                // Update all the list of entities before setting response.
+                for (Entity entityInf : entities) {
+                    entityInf.occiRetrieve();
+                    entitiesInf.add(entityInf);
+                }
+                response = outputParser.parseResponse(entitiesInf);
             }
 
         } catch (ResponseParseException ex) {

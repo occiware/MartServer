@@ -220,7 +220,7 @@ public class PutQuery extends AbstractPutQuery {
             throw new BadRequestException("Error, entity was not created on object model, please check your query.");
         }
 
-        Utils.printEntity(entity);
+        // Utils.printEntity(entity);
 
         try {
             // TODO : Check here if we must use outputParser.parseResponse...
