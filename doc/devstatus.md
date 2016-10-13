@@ -71,12 +71,12 @@ Development Status values :
     <tr>
         <td align="center">Update an entity with POST Method</td>
         <td align="center">Update entity, <a href="https://github.com/cgourdin/MartServer/issues/7">feature #7</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Update an attribute of entity collection</td>
         <td align="center">Update entities, <a href="https://github.com/cgourdin/MartServer/issues/9">feature #9</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Action on entity</td>
