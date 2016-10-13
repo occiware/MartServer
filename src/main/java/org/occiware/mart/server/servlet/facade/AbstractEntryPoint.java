@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
@@ -26,6 +27,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
@@ -71,32 +73,80 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
             return response;
         }
 
-        if (response == null) {
-            // Load the parsers.
-            // check content-type header.
-            contentType = Utils.findContentTypeFromHeader(headers);
-            acceptType = Utils.findAcceptTypeFromHeader(headers);
-            inputParser = ParserFactory.build(contentType);
-            outputParser = ParserFactory.build(acceptType);
-            inputParser.setServerURI(uri.getBaseUri());
-            outputParser.setServerURI(uri.getBaseUri());
-            try {
-                inputParser.parseInputQuery(headers, request);
+        // Load the parsers.
+        // check content-type header.
+        contentType = Utils.findContentTypeFromHeader(headers);
+        acceptType = Utils.findAcceptTypeFromHeader(headers);
+        inputParser = ParserFactory.build(contentType);
+        outputParser = ParserFactory.build(acceptType);
+        inputParser.setServerURI(uri.getBaseUri());
+        outputParser.setServerURI(uri.getBaseUri());
+        try {
+            inputParser.parseInputQuery(headers, request);
 
-                // Check if attributes are in configuration model for kind and mixins.
-                if (!inputParser.getOcciAttributes().isEmpty()) {
-                    // if there are attributes so there is a kind / mixins.
-                    // Check on configuration and used extension.
-                    boolean checkAttrs = false;
-                    boolean hasError = false;
-                    String error = null;
+            // Check if attributes are in configuration model for kind, mixins and actions.
+            if (!inputParser.getOcciAttributes().isEmpty()) {
+                // if there are attributes so there is a kind / mixins.
+                // Check on configuration and used extension.
+                boolean checkAttrs = false;
+                boolean hasError = false;
+                String error = null;
 
-                    Kind kindModel = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, inputParser.getKind());
+                String kindId = inputParser.getKind();
+                String action = inputParser.getAction();
+                List<String> mixins = inputParser.getMixins();
+                Kind kindModel = null;
+                Action actionModel = null;
+                List<Mixin> mixinsModel = new LinkedList<>();
+                
+                // Search for the kind if an action is set.
+                if (kindId == null && action != null) {
+                    // TODO : Export this to configurationManager with a method : getKindFromAction.
+                    List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(ConfigurationManager.DEFAULT_OWNER);
+                    List<Action> actions;
+                    for (Kind kind : kinds) {
+                        actions = kind.getActions();
+                        for (Action actionTmp : actions) {
+                            if (action.equals(actionTmp.getScheme() + actionTmp.getTerm())) {
+                                actionModel = actionTmp;
+                                kindModel = kind;
+                                kindId = kind.getScheme() + kind.getTerm();
+                                inputParser.setKind(kindId);
+                                break;
+                            }
+                        }
+                    }
+                }
+                // Actions based on mixins ?
+                if (kindModel == null && mixins == null && action != null) {
+                    // TODO : Export this below to configurationManager with a method : getMixinFromAction.
+                    List<Mixin> mixinsTmp = ConfigurationManager.getAllConfigurationMixins(ConfigurationManager.DEFAULT_OWNER);
+                    List<Action> actions;
+                    List<String> mixinsStr = new ArrayList<>();
+                    for (Mixin mixin : mixinsTmp) {
+                        actions = mixin.getActions();
+                        for (Action actionTmp : actions) {
+                            if (action.equals(actionTmp.getScheme() + actionTmp.getTerm())) {
+                                actionModel = actionTmp;
+                                mixinsModel.add(mixin);
+                                mixinsStr.add(mixin.getScheme()+mixin.getTerm());
+                                mixins = mixinsStr;
+                                inputParser.setMixins(mixinsStr);
+                            }
+                        }
+                    }
+                }
+                
+                if (kindModel == null) {
+                    kindModel = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, kindId);
                     if (kindModel == null) {
                         error = "The kind : " + inputParser.getKind() + " doesnt exist on referenced extensions";
                         hasError = true;
                     }
-                    List<Mixin> mixinsModel = new LinkedList<>();
+                }
+                
+                if (mixinsModel.isEmpty()) {
+                    
                     try {
                         mixinsModel = Utils.loadMixinFromSchemeTerm(inputParser.getMixins());
                     } catch (MixinNotFoundOnModelException ex) {
@@ -107,46 +157,45 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
                         error += "Mixin model error cause : " + ex.getMessage();
                         hasError = true;
                     }
+                }
+                
+                if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
+                    if (error != null) {
+                        error += " \n ";
+                    }
+                    error += "Some mixins doesnt apply to kind : " + inputParser.getKind();
+                    hasError = true;
+                }
 
-                    if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
+                if (!hasError) {
+
+                    if (!Utils.checkIfAttributesExistOnCategory(inputParser.getOcciAttributes(), kindModel, mixinsModel, actionModel)) {
                         if (error != null) {
                             error += " \n ";
                         }
-                        error += "Some mixins doesnt apply to kind : " + inputParser.getKind();
+                        error += "Some attributes doesnt exist on kind and mixins : " + inputParser.getKind();
                         hasError = true;
                     }
 
-                    if (!hasError) {
-
-                        if (!Utils.checkIfAttributesExistOnKindMixin(inputParser.getOcciAttributes(), kindModel, mixinsModel)) {
-                            if (error != null) {
-                                error += " \n ";
-                            }
-                            error += "Some attributes doesnt exist on kind and mixins : " + inputParser.getKind();
-                            hasError = true;
-                        }
-
-                    }
-
-                    if (hasError) {
-                        LOGGER.error(error);
-                        try {
-                            response = outputParser.parseResponse(error, Response.Status.BAD_REQUEST);
-                        } catch (ResponseParseException e) {
-                            throw new BadRequestException();
-                        }
-                        throw new BadRequestException("Error while parsing input query, some attributes doesnt exist on used extensions.");
-                    }
-
                 }
 
-            } catch (AttributeParseException | CategoryParseException ex) {
-                LOGGER.error(ex.getMessage());
-                try {
-                    response = outputParser.parseResponse("Error while parsing input query", Response.Status.BAD_REQUEST);
-                } catch (ResponseParseException e) {
-                    throw new BadRequestException();
+                if (hasError) {
+                    LOGGER.error(error);
+                    try {
+                        response = outputParser.parseResponse(error, Response.Status.BAD_REQUEST);
+                    } catch (ResponseParseException e) {
+                        throw new BadRequestException();
+                    }
+                    throw new BadRequestException("Error while parsing input query, some attributes doesnt exist on used extensions.");
                 }
+            }
+
+        } catch (AttributeParseException | CategoryParseException ex) {
+            LOGGER.error(ex.getMessage());
+            try {
+                response = outputParser.parseResponse("Error while parsing input query", Response.Status.BAD_REQUEST);
+            } catch (ResponseParseException e) {
+                throw new BadRequestException();
             }
         }
 

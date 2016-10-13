@@ -22,6 +22,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
@@ -39,7 +41,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
     @Path("{path:.*}")
     @DELETE
     @Override
-    public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
+    public Response inputQuery(@PathParam("path") String path,@Context HttpHeaders headers,@Context HttpServletRequest request) {
         LOGGER.info("--> Call DELETE method input query for relative path mode --> " + path);
         // Check header, load parsers, and check occi version.
         Response response = super.inputQuery(path, headers, request);

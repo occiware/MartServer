@@ -24,19 +24,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Category;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Extension;
-import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * execute actions, update attributes on entities, update mixin tag associations
- * etc.
  *
  * @author Christophe Gourdin
  */
@@ -61,7 +60,7 @@ public class PostQuery extends AbstractPostQuery {
     @Path("{path:.*}")
     @POST
     @Override
-    public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
+    public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers,@Context HttpServletRequest request) {
         LOGGER.info("--> Call POST method input query for relative path mode --> " + path);
         // Check header, load parsers, and check occi version.
         Response response = super.inputQuery(path, headers, request);
@@ -312,7 +311,13 @@ public class PostQuery extends AbstractPostQuery {
                 OcciHelper.executeAction(entity, actionKind.getTerm(), actionParameters);
             }
         } catch (InvocationTargetException ex) {
+            ex.printStackTrace();
             LOGGER.error("Action failed to execute : " + ex.getMessage());
+            try {
+                response = outputParser.parseResponse("Action failed : " + ex.getMessage());
+            } catch (ResponseParseException e) {
+                throw new InternalServerErrorException(e);
+            }
         }
         
         try {

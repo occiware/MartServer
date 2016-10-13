@@ -81,7 +81,7 @@ Development Status values :
     <tr>
         <td align="center">Action on entity</td>
         <td align="center">Action query (ex: start an instance), <a href="https://github.com/cgourdin/MartServer/issues/31">feature #31</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Action on entities collection</td>

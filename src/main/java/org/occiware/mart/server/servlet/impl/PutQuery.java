@@ -29,6 +29,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.exception.EntityAddException;
@@ -146,7 +147,7 @@ public class PutQuery extends AbstractPutQuery {
         isResource = ConfigurationManager.checkIfEntityIsResourceOrLinkFromAttributes(attributes);
         location = getUri().getPath();
         if (hasCreatedUUID) {
-            location += entityId;
+            location += "/" + entityId;
         }
         
         // Add location attribute.
@@ -215,8 +216,10 @@ public class PutQuery extends AbstractPutQuery {
             }
         } catch (EntityAddException ex) {
             return Response.serverError()
-                    .entity("The entity has not been add, it may be produce if you use forbidden attributes. \n Message : " + ex.getMessage())
+                    .entity("The entity has not been added, it may be produce if you use forbidden attributes. \n Message : " + ex.getMessage())
                     .header("Server", Constants.OCCI_SERVER_HEADER)
+                    .type(getContentType())
+                    .header("Accept", getAcceptType())
                     .build();
         }
         // Get the entity to be sure that it was inserted on configuration object.
@@ -235,12 +238,16 @@ public class PutQuery extends AbstractPutQuery {
             // TODO : Check here if we must use outputParser.parseResponse...
             response = Response.created(new URI(location))
                     .header("Server", Constants.OCCI_SERVER_HEADER)
+                    .type(getContentType())
+                    .header("Accept", getAcceptType())
                     .build();
 
             return response;
         } catch (URISyntaxException ex) {
             response = Response.created(getUri().getAbsolutePath())
                     .header("Server", Constants.OCCI_SERVER_HEADER)
+                    .type(getContentType())
+                    .header("Accept", getAcceptType())
                     .build();
 
             return response;

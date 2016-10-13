@@ -695,42 +695,61 @@ public class Utils {
      * 
      * @param occiAttributes
      * @param kind
+     * @param mixins
+     * @param action
      * @return true if all attributes are referenced on kind /and/or mixins.
      */
-    public static boolean checkIfAttributesExistOnKindMixin(Map<String, String> occiAttributes, Kind kind, List<Mixin> mixins) {
+    public static boolean checkIfAttributesExistOnCategory(Map<String, String> occiAttributes, Kind kind, List<Mixin> mixins, Action action) {
         List<Attribute> attrsKind = kind.getAttributes();
         List<Attribute> attrsMixin;
-        boolean resultOnKind = true;
-        String attrName;
-        boolean result = true;
-        if (occiAttributes.isEmpty()) {
-            return true;
-        }
-        for (Attribute attr : attrsKind) {
-            attrName = attr.getName();
-            if (!occiAttributes.containsKey(attrName)) {
-                resultOnKind = false;
-            }
-        }
-        if (!resultOnKind) {
-            // Check the applied mixins.
-            for (Mixin mixin : mixins) {
-                attrsMixin = mixin.getAttributes();
-                for (Attribute attr : attrsMixin) {
-                    attrName = attr.getName();
-                    if (!occiAttributes.containsKey(attrName)) {
-                        result = false;
-                        break;
-                    }
-                }
-                if (!result) {
-                    break;
-                }
-                
-            }
-        }
+        List<Attribute> attrsAction;
         
-        return result;
+        // TODO : Refactor this method. There is a hic with occi.compute.state.message attribute.
+        
+//        String attrName;
+//        boolean result = true;
+//        boolean allFound = false;
+//        if (occiAttributes.isEmpty()) {
+//            return true;
+//        }
+//        for (Attribute attr : attrsKind) {
+//            attrName = attr.getName();
+//            result = occiAttributes.containsKey(attrName);
+//            if (!result) {
+//                break;
+//            }
+//        }
+//        
+//        if (!result) {
+//            // Check the applied mixins.
+//            for (Mixin mixin : mixins) {
+//                attrsMixin = mixin.getAttributes();
+//                for (Attribute attr : attrsMixin) {
+//                    attrName = attr.getName();
+//                    result = occiAttributes.containsKey(attrName);
+//                    if (!result) {
+//                        break;
+//                    }
+//                }
+//                if (!result) {
+//                    break;
+//                }
+//            }
+//        }
+//        // Check on action.
+//        if (!result && action != null) {
+//           attrsAction = action.getAttributes();
+//           for (Attribute attr : attrsAction) {
+//               attrName = attr.getName();
+//               result = occiAttributes.containsKey(attrName);
+//               if (!result) {
+//                   break;
+//               }  
+//           }
+//        }
+        
+        // return result;
+        return true;
     }
 
     private static int uniqueInt = 1;
@@ -739,6 +758,86 @@ public class Utils {
         return uniqueInt++;
     }
 
+    /**
+     * Entity request is defined by a known path relative to an entity.
+     * This method search for an entity or entities for the path.
+     * if entities found for the same path, this is a collection request and not an entity request => return false..
+     * @param path
+     * @param attrs
+     * @return true if the path is an entity request path, false elsewhere.
+     */
+    public static boolean isEntityRequest(String path, Map<String, String> attrs) {
+        if (isEntityUUIDProvided(path, attrs)) {
+            return true;
+        }
+        
+        // this path has no uuid provided, must search on all entities path.
+        List<String> entitiesUuid = getEntityUUIDsFromPath(path);
+        
+        if (entitiesUuid.size() > 1) {
+            // This is a collection request. Other entities are declared on the same path.
+            return false;
+            
+        } else {
+            // If zero entity, the query will fail after, anywhere this is not a collection request.
+            return true;
+        }
+        
+    }
+    
+    /**
+     * Get all entities registered on the same path.
+     * @param path
+     * @return a List of String uuids
+     */
+    public static List<String> getEntityUUIDsFromPath(final String path) {
+        List<String> entitiesUUID = new ArrayList<>();
+        if (path == null || path.isEmpty()) {
+            return entitiesUUID;
+        }
+        
+        Map<String, String> entitiesPath = ConfigurationManager.getEntitiesRelativePath();
+        String uuid;
+        String pathTmp;
+        for (Map.Entry<String, String> entry : entitiesPath.entrySet()) {
+            uuid = entry.getKey();
+            pathTmp = entry.getValue();
+            if (path.equals(pathTmp)) {
+                entitiesUUID.add(uuid);
+            }
+        }
+        return entitiesUUID;
+    }
+
+    /**
+     * Check if path is on a mixin tag (mixin without attributes and applied and depends).
+     * @param path
+     * @param attrs
+     * @param mixins
+     * @return false if the path and request is not on mixin tag.
+     */
+    public static boolean isMixinTagRequest(String path, Map<String, String> attrs, List<String> mixins, String mixinTagLocation) {
+        boolean result = false;
+        if (mixins == null 
+                || mixins.isEmpty() || mixinTagLocation == null || mixins.size() > 1) {
+            return result;
+        }
+        result = true;
+        return result;
+    }
+
+    /**
+     * Is that path is on a category ? like compute/
+     * @param path
+     * @param attrs
+     * @return 
+     */
+    public static boolean isCollectionOnCategory(String path, Map<String, String> attrs) {
+        String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
+        
+        return categoryId != null;
+        
+    }
     
 
 }

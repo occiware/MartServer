@@ -614,18 +614,6 @@ public class ConfigurationManager {
             }
         }
         resource.getLinks().clear(); // Remove all links on that resource.
-
-        Kind kind = resource.getKind();
-        if (kind.getEntities().contains(resource)) {
-            kind.getEntities().remove(resource);
-        }
-
-        if (resource.getMixins() != null) {
-            for (Mixin mixin : resource.getMixins()) {
-                mixin.getEntities().remove(resource);
-            }
-        }
-
         config.getResources().remove(resource);
         entitiesRelativePath.remove(resource.getId());
     }
@@ -641,15 +629,6 @@ public class ConfigurationManager {
         Resource resourceTarget = link.getTarget();
         resourceSrc.getLinks().remove(link);
         resourceTarget.getLinks().remove(link);
-        Kind linkKind = link.getKind();
-        if (linkKind.getEntities().contains(link)) {
-            linkKind.getEntities().remove(link);
-        }
-        if (link.getMixins() != null) {
-            for (Mixin mixin : link.getMixins()) {
-                mixin.getEntities().remove(link);
-            }
-        }
         entitiesRelativePath.remove(link.getId());
 
     }
@@ -675,7 +654,6 @@ public class ConfigurationManager {
             }
         }
         entities.clear();
-        // kind.getEntities().clear();
     }
 
     /**
@@ -694,7 +672,6 @@ public class ConfigurationManager {
             updateVersion(owner, entity.getId());
         }
         entities.clear();
-        // mixin.getEntities().clear();
 
     }
 
@@ -834,13 +811,11 @@ public class ConfigurationManager {
                     found = true;
                     break;
                 }
-                
+
             }
             return found;
         }
-        
-        
-    
+
     }
 
     /**
@@ -1448,8 +1423,6 @@ public class ConfigurationManager {
 
                 entity.getMixins().add(mixin);
                 result = true;
-
-                // mixin.getEntities().add(entity);
             }
         }
         return result;
@@ -1587,22 +1560,23 @@ public class ConfigurationManager {
             }
         }
         LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-
+        List<Entity> entities = new ArrayList<>();
         for (String entityId : entityIds) {
             Entity entity = findEntity(owner, entityId);
 
-            if (entity != null && !mixin.getEntities().contains(entity)) {
-                // mixin.getEntities().add(entity);
+            if (entity != null && !entity.getMixins().contains(mixin)) {
                 entity.getMixins().add(mixin);
-
                 updateVersion(owner, entityId);
+            }
+            if (entity != null) {
+                entities.add(entity);
             }
         }
 
         if (!updateMode) {
             boolean found;
             // Remove entities those are not in the list.
-            Iterator<Entity> it = mixin.getEntities().iterator();
+            Iterator<Entity> it = entities.iterator();
             while (it.hasNext()) {
                 found = false;
                 Entity entityMixin = it.next();
@@ -2114,7 +2088,7 @@ public class ConfigurationManager {
                     it.remove(); // remove this entity from collection, the entity doesnt respect constraints attrib and value.
                 }
             }
-            
+
         } // has filters and has entities.
 
         // Position the start index if > 0.
@@ -2354,5 +2328,44 @@ public class ConfigurationManager {
         return null;
 
     }
+
+    public static Map<String, String> getEntitiesRelativePath() {
+        if (entitiesRelativePath == null) {
+            entitiesRelativePath = new HashMap<>();
+        }
+        return entitiesRelativePath;
+    }
+    
+    /**
+     * This method is called when no uuid is provided on request, but you have to ensure that only one entity exist for this path.
+     * 
+     * @param path
+     * @return an entity from a relative path, if entity doesnt exist on path, return null.
+     */
+    public static Entity getEntityFromPath(final String path) {
+        Entity entity = null;
+        String uuid = null;
+        String pathTmp = null;
+        if (path == null) {
+            return null;
+        }
+        
+        for (Map.Entry<String, String> entry : entitiesRelativePath.entrySet()) {
+            uuid = entry.getKey();
+            pathTmp = entry.getValue();
+            if (path.equals(pathTmp)) {
+                // entity found.
+                break;
+            }
+        }
+        if (uuid != null) {
+            entity = findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
+        }
+        
+        return entity;
+    }
+    
+    
+    
 
 }

@@ -20,7 +20,6 @@ package org.occiware.mart.server.servlet.facade;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Kind;
@@ -40,7 +40,7 @@ import org.occiware.mart.server.servlet.utils.Constants;
 
 /**
  *
- * @author cgourdin
+ * @author Christophe Gourdin
  */
 public abstract class AbstractRequestParser implements IRequestParser {
 
@@ -53,7 +53,8 @@ public abstract class AbstractRequestParser implements IRequestParser {
      * Scheme # + term list.
      */
     private List<String> mixins = new ArrayList<>();
-
+    
+    private String mixinTagLocation = null;
     /**
      * Action scheme + term.
      */
@@ -115,12 +116,12 @@ public abstract class AbstractRequestParser implements IRequestParser {
                 key = entry.getKey();
                 vals = entry.getValue();
                 if (vals != null && vals.length > 0) {
-                   val = vals[0];
-                   parameters.put(key, val);
+                    val = vals[0];
+                    parameters.put(key, val);
                 }
-            } 
+            }
         }
-        
+
     }
 
     @Override
@@ -196,9 +197,10 @@ public abstract class AbstractRequestParser implements IRequestParser {
 
     /**
      * Be warned that categoryFilter is the term only.
+     *
      * @param categoryFilter
      * @param user
-     * @return 
+     * @return
      */
     @Override
     public Response getInterface(final String categoryFilter, final String user) {
@@ -278,9 +280,25 @@ public abstract class AbstractRequestParser implements IRequestParser {
         }
         return parameters;
     }
+
     @Override
     public String getParameter(final String key) {
         return getRequestPameters().get(key);
     }
 
+    @Override
+    public String getAcceptedTypes() {
+        return Constants.MEDIA_TYPE_TEXT_OCCI + ";" + Constants.MEDIA_TYPE_JSON + ";" + MediaType.TEXT_PLAIN;
+    }
+
+    @Override
+    public String getMixinTagLocation() {
+        return mixinTagLocation;
+    }
+
+    @Override
+    public void setMixinTagLocation(String location) {
+        this.mixinTagLocation = location;
+    }
+    
 }

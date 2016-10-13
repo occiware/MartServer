@@ -37,7 +37,6 @@ import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
-import org.occiware.clouddesigner.occi.Resource;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -84,6 +83,7 @@ public class TextOcciParser extends AbstractRequestParser {
                     String term = matcher.group(Constants.GROUP_TERM);
                     String scheme = matcher.group(Constants.GROUP_SCHEME);
                     String categoryClass = matcher.group(Constants.GROUP_CLASS);
+                    
                     if (categoryClass.equalsIgnoreCase(Constants.CLASS_KIND)) {
                         // Assign the kind.
                         setKind(scheme + term);
@@ -91,6 +91,7 @@ public class TextOcciParser extends AbstractRequestParser {
                     }
                     if (categoryClass.equalsIgnoreCase(Constants.CLASS_MIXIN)) {
                         mixinsToAdd.add(scheme + term);
+                        setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
                         continue;
                     }
                     if (categoryClass.equalsIgnoreCase(Constants.CLASS_ACTION)) {
@@ -110,6 +111,8 @@ public class TextOcciParser extends AbstractRequestParser {
      *
      * @param headers
      * @param request
+     * @throws
+     * org.occiware.mart.server.servlet.exception.AttributeParseException
      */
     @Override
     public void parseOcciAttributes(HttpHeaders headers, HttpServletRequest request) throws AttributeParseException {
@@ -151,13 +154,15 @@ public class TextOcciParser extends AbstractRequestParser {
             if (status != null && status.equals(Response.Status.OK)) {
                 response = Response.fromResponse((Response) object)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .header("Accept", getAcceptedTypes())
                         .type(Constants.MEDIA_TYPE_TEXT_OCCI)
-                        .entity("OK")
+                        .entity("OK \n")
                         .status(status)
                         .build();
             } else {
                 response = Response.fromResponse((Response) object)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .header("Accept", getAcceptedTypes())
                         .type(Constants.MEDIA_TYPE_TEXT_OCCI)
                         .status(status)
                         .build();
@@ -169,13 +174,15 @@ public class TextOcciParser extends AbstractRequestParser {
                 response = Response.status(status)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
                         .header("content", (String) object)
-                        .entity("OK")
+                        .header("Accept", getAcceptedTypes())
+                        .entity("OK \n")
                         .type(Constants.MEDIA_TYPE_TEXT_OCCI)
                         .build();
             } else {
                 response = Response.status(status)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
                         .header("content", (String) object)
+                        .header("Accept", getAcceptedTypes())
                         .entity((String) object)
                         .type(Constants.MEDIA_TYPE_TEXT_OCCI)
                         .build();
@@ -187,54 +194,54 @@ public class TextOcciParser extends AbstractRequestParser {
             Entity entity = (Entity) object;
             response = renderEntityResponse(entity, status);
         }
-        
+
         if (object instanceof List) {
             LOGGER.info("Collection to render.");
-           List<Object> objects = (List<Object>) object;
-           List<String> locations = new LinkedList<>();
-           List<Entity> entities = new LinkedList<>();
-           String tmp;
-           Entity entityTmp;
-           // To determine if location or if entities to render..
-           for (Object objectTmp : objects) {
-               if (objectTmp instanceof String) {
-                   // List of locations.
-                   tmp = (String) objectTmp;
-                   locations.add(tmp);
-                   
-               } else if (objectTmp instanceof Entity) {
-                   // List of entities to render.
-                   entityTmp = (Entity) objectTmp;
-                   entities.add(entityTmp);
-                   
-               } else {
-                   throw new ResponseParseException("unknown datatype collection.");
-               }
-           }
-           
-           if (!locations.isEmpty()) {
-               Response.ResponseBuilder responseBuilder = Response.status(status)
-                       .header("Server", Constants.OCCI_SERVER_HEADER)
-                       .entity("OK \n")
-                       .type(Constants.MEDIA_TYPE_TEXT_OCCI);
-               for (String location : locations) {
-                   String absLocation = getServerURI().toString() + location;
-                   responseBuilder.header(Constants.X_OCCI_LOCATION, absLocation);
-               }
-               response = responseBuilder.build();
-           } 
-           if (!entities.isEmpty()) {
-               
-               for (Entity entity : entities) {
-                   response = renderEntityResponse(entity, status);
-                   // We render only the first entity found, cause to limit size of header.
-                   break;
-               }
-               
-           }
-            
+            List<Object> objects = (List<Object>) object;
+            List<String> locations = new LinkedList<>();
+            List<Entity> entities = new LinkedList<>();
+            String tmp;
+            Entity entityTmp;
+            // To determine if location or if entities to render..
+            for (Object objectTmp : objects) {
+                if (objectTmp instanceof String) {
+                    // List of locations.
+                    tmp = (String) objectTmp;
+                    locations.add(tmp);
+
+                } else if (objectTmp instanceof Entity) {
+                    // List of entities to render.
+                    entityTmp = (Entity) objectTmp;
+                    entities.add(entityTmp);
+
+                } else {
+                    throw new ResponseParseException("unknown datatype collection.");
+                }
+            }
+
+            if (!locations.isEmpty()) {
+                Response.ResponseBuilder responseBuilder = Response.status(status)
+                        .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .header("Accept", getAcceptedTypes())
+                        .entity("OK \n")
+                        .type(Constants.MEDIA_TYPE_TEXT_OCCI);
+                for (String location : locations) {
+                    String absLocation = getServerURI().toString() + location;
+                    responseBuilder.header(Constants.X_OCCI_LOCATION, absLocation);
+                }
+                response = responseBuilder.build();
+            }
+            if (!entities.isEmpty()) {
+
+                for (Entity entity : entities) {
+                    response = renderEntityResponse(entity, status);
+                    // We render only the first entity found, cause to limit size of header.
+                    break;
+                }
+
+            }
+
         }
-        
 
         if (response == null) {
             throw new ResponseParseException("Cannot parse the object to text/occi representation.");
@@ -271,9 +278,11 @@ public class TextOcciParser extends AbstractRequestParser {
 
         String msg = sb.toString();
         if (msg != null && !msg.isEmpty()) {
-            response = Response.ok().entity("ok")
+            response = Response.ok().entity("OK \n")
                     .header("Server", Constants.OCCI_SERVER_HEADER)
                     .header("", sb.toString())
+                    .type(Constants.MEDIA_TYPE_TEXT_OCCI)
+                    .header("Accept", getAcceptedTypes())
                     .build();
         } else {
             // May not be called.
@@ -462,9 +471,9 @@ public class TextOcciParser extends AbstractRequestParser {
     private Response renderEntityResponse(Entity entity, Response.Status status) {
 
         Response response;
-        
+
         String categories = renderCategory(entity.getKind(), false);
-        
+
         // if entity as mixins, update categories as expected.
         List<Mixin> mixinsTmp = entity.getMixins();
         for (Mixin mixin : mixinsTmp) {
@@ -477,12 +486,14 @@ public class TextOcciParser extends AbstractRequestParser {
 
         // Convert all actions to links.
         javax.ws.rs.core.Link[] links = renderActionsLink(entity, absoluteEntityLocation);
-        
+
         response = Response.status(status)
                 .header("Server", Constants.OCCI_SERVER_HEADER)
                 .header(Constants.CATEGORY, categories)
                 .header(Constants.X_OCCI_ATTRIBUTE, renderAttributes(entity))
                 .header(Constants.X_OCCI_LOCATION, renderXOCCILocationAttr(entity))
+                .type(Constants.MEDIA_TYPE_TEXT_OCCI)
+                .header("Accept", getAcceptedTypes())
                 .entity("OK")
                 .links(links)
                 .build();
