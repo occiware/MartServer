@@ -557,9 +557,10 @@ public class Utils {
 
         return null;
     }
+
     /**
-     * Check if the path contains a category referenced on extensions used by
-     * configuration.
+     * Check if the path equals a category referenced on extensions used by
+     * configuration. Remove leading slash and ending slash before proceed.
      *
      * @param path
      * @param user
@@ -572,12 +573,25 @@ public class Utils {
         String term;
         String scheme;
         String id;
+        
+        if (path == null) {
+            return null;
+        }
+        
+        String pathTerm = path;
+        if (pathTerm.startsWith("/")) {
+            pathTerm = pathTerm.substring(1);
+        }
+        if (pathTerm.endsWith("/")) {
+            pathTerm = pathTerm.substring(0, pathTerm.length() - 1);
+        }
+        
         for (Kind kind : kinds) {
             for (Action action : kind.getActions()) {
                 term = action.getTerm();
                 scheme = action.getScheme();
                 id = scheme + term;
-                if (path.contains(term) || path.contains(term.toLowerCase())) {
+                if (pathTerm.equals(term) || pathTerm.equals(term.toLowerCase())) {
                     return id;
 
                 }
@@ -586,28 +600,30 @@ public class Utils {
             term = kind.getTerm();
             scheme = kind.getScheme();
             id = scheme + term;
-            if (path.contains(term) || path.contains(term.toLowerCase())) {
+            if (pathTerm.equals(term) || path.equals(term.toLowerCase())) {
                 return id;
             }
 
         }
         for (Mixin mixin : mixins) {
-            
+
             term = mixin.getTerm();
             scheme = mixin.getScheme();
             id = scheme + term;
-            if (path.contains(term) || path.contains(term.toLowerCase())) {
+            if (pathTerm.equals(term) || pathTerm.equals(term.toLowerCase())) {
                 return id;
             }
         }
 
         return null;
     }
+
     /**
      * Return true if categoryFilter is a scheme + term.
+     *
      * @param categoryFilter
      * @param user
-     * @return 
+     * @return
      */
     public static boolean checkIfCategorySchemeTerm(String categoryFilter, String user) {
         boolean result = false;
@@ -637,7 +653,7 @@ public class Utils {
 
         }
         for (Mixin mixin : mixins) {
-            
+
             term = mixin.getTerm();
             scheme = mixin.getScheme();
             id = scheme + term;
@@ -645,13 +661,12 @@ public class Utils {
                 return true;
             }
         }
-        
-        
+
         return result;
     }
 
     /**
-     * 
+     *
      * @param mixins
      * @param kind
      * @return true if all mixins applied.
@@ -669,16 +684,17 @@ public class Utils {
         }
         return result;
     }
-    
+
     /**
      * Load a list of mixin from used extensions models.
+     *
      * @param mixins
      * @return
-     * @throws MixinNotFoundOnModelException 
+     * @throws MixinNotFoundOnModelException
      */
     public static List<Mixin> loadMixinFromSchemeTerm(List<String> mixins) throws MixinNotFoundOnModelException {
         List<Mixin> mixinModel = new LinkedList<>();
-        
+
         Mixin mixinTmp;
         for (String mixinId : mixins) {
             mixinTmp = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, mixinId);
@@ -690,9 +706,9 @@ public class Utils {
         }
         return mixinModel;
     }
-    
+
     /**
-     * 
+     *
      * @param occiAttributes
      * @param kind
      * @param mixins
@@ -703,9 +719,8 @@ public class Utils {
         List<Attribute> attrsKind = kind.getAttributes();
         List<Attribute> attrsMixin;
         List<Attribute> attrsAction;
-        
+
         // TODO : Refactor this method. There is a hic with occi.compute.state.message attribute.
-        
 //        String attrName;
 //        boolean result = true;
 //        boolean allFound = false;
@@ -747,7 +762,6 @@ public class Utils {
 //               }  
 //           }
 //        }
-        
         // return result;
         return true;
     }
@@ -759,9 +773,11 @@ public class Utils {
     }
 
     /**
-     * Entity request is defined by a known path relative to an entity.
-     * This method search for an entity or entities for the path.
-     * if entities found for the same path, this is a collection request and not an entity request => return false..
+     * Entity request is defined by a known path relative to an entity. This
+     * method search for an entity or entities for the path. if entities found
+     * for the same path, this is a collection request and not an entity request
+     * => return false..
+     *
      * @param path
      * @param attrs
      * @return true if the path is an entity request path, false elsewhere.
@@ -770,23 +786,23 @@ public class Utils {
         if (isEntityUUIDProvided(path, attrs)) {
             return true;
         }
-        
+
         // this path has no uuid provided, must search on all entities path.
         List<String> entitiesUuid = getEntityUUIDsFromPath(path);
-        
-        if (entitiesUuid.size() > 1) {
-            // This is a collection request. Other entities are declared on the same path.
-            return false;
-            
-        } else {
-            // If zero entity, the query will fail after, anywhere this is not a collection request.
+
+        if (entitiesUuid.size() == 1) {
             return true;
+
+        } else {
+            // This is a collection request or no entities on paths. Other entities are declared on the same path.
+            return false;
         }
-        
+
     }
-    
+
     /**
      * Get all entities registered on the same path.
+     *
      * @param path
      * @return a List of String uuids
      */
@@ -795,14 +811,34 @@ public class Utils {
         if (path == null || path.isEmpty()) {
             return entitiesUUID;
         }
-        
+        String pathCompare = path;
+        if (!path.equals("/") && path.endsWith("/")) {
+            // Delete ending slash.
+            pathCompare = path.substring(0, path.length() - 1);
+        }
+        // Remove leading "/".
+        if (path.startsWith("/")) {
+            pathCompare = path.substring(1);
+        }
+
         Map<String, String> entitiesPath = ConfigurationManager.getEntitiesRelativePath();
         String uuid;
         String pathTmp;
         for (Map.Entry<String, String> entry : entitiesPath.entrySet()) {
             uuid = entry.getKey();
             pathTmp = entry.getValue();
-            if (path.equals(pathTmp)) {
+
+            if (!pathTmp.equals("/") && pathTmp.endsWith("/")) {
+                pathTmp = pathTmp.substring(0, pathTmp.length() - 1);
+            }
+            // Remove leading "/".
+            if (pathTmp.startsWith("/")) {
+                pathTmp = pathTmp.substring(1);
+            }
+
+            if (pathCompare.equals(pathTmp)) {
+                entitiesUUID.add(uuid);
+            } else if (pathCompare.startsWith(pathTmp) || pathTmp.startsWith(pathCompare)) {
                 entitiesUUID.add(uuid);
             }
         }
@@ -810,7 +846,9 @@ public class Utils {
     }
 
     /**
-     * Check if path is on a mixin tag (mixin without attributes and applied and depends).
+     * Check if path is on a mixin tag (mixin without attributes and applied and
+     * depends).
+     *
      * @param path
      * @param attrs
      * @param mixins
@@ -818,7 +856,7 @@ public class Utils {
      */
     public static boolean isMixinTagRequest(String path, Map<String, String> attrs, List<String> mixins, String mixinTagLocation) {
         boolean result = false;
-        if (mixins == null 
+        if (mixins == null
                 || mixins.isEmpty() || mixinTagLocation == null || mixins.size() > 1) {
             return result;
         }
@@ -828,16 +866,16 @@ public class Utils {
 
     /**
      * Is that path is on a category ? like compute/
+     *
      * @param path
      * @param attrs
-     * @return 
+     * @return
      */
     public static boolean isCollectionOnCategory(String path, Map<String, String> attrs) {
         String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
-        
+
         return categoryId != null;
-        
+
     }
-    
 
 }

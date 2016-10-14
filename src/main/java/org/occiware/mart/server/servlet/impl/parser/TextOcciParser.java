@@ -75,27 +75,36 @@ public class TextOcciParser extends AbstractRequestParser {
                 // compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind";
 
                 for (String value : values) {
-                    String line = Constants.CATEGORY + ": " + value;
-                    Matcher matcher = Constants.PATTERN_CATEGORY.matcher(line);
-                    if (!matcher.find()) {
-                        continue;
-                    }
-                    String term = matcher.group(Constants.GROUP_TERM);
-                    String scheme = matcher.group(Constants.GROUP_SCHEME);
-                    String categoryClass = matcher.group(Constants.GROUP_CLASS);
-                    
-                    if (categoryClass.equalsIgnoreCase(Constants.CLASS_KIND)) {
-                        // Assign the kind.
-                        setKind(scheme + term);
-                        continue;
-                    }
-                    if (categoryClass.equalsIgnoreCase(Constants.CLASS_MIXIN)) {
-                        mixinsToAdd.add(scheme + term);
-                        setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
-                        continue;
-                    }
-                    if (categoryClass.equalsIgnoreCase(Constants.CLASS_ACTION)) {
-                        setAction(scheme + term);
+                    String[] valuesArray = value.split(",");
+
+                    for (String line : valuesArray) {
+                        if (line.startsWith(" ")) {
+                            line = Constants.CATEGORY + ":" + line;
+                        } else {
+                            line = Constants.CATEGORY + ": " + line;
+                        }
+                        // String line = Constants.CATEGORY + ": " + value;
+                        Matcher matcher = Constants.PATTERN_CATEGORY.matcher(line);
+                        if (!matcher.find()) {
+                            continue;
+                        }
+                        String term = matcher.group(Constants.GROUP_TERM);
+                        String scheme = matcher.group(Constants.GROUP_SCHEME);
+                        String categoryClass = matcher.group(Constants.GROUP_CLASS);
+
+                        if (categoryClass.equalsIgnoreCase(Constants.CLASS_KIND)) {
+                            // Assign the kind.
+                            setKind(scheme + term);
+                            continue;
+                        }
+                        if (categoryClass.equalsIgnoreCase(Constants.CLASS_MIXIN)) {
+                            mixinsToAdd.add(scheme + term);
+                            setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
+                            continue;
+                        }
+                        if (categoryClass.equalsIgnoreCase(Constants.CLASS_ACTION)) {
+                            setAction(scheme + term);
+                        }
                     }
                 }
             }
@@ -124,12 +133,20 @@ public class TextOcciParser extends AbstractRequestParser {
             values = entry.getValue();
             if (key.equalsIgnoreCase(Constants.X_OCCI_ATTRIBUTE)) {
                 for (String value : values) {
-                    // Parse the value:
-                    String[] attr = value.split("=");
-                    if (attr != null && attr.length > 0) {
-                        attr[0] = attr[0].replace("\"", "");
-                        attr[1] = attr[1].replace("\"", "");
-                        attrs.put(attr[0], attr[1]);
+                    // Multiple value on X_OCCI_Attribute header may exist on a same declaration. (source and target for example).
+                    // like this --> X-OCCI-Attribute: occi.core.source="/compute/f88486b7-0632-482d-a184-a9195733ddd0", occi.core.target="/network/network1".
+                    String[] valuesTmp = value.split(",");
+                    for (String valueTmp : valuesTmp) {
+                        // Parse the value:
+                        String[] attr = valueTmp.split("=");
+                        if (attr != null && attr.length > 0) {
+                            attr[0] = attr[0].replace("\"", "");
+                            if (attr[0].startsWith(" ")) {
+                                attr[0] = attr[0].substring(1); // remove starting space.
+                            }
+                            attr[1] = attr[1].replace("\"", "");
+                            attrs.put(attr[0], attr[1]);
+                        }
                     }
 
                 }
@@ -303,15 +320,17 @@ public class TextOcciParser extends AbstractRequestParser {
         StringBuilder sb = new StringBuilder();
 
         for (Kind kind : kinds) {
-            sb.append(kind.getTerm())
-                    .append(";scheme=\"").append(kind.getScheme()).append("\";class=\"kind\"");
+            sb.append(kind.getTerm()).append(";").append(Constants.CRLF)
+                    .append("scheme=\"").append(kind.getScheme()).append("\";").append(Constants.CRLF)
+                    .append("class=\"kind\"").append(";");
             if (detailed) {
-                sb.append(";title=\"").append(kind.getTitle()).append('\"');
+                sb.append(Constants.CRLF);
+                sb.append("title=\"").append(kind.getTitle()).append('\"').append(";").append(Constants.CRLF);
                 Kind parent = kind.getParent();
                 if (parent != null) {
-                    sb.append(";rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"');
+                    sb.append("rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"').append(";").append(Constants.CRLF);
                 }
-                sb.append(";location=\"").append(ConfigurationManager.getLocation(kind)).append('\"');
+                sb.append("location=\"").append(ConfigurationManager.getLocation(kind)).append('\"').append(";").append(Constants.CRLF);
                 appendAttributes(sb, kind.getAttributes());
                 appendActions(sb, kind.getActions());
             }
@@ -329,21 +348,23 @@ public class TextOcciParser extends AbstractRequestParser {
     private StringBuilder renderOcciMixins(List<Mixin> mixins, boolean detailed) {
         StringBuilder sb = new StringBuilder();
         for (Mixin mixin : mixins) {
-            sb.append(mixin.getTerm())
-                    .append(";scheme=\"").append(mixin.getScheme()).append("\";class=\"mixin\"");
+            sb.append(mixin.getTerm()).append(";").append(Constants.CRLF)
+                    .append("scheme=\"").append(mixin.getScheme()).append("\";").append(Constants.CRLF)
+                    .append("class=\"mixin\"").append(";");
             if (detailed) {
-                sb.append(";title=\"").append(mixin.getTitle()).append('\"');
+                sb.append(Constants.CRLF);
+                sb.append("title=\"").append(mixin.getTitle()).append('\"').append(";").append(Constants.CRLF);
                 List<Mixin> mixinsDep = mixin.getDepends();
                 if (!mixinsDep.isEmpty()) {
-                    sb.append(";rel=\"");
+                    sb.append("rel=\"");
                     String sep = "";
                     for (Mixin md : mixinsDep) {
                         sb.append(sep).append(md.getScheme()).append(md.getTerm());
                         sep = " ";
                     }
-                    sb.append('\"');
+                    sb.append('\"').append(";").append(Constants.CRLF);
                 }
-                sb.append(";location=\"").append(ConfigurationManager.getLocation(mixin)).append('\"');
+                sb.append("location=\"").append(ConfigurationManager.getLocation(mixin)).append('\"').append(";").append(Constants.CRLF);
                 appendAttributes(sb, mixin.getAttributes());
                 appendActions(sb, mixin.getActions());
             }
@@ -361,7 +382,7 @@ public class TextOcciParser extends AbstractRequestParser {
      */
     private void appendAttributes(StringBuilder sb, List<Attribute> attributes) {
         if (!attributes.isEmpty()) {
-            sb.append(";attributes=\"");
+            sb.append("attributes=\"");
             String sep = "";
             for (Attribute attribute : attributes) {
                 sb.append(sep).append(attribute.getName());
@@ -380,17 +401,8 @@ public class TextOcciParser extends AbstractRequestParser {
                 }
                 sep = " ";
             }
-            sb.append('\"');
+            sb.append('\"').append(";").append(Constants.CRLF);
         }
-    }
-
-    private String asString(Action action) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(action.getTerm())
-                .append(";scheme=\"").append(action.getScheme()).append("\";class=\"action\"")
-                .append(";title=\"").append(action.getTitle()).append('\"');
-        appendAttributes(sb, action.getAttributes());
-        return sb.toString();
     }
 
     /**
@@ -401,13 +413,13 @@ public class TextOcciParser extends AbstractRequestParser {
      */
     private void appendActions(StringBuilder sb, List<Action> actions) {
         if (!actions.isEmpty()) {
-            sb.append(";actions=\"");
+            sb.append("actions=\"");
             String sep = "";
             for (Action action : actions) {
                 sb.append(sep).append(action.getScheme()).append(action.getTerm());
                 sep = " ";
             }
-            sb.append('\"');
+            sb.append('\"').append(";").append(Constants.CRLF);
         }
     }
 
@@ -509,15 +521,17 @@ public class TextOcciParser extends AbstractRequestParser {
      */
     private String renderCategory(Kind kind, boolean detailed) {
         StringBuilder sb = new StringBuilder();
-        sb.append(kind.getTerm())
-                .append(";scheme=\"").append(kind.getScheme()).append("\";class=\"kind\"");
+        sb.append(kind.getTerm()).append(";").append(Constants.CRLF)
+                .append("scheme=\"").append(kind.getScheme()).append("\"").append(";").append(Constants.CRLF)
+                .append("class=\"kind\"").append(";");
         if (detailed) {
-            sb.append(";title=\"").append(kind.getTitle()).append('\"');
+            sb.append(Constants.CRLF);
+            sb.append("title=\"").append(kind.getTitle()).append('\"').append(";").append(Constants.CRLF);
             Kind parent = kind.getParent();
             if (parent != null) {
-                sb.append(";rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"');
+                sb.append("rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"').append(";").append(Constants.CRLF);
             }
-            sb.append(";location=\"").append(ConfigurationManager.getLocation(kind)).append('\"');
+            sb.append("location=\"").append(ConfigurationManager.getLocation(kind)).append('\"').append(";").append(Constants.CRLF);
             appendAttributes(sb, kind.getAttributes());
             appendActions(sb, kind.getActions());
         }
@@ -533,24 +547,28 @@ public class TextOcciParser extends AbstractRequestParser {
      */
     private String renderCategory(Mixin mixin, boolean detailed) {
         StringBuilder sb = new StringBuilder();
-        sb.append(mixin.getTerm())
-                .append(";scheme=\"").append(mixin.getScheme()).append("\";class=\"mixin\"");
+
+        sb.append(mixin.getTerm()).append(";").append(Constants.CRLF)
+                .append("scheme=\"").append(mixin.getScheme()).append("\";").append(Constants.CRLF)
+                .append("class=\"mixin\"").append(";");
         if (detailed) {
-            sb.append(";title=\"").append(mixin.getTitle()).append('\"');
-            List<Mixin> mixinsTmp = mixin.getDepends();
-            if (!mixinsTmp.isEmpty()) {
-                sb.append(";rel=\"");
+            sb.append(Constants.CRLF);
+            sb.append("title=\"").append(mixin.getTitle()).append('\"').append(";").append(Constants.CRLF);
+            List<Mixin> mixinsDep = mixin.getDepends();
+            if (!mixinsDep.isEmpty()) {
+                sb.append("rel=\"");
                 String sep = "";
-                for (Mixin md : mixinsTmp) {
+                for (Mixin md : mixinsDep) {
                     sb.append(sep).append(md.getScheme()).append(md.getTerm());
                     sep = " ";
                 }
-                sb.append('\"');
+                sb.append('\"').append(";").append(Constants.CRLF);
             }
-            sb.append(";location=\"").append(ConfigurationManager.getLocation(mixin)).append('\"');
+            sb.append("location=\"").append(ConfigurationManager.getLocation(mixin)).append('\"').append(";").append(Constants.CRLF);
             appendAttributes(sb, mixin.getAttributes());
             appendActions(sb, mixin.getActions());
         }
+
         return sb.toString();
     }
 
@@ -620,13 +638,13 @@ public class TextOcciParser extends AbstractRequestParser {
         String attribs = "";
         StringBuilder sb = new StringBuilder();
         List<AttributeState> attrStates = entity.getAttributes();
-        String coreId = Constants.OCCI_CORE_ID + "=\"" + Constants.URN_UUID_PREFIX + entity.getId() + "\",";
+        String coreId = Constants.OCCI_CORE_ID + "=\"" + Constants.URN_UUID_PREFIX + entity.getId() + "\"," + Constants.CRLF;
         sb.append(coreId);
         if (entity instanceof Link) {
             Link link = (Link) entity;
-            String source = Constants.OCCI_CORE_SOURCE + "=\"" + ConfigurationManager.getLocation(link.getSource()) + ", \"";
+            String source = Constants.OCCI_CORE_SOURCE + "=\"" + ConfigurationManager.getLocation(link.getSource()) + "\"" + "," + Constants.CRLF;
             sb.append(source);
-            String target = Constants.OCCI_CORE_TARGET + "=\"" + ConfigurationManager.getLocation(link.getTarget()) + ", \"";
+            String target = Constants.OCCI_CORE_TARGET + "=\"" + ConfigurationManager.getLocation(link.getTarget()) + "\"" + "," + Constants.CRLF;
             sb.append(target);
         }
 
@@ -653,12 +671,12 @@ public class TextOcciParser extends AbstractRequestParser {
                 value = "\"" + value + "\"";
             } // other values are not quoted.
 
-            attribs += attribute.getName() + '=' + value + ",";
+            attribs += attribute.getName() + '=' + value + "," + Constants.CRLF;
         }
 
         if (!attribs.isEmpty()) {
             // To remove the last comma.
-            attribs = attribs.substring(0, attribs.length() - 1);
+            attribs = attribs.substring(0, attribs.length() - 2);
             sb.append(attribs);
         }
         return sb.toString();

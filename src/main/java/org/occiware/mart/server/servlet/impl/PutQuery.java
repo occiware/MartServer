@@ -29,7 +29,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.exception.EntityAddException;
@@ -102,7 +101,13 @@ public class PutQuery extends AbstractPutQuery {
         }
 
         if (kind != null) {
-            response = createEntity(path, entityId, kind, mixins, inputParser.getOcciAttributes());
+            String relativePath = path;
+            
+            if (entityId != null && path.contains(entityId)) {
+                relativePath = path.replace(entityId, "");
+            }
+            
+            response = createEntity(relativePath, entityId, kind, mixins, inputParser.getOcciAttributes());
         } 
 
         return response;
@@ -188,7 +193,7 @@ public class PutQuery extends AbstractPutQuery {
             String coreId = Constants.URN_UUID_PREFIX + entityId;
             if (isResource) {
                 attributes.put("occi.core.id", coreId);
-                ConfigurationManager.addResourceToConfiguration(entityId, kind, mixins, attributes, owner, location);
+                ConfigurationManager.addResourceToConfiguration(entityId, kind, mixins, attributes, owner, path);
             } else {
                 String src = attributes.get(Constants.OCCI_CORE_SOURCE);
                 String target = attributes.get(Constants.OCCI_CORE_TARGET);
@@ -212,7 +217,7 @@ public class PutQuery extends AbstractPutQuery {
                 }
 
                 attributes.put("occi.core.id", coreId);
-                ConfigurationManager.addLinkToConfiguration(entityId, kind, mixins, src, target, attributes, owner, location);
+                ConfigurationManager.addLinkToConfiguration(entityId, kind, mixins, src, target, attributes, owner, path);
             }
         } catch (EntityAddException ex) {
             return Response.serverError()

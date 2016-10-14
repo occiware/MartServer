@@ -714,20 +714,49 @@ public class ConfigurationManager {
      * Find a resource for owner and entity Id.
      *
      * @param owner
-     * @param id
+     * @param id (may be an uuid, a path/uuid or a path.)
      * @return an OCCI resource.
      */
     public static Resource findResource(final String owner, final String id) {
         Resource resFound = null;
         Configuration configuration = getConfigurationForOwner(owner);
 
-        for (Resource resource : configuration.getResources()) {
-            if (resource.getId().equals(id)) {
-                resFound = resource;
-                // Resource found.
-                break;
+        boolean isEntityUUID = Utils.isEntityUUIDProvided(id, new HashMap<>());
+        String entityUUID;
+        if (isEntityUUID) {
+            entityUUID = Utils.getUUIDFromPath(id, new HashMap<>());
+
+            for (Resource resource : configuration.getResources()) {
+                if (resource.getId().equals(entityUUID)) {
+                    resFound = resource;
+                    // Resource found.
+                    break;
+                }
             }
         }
+        // Case: resource not found but a path is given (without uuid).
+        if (resFound == null && !isEntityUUID) {
+            // The id hasn't an uuid. Search on map if a single entity is on the path.
+            List<String> uuids = Utils.getEntityUUIDsFromPath(id);
+            if (uuids.size() == 1) {
+                for (String uuidTmp : uuids) {
+                    // Load the resource..
+                    for (Resource resource : configuration.getResources()) {
+                        if (resource.getId().equals(uuidTmp)) {
+                            resFound = resource;
+                            // Resource found.
+                            break;
+                        }
+
+                    }
+                    break;
+
+                }
+            }
+            // if multiple entities, return null.
+
+        }
+
         return resFound;
     }
 
@@ -740,14 +769,18 @@ public class ConfigurationManager {
      */
     public static Link findLink(final String owner, final String id) {
         Configuration configuration = getConfigurationForOwner(owner);
-
+        String entityUUID;
+        boolean isEntityUUID = Utils.isEntityUUIDProvided(id, new HashMap<>());
+        
+        
         Link link = null;
         EList<Link> links;
         for (Resource resource : configuration.getResources()) {
+            entityUUID = Utils.getUUIDFromPath(id, new HashMap<>());
             links = resource.getLinks();
             if (!links.isEmpty()) {
                 for (Link lnk : links) {
-                    if (lnk.getId().equals(id)) {
+                    if (lnk.getId().equals(entityUUID)) {
                         link = lnk;
                         break;
 
@@ -759,6 +792,35 @@ public class ConfigurationManager {
             }
 
         }
+
+        // Path only case. but compare with real uuid, if uuids number > 1 return null.
+        if (link == null && !isEntityUUID) {
+            // The id hasn't an uuid. Search on map if a single entity is on the path.
+            List<String> uuids = Utils.getEntityUUIDsFromPath(id);
+            if (uuids.size() == 1) {
+                for (String uuidTmp : uuids) {
+                    for (Resource resource : configuration.getResources()) {
+                        links = resource.getLinks();
+                        if (!links.isEmpty()) {
+                            for (Link lnk : links) {
+                                if (lnk.getId().equals(uuidTmp)) {
+                                    link = lnk;
+                                    break;
+
+                                }
+                            }
+                            if (link != null) {
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+            // if multiple entities, return null.
+
+        }
+
         return link;
     }
 
@@ -1995,6 +2057,9 @@ public class ConfigurationManager {
                 filterOnPath = filter.getFilterOnPath();
                 if (filterOnPath != null && !filterOnPath.isEmpty()) {
                     hasFilterOnPath = true;
+                    if (filterOnPath.endsWith("/")) {
+                        filterOnPath = filterOnPath.substring(0, filterOnPath.length() - 1);
+                    }
                     break;
                 }
             }
@@ -2072,15 +2137,16 @@ public class ConfigurationManager {
 
                 }
 
-                if (hasFilterOnPath) {
+                if (hasFilterOnPath && filterOnPath != null) {
                     String relativeLocation = getEntityRelativePath(entity.getId());
-
+                    
                     if (relativeLocation == null || relativeLocation.isEmpty()) {
                         control = false;
-                    } else if (filterOnPath.contains(relativeLocation) || relativeLocation.contains(filterOnPath)) {
+                        
+                    } else if (relativeLocation.startsWith(filterOnPath)) {
                         control = true;
                     } else {
-                        control = true;
+                        control = false;
                     }
                 } // endif has a filter on relative path.
 
@@ -2227,6 +2293,13 @@ public class ConfigurationManager {
             return null;
         }
         String location = entitiesRelativePath.get(entity.getId());
+
+        // we have maybe no leading slash.
+        if (!location.equals("/") && !location.endsWith("/")) {
+            location += "/";
+        }
+
+        location += entity.getId(); // add the uuid to get a full location.
         // return getLocation(entity.getKind()) + entity.getId();
         return location;
     }
@@ -2335,12 +2408,14 @@ public class ConfigurationManager {
         }
         return entitiesRelativePath;
     }
-    
+
     /**
-     * This method is called when no uuid is provided on request, but you have to ensure that only one entity exist for this path.
-     * 
+     * This method is called when no uuid is provided on request, but you have
+     * to ensure that only one entity exist for this path.
+     *
      * @param path
-     * @return an entity from a relative path, if entity doesnt exist on path, return null.
+     * @return an entity from a relative path, if entity doesnt exist on path,
+     * return null.
      */
     public static Entity getEntityFromPath(final String path) {
         Entity entity = null;
@@ -2349,7 +2424,7 @@ public class ConfigurationManager {
         if (path == null) {
             return null;
         }
-        
+
         for (Map.Entry<String, String> entry : entitiesRelativePath.entrySet()) {
             uuid = entry.getKey();
             pathTmp = entry.getValue();
@@ -2361,11 +2436,8 @@ public class ConfigurationManager {
         if (uuid != null) {
             entity = findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
         }
-        
+
         return entity;
     }
-    
-    
-    
 
 }

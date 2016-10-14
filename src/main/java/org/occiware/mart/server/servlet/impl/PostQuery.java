@@ -77,7 +77,10 @@ public class PostQuery extends AbstractPostQuery {
         if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
             throw new BadRequestException("Cant use " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " on POST method.");
         }
-        if (inputParser.getParameter("action") == null) {
+        
+        
+        boolean isActionPost = inputParser.getAction() != null && !inputParser.getAction().isEmpty();
+        if (isActionPost && inputParser.getParameter("action") == null) {
             throw new BadRequestException("you forgot the parameter ?action=action term");
         }
         
@@ -91,12 +94,12 @@ public class PostQuery extends AbstractPostQuery {
 
         // actionId ==> scheme + term.
         String actionId = inputParser.getAction();
-        List<Entity> entities = null;
-        Entity entity = null;
+        List<Entity> entities;
+        Entity entity;
 
         String entityUUID = Utils.getUUIDFromPath(path, attrs);
         // Action part.
-        if (actionId != null && !actionId.isEmpty()) {
+        if (isActionPost) {
 
             // Check if this action exist.
             if (ConfigurationManager.getExtensionForAction(ConfigurationManager.DEFAULT_OWNER, actionId) == null) {

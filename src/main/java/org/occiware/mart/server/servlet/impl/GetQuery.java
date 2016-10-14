@@ -18,7 +18,7 @@
  */
 package org.occiware.mart.server.servlet.impl;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -108,9 +108,36 @@ public class GetQuery extends AbstractGetQuery {
 
             }
         }
+        // case if entity request on custom path like vms/foo/bar/ (without uuid provided). 
+        if (isEntityRequest && getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST) && !Utils.isEntityUUIDProvided(path, attrs)) {
+            entity = ConfigurationManager.getEntityFromPath(path);
+            if (entity == null) {
+                try {
+                    response = outputParser.parseResponse("you must not use the accept type " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " in this way.", Response.Status.BAD_REQUEST);
+                } catch (ResponseParseException ex) {
+                    // Must never happen if input query is ok.
+                    throw new InternalServerErrorException(ex);
+                }
+            } else {
+                // Retrieve entity informations from provider.
+                entity.occiRetrieve();
+                // Entity is found, we must parse the result (on accept type media if defined in header of the query elsewhere this will be text/occi) to a response ok --> 200 object
+                //   AND the good rendering output (text/occi, application/json etc.).
+                try {
+                    String location = ConfigurationManager.getLocation(entity);
+                    List<String> locations = new ArrayList<>();
+                    locations.add(location);
+                    response = outputParser.parseResponse(locations);
+                    return response;
+                } catch (ResponseParseException ex) {
+                    // This must never go here. If that's the case this is a bug in parser.
+                    throw new InternalServerErrorException(ex);
+                }
+            }
+        }
 
-        // Case if entity request but accept type is text/uri-list => bad request.
-        if (isEntityRequest && getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+        // Case if entity request with uuid provided but accept type is text/uri-list => bad request.
+        if (isEntityRequest && getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST) && Utils.isEntityUUIDProvided(path, attrs)) {
             // To be compliant with occi specification (text/rendering and all others), it must check if uri-list is used with entity request, if this is the case ==> badrequest.
             try {
                 response = outputParser.parseResponse("you must not use the accept type " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " in this way.", Response.Status.BAD_REQUEST);
