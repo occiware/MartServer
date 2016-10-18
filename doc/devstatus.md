@@ -86,7 +86,7 @@ Development Status values :
     <tr>
         <td align="center">Action on entities collection</td>
         <td align="center">Action query (ex: start an instance) on collections, <a href="https://github.com/cgourdin/MartServer/issues/32">feature #32</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Create a mixin tag on entity</td>
@@ -112,22 +112,22 @@ Development Status values :
     <tr>
         <td align="center">Delete an entity</td>
         <td align="center">Delete an entity (resource or link), <a href="https://github.com/cgourdin/MartServer/issues/18">feature #18</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Delete a collection</td>
         <td align="center">Delete a collection (ex: delete all the compute of the configuration), <a href="https://github.com/cgourdin/MartServer/issues/19">feature #19</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">text/occi media type parser (Content-Type and accept)</td>
         <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/6">feature #6</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">application/json media type parser (Content-Type and accept)</td>
         <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/30">feature #30</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">application/xml media type parser (Content-Type and accept)</td>

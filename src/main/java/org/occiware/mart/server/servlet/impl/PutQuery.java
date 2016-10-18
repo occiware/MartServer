@@ -23,7 +23,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.BadRequestException;
+import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -75,25 +75,38 @@ public class PutQuery extends AbstractPutQuery {
         }
         // Check if the query is not on interface query, this path is used only on GET method.
         if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
-            throw new BadRequestException("Cant use interface on PUT method.");
+            try {
+                response = outputParser.parseResponse("you cannot use interface query on PUT method", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
+            }
         }
 
         if (inputParser.getAction() != null) {
-            throw new BadRequestException("cant use action with put request.");
+            try {
+                response = outputParser.parseResponse("you cannot use an action with PUT method", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
+            }
         }
 
         String kind = inputParser.getKind();
         List<String> mixins = inputParser.getMixins();
         if (kind == null && mixins == null) {
-            throw new BadRequestException("No category provided !");
+            try {
+                response = outputParser.parseResponse("No category provided !", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
+            }
         }
-        
+
         // TODO : Check if the query is a create mixin definition.
         // if (kind == null && mixins != null && ConfigurationManager.checkIfMixinsExist(mixins)) {
-            // TODO: create mixin method then return response.
+        // TODO: create mixin method then return response.
         //        }
-        
-        
         String entityId = inputParser.getEntityUUID();
         if (entityId == null) {
             entityId = Utils.getUUIDFromPath(path, inputParser.getOcciAttributes());
@@ -102,13 +115,13 @@ public class PutQuery extends AbstractPutQuery {
 
         if (kind != null) {
             String relativePath = path;
-            
+
             if (entityId != null && path.contains(entityId)) {
                 relativePath = path.replace(entityId, "");
             }
-            
+
             response = createEntity(relativePath, entityId, kind, mixins, inputParser.getOcciAttributes());
-        } 
+        }
 
         return response;
 
@@ -154,7 +167,7 @@ public class PutQuery extends AbstractPutQuery {
         if (hasCreatedUUID) {
             location += "/" + entityId;
         }
-        
+
         // Add location attribute.
 //        attrs.put(Constants.X_OCCI_LOCATION, location);
         LOGGER.info("Create entity with location: " + location);
@@ -201,18 +214,18 @@ public class PutQuery extends AbstractPutQuery {
                     String message = "No source provided for this link : " + entityId;
                     try {
                         response = outputParser.parseResponse(message, Response.Status.BAD_REQUEST);
-                        throw new BadRequestException(response);
+                        return response;
                     } catch (ResponseParseException ex) {
-                        throw new BadRequestException(message);
+                        throw new InternalServerErrorException(ex);
                     }
                 }
                 if (target == null) {
                     String message = "No target provided for this link : " + entityId;
                     try {
                         response = outputParser.parseResponse(message, Response.Status.BAD_REQUEST);
-                        throw new BadRequestException(response);
+                        return response;
                     } catch (ResponseParseException ex) {
-                        throw new BadRequestException(message);
+                        throw new InternalServerErrorException(ex);
                     }
                 }
 
@@ -220,12 +233,12 @@ public class PutQuery extends AbstractPutQuery {
                 ConfigurationManager.addLinkToConfiguration(entityId, kind, mixins, src, target, attributes, owner, path);
             }
         } catch (EntityAddException ex) {
-            return Response.serverError()
-                    .entity("The entity has not been added, it may be produce if you use forbidden attributes. \n Message : " + ex.getMessage())
-                    .header("Server", Constants.OCCI_SERVER_HEADER)
-                    .type(getContentType())
-                    .header("Accept", getAcceptType())
-                    .build();
+            try {
+                response = outputParser.parseResponse("The entity has not been added, it may be produce if you use forbidden attributes. \r\n Message : " + ex.getMessage(), Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException e) {
+                throw new InternalServerErrorException(e);
+            }
         }
         // Get the entity to be sure that it was inserted on configuration object.
         Entity entity = ConfigurationManager.findEntity(owner, entityId);
@@ -234,13 +247,16 @@ public class PutQuery extends AbstractPutQuery {
             LOGGER.info("Create entity done returning location : " + location);
         } else {
             LOGGER.error("Error, entity was not created on object model, please check your query.");
-            throw new BadRequestException("Error, entity was not created on object model, please check your query.");
+            try {
+                response = outputParser.parseResponse("Error, entity was not created on object model, please check your query", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException e) {
+                throw new InternalServerErrorException(e);
+            }
         }
 
-        // Utils.printEntity(entity);
-
         try {
-            // TODO : Check here if we must use outputParser.parseResponse...
+
             response = Response.created(new URI(location))
                     .header("Server", Constants.OCCI_SERVER_HEADER)
                     .type(getContentType())
@@ -259,8 +275,7 @@ public class PutQuery extends AbstractPutQuery {
         }
 
     }
-    
-    
+
     @Override
     public Response defineMixinTag(String mixinTagKind, String relativeLocationApply) {
         // TODO : Implement this.

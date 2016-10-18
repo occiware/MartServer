@@ -606,14 +606,25 @@ public class ConfigurationManager {
      */
     public static void removeResource(final String owner, final Resource resource) {
         Configuration config = getConfigurationForOwner(owner);
-        EList<Link> resLink = resource.getLinks();
-        if (resLink != null) {
 
-            for (Link link : resLink) {
-                removeLink(owner, link);
+        Iterator<Link> it = resource.getLinks().iterator();
+        while (it.hasNext()) {
+            Link link = it.next();
+            // removeLink(owner, link);
+            Resource src = link.getSource();
+            if (!src.equals(resource)) {
+                src.getLinks().remove(link);
+                entitiesRelativePath.remove(link.getId());
+            }
+            Resource target = link.getTarget();
+            if (!target.equals(resource)) {
+                target.getLinks().remove(link);
+                entitiesRelativePath.remove(link.getId());
             }
         }
+
         resource.getLinks().clear(); // Remove all links on that resource.
+        // Remove resource from configuration object.
         config.getResources().remove(resource);
         entitiesRelativePath.remove(resource.getId());
     }
@@ -771,8 +782,7 @@ public class ConfigurationManager {
         Configuration configuration = getConfigurationForOwner(owner);
         String entityUUID;
         boolean isEntityUUID = Utils.isEntityUUIDProvided(id, new HashMap<>());
-        
-        
+
         Link link = null;
         EList<Link> links;
         for (Resource resource : configuration.getResources()) {
@@ -2139,10 +2149,10 @@ public class ConfigurationManager {
 
                 if (hasFilterOnPath && filterOnPath != null) {
                     String relativeLocation = getEntityRelativePath(entity.getId());
-                    
+
                     if (relativeLocation == null || relativeLocation.isEmpty()) {
                         control = false;
-                        
+
                     } else if (relativeLocation.startsWith(filterOnPath)) {
                         control = true;
                     } else {

@@ -25,7 +25,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
@@ -70,9 +69,19 @@ public class GetQuery extends AbstractGetQuery {
             return getQueryInterface(path, headers);
         }
 
+        String actionId = inputParser.getAction();
+        if (actionId != null) {
+            try {
+                response = outputParser.parseResponse("You cannot use an action with GET method.", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
+            }
+        }
+
         Entity entity;
         String entityId;
-        
+
         Map<String, String> attrs = inputParser.getOcciAttributes();
         // Get one entity check with uuid provided.
         // path with category/kind : http://localhost:8080/compute/uuid
@@ -91,7 +100,7 @@ public class GetQuery extends AbstractGetQuery {
                     response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
                     return response;
                 } catch (ResponseParseException ex) {
-                    throw new NotFoundException(ex);
+                    throw new InternalServerErrorException(ex);
                 }
             } else {
                 // Retrieve entity informations from provider.
@@ -147,20 +156,18 @@ public class GetQuery extends AbstractGetQuery {
             }
             return response;
         }
-        
+
         // note: attrs must be empty if result is true.
-          //  +++ the mixin tag has no attributes. mixin.getAttributes() must return empty list.
+        //  +++ the mixin tag has no attributes. mixin.getAttributes() must return empty list.
         boolean isMixinTagRequest = Utils.isMixinTagRequest(path, attrs, inputParser.getMixins(), inputParser.getMixinTagLocation());
         if (isMixinTagRequest) {
             // TODO :  Load mixin tag.
-            
-        // Return informations about the mixin tag.
+
+            // Return informations about the mixin tag.
             // Load the entities defined.
             // if (urilist media ==> list of location else list of entities to display.)
-            
         }
-        
-        
+
         // Collections part.
         // Get pagination if any (current page number and number max of items, for the last if none defined, used to 20 items per page by default).
         String pageTmp = inputParser.getParameter(Constants.CURRENT_PAGE_KEY);
@@ -172,27 +179,27 @@ public class GetQuery extends AbstractGetQuery {
             try {
                 items = Integer.valueOf(itemsNumber);
             } catch (NumberFormatException ex) {
-                    // Cant parse the number
-                    LOGGER.error("The parameter \"number\" is not set correctly, please check the parameter, this must be a number.");
-                    LOGGER.error("Default to " + items);
-                }
-                try {
-                    page = Integer.valueOf(pageTmp);
-                } catch (NumberFormatException ex) {
-                    LOGGER.error("The parameter \"page\" is not set correctly, please check the parameter, this must be a number.");
-                    LOGGER.error("Default to " + page);
-                }
+                // Cant parse the number
+                LOGGER.error("The parameter \"number\" is not set correctly, please check the parameter, this must be a number.");
+                LOGGER.error("Default to " + items);
+            }
+            try {
+                page = Integer.valueOf(pageTmp);
+            } catch (NumberFormatException ex) {
+                LOGGER.error("The parameter \"page\" is not set correctly, please check the parameter, this must be a number.");
+                LOGGER.error("Default to " + page);
+            }
         }
         String operatorTmp = inputParser.getParameter(Constants.OPERATOR_KEY);
         if (operatorTmp == null) {
-                operatorTmp = "0";
+            operatorTmp = "0";
         }
-            int operator = 0;
+        int operator = 0;
         try {
-                operator = Integer.valueOf(operatorTmp);
-            } catch (NumberFormatException ex) {
-            }
-    
+            operator = Integer.valueOf(operatorTmp);
+        } catch (NumberFormatException ex) {
+        }
+
         // Get collections based on location and Accept = text/uri-list or give entities details for other accept types.
         // Examples of query for filtering and pagination: 
         // Filtering (attribute or category) :  http://localhost:9090/myquery?attribute=myattributename or http://localh...?category=mymixintag
@@ -206,20 +213,20 @@ public class GetQuery extends AbstractGetQuery {
         // Category filter check.
         String paramTmp = inputParser.getParameter("category");
         if (paramTmp != null && !paramTmp.isEmpty()) {
-                CollectionFilter filter = new CollectionFilter();
-                filter.setCategoryFilter(paramTmp);
-                filter.setOperator(operator);
-                filters.add(filter);
-            }
-            // Attribute filter check.
-            paramTmp = inputParser.getParameter("attribute");
-            if (paramTmp != null && !paramTmp.isEmpty()) {
-                CollectionFilter filter = new CollectionFilter();
-                filter.setAttributeFilter(paramTmp);
-                filter.setOperator(operator);
-                filters.add(filter);
-            }
-       
+            CollectionFilter filter = new CollectionFilter();
+            filter.setCategoryFilter(paramTmp);
+            filter.setOperator(operator);
+            filters.add(filter);
+        }
+        // Attribute filter check.
+        paramTmp = inputParser.getParameter("attribute");
+        if (paramTmp != null && !paramTmp.isEmpty()) {
+            CollectionFilter filter = new CollectionFilter();
+            filter.setAttributeFilter(paramTmp);
+            filter.setOperator(operator);
+            filters.add(filter);
+        }
+
         if (isCollectionOnCategoryPath) {
             // Check category uri.
             String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
@@ -234,7 +241,7 @@ public class GetQuery extends AbstractGetQuery {
             filter.setFilterOnPath(path);
             filters.add(filter);
         }
-        
+
         try {
             entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
 

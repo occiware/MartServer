@@ -30,13 +30,10 @@ public interface IDeleteQuery extends IEntryPoint {
     
     /**
      * Remove an entity.
-     * @param kind (ex: compute)
-     * @param entityId (entity uuid)
-     * @param headers
-     * @param request
+     * @param path
      * @return 
      */
-    public Response deleteEntity(String kind, String entityId, HttpHeaders headers, HttpServletRequest request);
+    public Response deleteEntity(String path);
     
     /**
      * Remove an entire collection of entities with path = kind (ex: compute).
@@ -45,7 +42,7 @@ public interface IDeleteQuery extends IEntryPoint {
      * @param request
      * @return 
      */
-    public Response deleteEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
+    public Response deleteEntityCollection(String path);
     
     /**
      * if on other methods parameter kind is a mixin, remove a mixin by calling this method.

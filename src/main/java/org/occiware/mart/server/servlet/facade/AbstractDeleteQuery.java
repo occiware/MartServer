@@ -32,9 +32,9 @@ public abstract class AbstractDeleteQuery extends AbstractEntryPoint implements 
     public abstract Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request);
 
     @Override
-    public abstract Response deleteEntityCollection(String path, HttpHeaders headers, HttpServletRequest request);
+    public abstract Response deleteEntityCollection(String path);
 
     @Override
-    public abstract Response deleteEntity(String kind, String entityId, HttpHeaders headers, HttpServletRequest request);
+    public abstract Response deleteEntity(String path);
 
 }
