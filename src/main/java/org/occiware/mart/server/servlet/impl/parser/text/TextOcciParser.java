@@ -16,7 +16,7 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.servlet.impl.parser;
+package org.occiware.mart.server.servlet.impl.parser.text;
 
 import java.util.ArrayList;
 import java.util.HashMap;

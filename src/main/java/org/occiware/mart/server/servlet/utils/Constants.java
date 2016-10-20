@@ -41,6 +41,7 @@ public class Constants {
     
     public static final String MEDIA_TYPE_TEXT_URI_LIST = "text/uri-list";
     public static final String MEDIA_TYPE_JSON = "application/json";
+    public static final String MEDIA_TYPE_JSON_OCCI = "application/occi+json";
     
     public static final String CATEGORY = "Category";
     public static final String LINK = "Link";

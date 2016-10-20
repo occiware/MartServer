@@ -18,6 +18,8 @@
  */
 package org.occiware.mart.server.servlet.impl.parser;
 
+import org.occiware.mart.server.servlet.impl.parser.text.TextOcciParser;
+import org.occiware.mart.server.servlet.impl.parser.json.JsonOcciParser;
 import org.occiware.mart.server.servlet.facade.IRequestParser;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.slf4j.Logger;
@@ -47,6 +49,7 @@ public class ParserFactory {
                 return new TextOcciParser();
             
             case Constants.MEDIA_TYPE_JSON:
+            case Constants.MEDIA_TYPE_JSON_OCCI:
                 LOGGER.info("Parser input request: JsonOcciParser");
                 return new JsonOcciParser();
             // You can add here all other parsers you need without updating class like GetQuery, PostQuery etc.

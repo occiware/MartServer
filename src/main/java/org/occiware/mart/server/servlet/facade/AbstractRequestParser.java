@@ -288,7 +288,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
 
     @Override
     public String getAcceptedTypes() {
-        return Constants.MEDIA_TYPE_TEXT_OCCI + ";" + Constants.MEDIA_TYPE_JSON + ";" + MediaType.TEXT_PLAIN;
+        return Constants.MEDIA_TYPE_TEXT_OCCI + ";" + Constants.MEDIA_TYPE_JSON + ";" + Constants.MEDIA_TYPE_JSON_OCCI + ";" + MediaType.TEXT_PLAIN;
     }
 
     @Override
