@@ -35,6 +35,7 @@ import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.MixinNotFoundOnModelException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.impl.parser.ParserFactory;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
@@ -84,101 +85,99 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         try {
             inputParser.parseInputQuery(headers, request);
 
-            // Check if attributes are in configuration model for kind, mixins and actions.
-            if (!inputParser.getOcciAttributes().isEmpty()) {
-                // if there are attributes so there is a kind / mixins.
-                // Check on configuration and used extension.
-                boolean checkAttrs = false;
+            // Get the datas.
+            List<InputData> datas = inputParser.getInputDatas();
+            if (!datas.isEmpty()) {
+                String error = "";
                 boolean hasError = false;
-                String error = null;
+                for (InputData data : datas) {
+                    // Check if attributes are in configuration model for kind, mixins and actions.
+                    if (!data.getAttrs().isEmpty()) {
+                        // if there are attributes so there is a kind / mixins.
+                        // Check on configuration and used extension.
 
-                String kindId = inputParser.getKind();
-                String action = inputParser.getAction();
-                List<String> mixins = inputParser.getMixins();
-                Kind kindModel = null;
-                Action actionModel = null;
-                List<Mixin> mixinsModel = new LinkedList<>();
-                
-                // Search for the kind if an action is set.
-                if (kindId == null && action != null) {
-                    // TODO : Export this to configurationManager with a method : getKindFromAction.
-                    List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(ConfigurationManager.DEFAULT_OWNER);
-                    List<Action> actions;
-                    for (Kind kind : kinds) {
-                        actions = kind.getActions();
-                        for (Action actionTmp : actions) {
-                            if (action.equals(actionTmp.getScheme() + actionTmp.getTerm())) {
-                                actionModel = actionTmp;
-                                kindModel = kind;
-                                kindId = kind.getScheme() + kind.getTerm();
-                                inputParser.setKind(kindId);
-                                break;
+                        String kindId = data.getKind();
+                        String action = data.getAction();
+                        List<String> mixins = data.getMixins();
+                        Kind kindModel = null;
+                        Action actionModel = null;
+                        List<Mixin> mixinsModel = new LinkedList<>();
+
+                        // Search for the kind if an action is set.
+                        if (kindId == null && action != null) {
+                            // TODO : Export this to configurationManager with a method : getKindFromAction.
+                            List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(ConfigurationManager.DEFAULT_OWNER);
+                            List<Action> actions;
+                            for (Kind kind : kinds) {
+                                actions = kind.getActions();
+                                for (Action actionTmp : actions) {
+                                    if (action.equals(actionTmp.getScheme() + actionTmp.getTerm())) {
+                                        actionModel = actionTmp;
+                                        kindModel = kind;
+                                        kindId = kind.getScheme() + kind.getTerm();
+                                        data.setKind(kindId);
+                                        break;
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-                // Actions based on mixins ?
-                if (kindModel == null && mixins == null && action != null) {
-                    // TODO : Export this below to configurationManager with a method : getMixinFromAction.
-                    List<Mixin> mixinsTmp = ConfigurationManager.getAllConfigurationMixins(ConfigurationManager.DEFAULT_OWNER);
-                    List<Action> actions;
-                    List<String> mixinsStr = new ArrayList<>();
-                    for (Mixin mixin : mixinsTmp) {
-                        actions = mixin.getActions();
-                        for (Action actionTmp : actions) {
-                            if (action.equals(actionTmp.getScheme() + actionTmp.getTerm())) {
-                                actionModel = actionTmp;
-                                mixinsModel.add(mixin);
-                                mixinsStr.add(mixin.getScheme()+mixin.getTerm());
-                                mixins = mixinsStr;
-                                inputParser.setMixins(mixinsStr);
+                        // Actions based on mixins ?
+                        if (kindModel == null && mixins == null && action != null) {
+                            // TODO : Export this below to configurationManager with a method : getMixinFromAction.
+                            List<Mixin> mixinsTmp = ConfigurationManager.getAllConfigurationMixins(ConfigurationManager.DEFAULT_OWNER);
+                            List<Action> actions;
+                            List<String> mixinsStr = new ArrayList<>();
+                            for (Mixin mixin : mixinsTmp) {
+                                actions = mixin.getActions();
+                                for (Action actionTmp : actions) {
+                                    if (action.equals(actionTmp.getScheme() + actionTmp.getTerm())) {
+                                        actionModel = actionTmp;
+                                        mixinsModel.add(mixin);
+                                        mixinsStr.add(mixin.getScheme() + mixin.getTerm());
+                                        // mixins = mixinsStr;
+                                        data.setMixins(mixinsStr);
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-                
-                if (kindModel == null) {
-                    kindModel = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, kindId);
-                    if (kindModel == null) {
-                        error = "The kind : " + inputParser.getKind() + " doesnt exist on referenced extensions";
-                        hasError = true;
-                    }
-                }
-                
-                if (mixinsModel.isEmpty()) {
-                    
-                    try {
-                        mixinsModel = Utils.loadMixinFromSchemeTerm(inputParser.getMixins());
-                    } catch (MixinNotFoundOnModelException ex) {
 
-                        if (error != null) {
-                            error += " \n ";
+                        if (kindModel == null) {
+                            kindModel = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, kindId);
+                            if (kindModel == null) {
+                                error += "The kind : " + data.getKind() + " doesnt exist on referenced extensions";
+                                hasError = true;
+                            }
                         }
-                        error += "Mixin model error cause : " + ex.getMessage();
-                        hasError = true;
-                    }
-                }
-                
-                if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
-                    if (error != null) {
-                        error += " \n ";
-                    }
-                    error += "Some mixins doesnt apply to kind : " + inputParser.getKind();
-                    hasError = true;
-                }
 
-                if (!hasError) {
+                        if (mixinsModel.isEmpty()) {
 
-                    if (!Utils.checkIfAttributesExistOnCategory(inputParser.getOcciAttributes(), kindModel, mixinsModel, actionModel)) {
-                        if (error != null) {
-                            error += " \n ";
+                            try {
+                                mixinsModel = Utils.loadMixinFromSchemeTerm(data.getMixins());
+                            } catch (MixinNotFoundOnModelException ex) {
+                                error += " \n ";
+                                error += "Mixin model error cause : " + ex.getMessage();
+                                hasError = true;
+                            }
                         }
-                        error += "Some attributes doesnt exist on kind and mixins : " + inputParser.getKind();
-                        hasError = true;
+
+                        if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
+                            error += " \n ";
+                            error += "Some mixins doesnt apply to kind : " + data.getKind();
+                            hasError = true;
+                        }
+
+                        if (!hasError) {
+
+                            if (!Utils.checkIfAttributesExistOnCategory(data.getAttrs(), kindModel, mixinsModel, actionModel)) {
+                                error += " \n ";
+                                error += "Some attributes doesnt exist on kind and mixins : " + data.getKind();
+                                hasError = true;
+                            }
+
+                        }
+
                     }
-
                 }
-
                 if (hasError) {
                     LOGGER.error(error);
                     try {

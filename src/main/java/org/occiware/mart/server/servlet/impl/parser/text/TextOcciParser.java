@@ -41,6 +41,7 @@ import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractRequestParser;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
@@ -56,6 +57,8 @@ import org.slf4j.LoggerFactory;
 public class TextOcciParser extends AbstractRequestParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TextOcciParser.class);
+    
+    private InputData data = new InputData();
 
     @Override
     public void parseOcciCategories(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException {
@@ -94,25 +97,34 @@ public class TextOcciParser extends AbstractRequestParser {
 
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_KIND)) {
                             // Assign the kind.
-                            setKind(scheme + term);
+                            data.setKind(scheme + term);
                             continue;
                         }
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_MIXIN)) {
                             mixinsToAdd.add(scheme + term);
-                            setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
+                            data.setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
                             continue;
                         }
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_ACTION)) {
-                            setAction(scheme + term);
+                            data.setAction(scheme + term);
                         }
                     }
                 }
             }
         }
         if (!mixinsToAdd.isEmpty()) {
-            setMixins(mixinsToAdd);
+            data.setMixins(mixinsToAdd);
         }
-
+        // Update the data in the list of input datas. for this parser, there is only one inputdata.
+        List<InputData> inputDatas = getInputDatas();
+        
+        if (inputDatas.isEmpty()) {
+            inputDatas.add(data);
+            setInputDatas(inputDatas);
+        } else {
+            inputDatas.clear();
+            inputDatas.add(data);
+        }
     }
 
     /**
@@ -152,7 +164,17 @@ public class TextOcciParser extends AbstractRequestParser {
                 }
             }
         }
-        setOcciAttributes(attrs);
+        data.setAttrs(attrs);
+        // Update the data in the list of input datas. for this parser, there is only one inputdata.
+        List<InputData> inputDatas = getInputDatas();
+        
+        if (inputDatas.isEmpty()) {
+            inputDatas.add(data);
+            setInputDatas(inputDatas);
+        } else {
+            inputDatas.clear();
+            inputDatas.add(data);
+        }
     }
 
     /**
@@ -266,11 +288,6 @@ public class TextOcciParser extends AbstractRequestParser {
 
         return response;
 
-    }
-
-    @Override
-    public String getEntityUUID() {
-        return super.getEntityUUID();
     }
 
     /**

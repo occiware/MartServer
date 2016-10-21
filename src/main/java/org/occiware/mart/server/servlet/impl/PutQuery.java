@@ -35,6 +35,7 @@ import org.occiware.mart.server.servlet.exception.EntityAddException;
 import org.occiware.mart.server.servlet.exception.EntityConflictException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractPutQuery;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
@@ -83,46 +84,57 @@ public class PutQuery extends AbstractPutQuery {
             }
         }
 
-        if (inputParser.getAction() != null) {
+        // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
+        List<InputData> datas = inputParser.getInputDatas();
+        for (InputData data : datas) {
+            if (data.getAction() != null) {
+                try {
+                    response = outputParser.parseResponse("you cannot use an action with PUT method", Response.Status.BAD_REQUEST);
+                    return response;
+                } catch (ResponseParseException ex) {
+                    throw new InternalServerErrorException(ex);
+                }
+            }
+
+            String kind = data.getKind();
+            List<String> mixins = data.getMixins();
+            if (kind == null && mixins == null) {
+                try {
+                    response = outputParser.parseResponse("No category provided !", Response.Status.BAD_REQUEST);
+                    return response;
+                } catch (ResponseParseException ex) {
+                    throw new InternalServerErrorException(ex);
+                }
+            }
+
+            // TODO : Check if the query is a create mixin definition.
+            // if (kind == null && mixins != null && ConfigurationManager.checkIfMixinsExist(mixins)) {
+            // TODO: create mixin method then return response.
+            //        }
+            String entityId = data.getEntityUUID();
+            if (entityId == null) {
+                entityId = Utils.getUUIDFromPath(path, data.getAttrs());
+                // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
+            }
+
+            if (kind != null) {
+                String relativePath = path;
+
+                if (entityId != null && path.contains(entityId)) {
+                    relativePath = path.replace(entityId, "");
+                }
+
+                response = createEntity(relativePath, entityId, kind, mixins, data.getAttrs());
+            }
+        } // End for each inputdatas.
+        if (datas.isEmpty()) {
             try {
-                response = outputParser.parseResponse("you cannot use an action with PUT method", Response.Status.BAD_REQUEST);
+                response = outputParser.parseResponse("Request is invalid, no datas attributes, nor resources, please check your query", Response.Status.BAD_REQUEST);
                 return response;
             } catch (ResponseParseException ex) {
                 throw new InternalServerErrorException(ex);
             }
         }
-
-        String kind = inputParser.getKind();
-        List<String> mixins = inputParser.getMixins();
-        if (kind == null && mixins == null) {
-            try {
-                response = outputParser.parseResponse("No category provided !", Response.Status.BAD_REQUEST);
-                return response;
-            } catch (ResponseParseException ex) {
-                throw new InternalServerErrorException(ex);
-            }
-        }
-
-        // TODO : Check if the query is a create mixin definition.
-        // if (kind == null && mixins != null && ConfigurationManager.checkIfMixinsExist(mixins)) {
-        // TODO: create mixin method then return response.
-        //        }
-        String entityId = inputParser.getEntityUUID();
-        if (entityId == null) {
-            entityId = Utils.getUUIDFromPath(path, inputParser.getOcciAttributes());
-            // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
-        }
-
-        if (kind != null) {
-            String relativePath = path;
-
-            if (entityId != null && path.contains(entityId)) {
-                relativePath = path.replace(entityId, "");
-            }
-
-            response = createEntity(relativePath, entityId, kind, mixins, inputParser.getOcciAttributes());
-        }
-
         return response;
 
     }

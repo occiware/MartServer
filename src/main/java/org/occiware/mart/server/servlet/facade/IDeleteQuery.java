@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -31,15 +32,14 @@ public interface IDeleteQuery extends IEntryPoint {
     /**
      * Remove an entity.
      * @param path
+     * @param attrs
      * @return 
      */
-    public Response deleteEntity(String path);
+    public Response deleteEntity(String path, Map<String, String> attrs);
     
     /**
      * Remove an entire collection of entities with path = kind (ex: compute).
      * @param path
-     * @param headers
-     * @param request
      * @return 
      */
     public Response deleteEntityCollection(String path);
@@ -48,6 +48,7 @@ public interface IDeleteQuery extends IEntryPoint {
      * if on other methods parameter kind is a mixin, remove a mixin by calling this method.
      * @param mixinKind
      * @param entityId (entity uuid if any), if this is a mixin tag no entityId is provided and this will have null value.
+     * @param headers
      * @param request
      * @return a Response object.
      */

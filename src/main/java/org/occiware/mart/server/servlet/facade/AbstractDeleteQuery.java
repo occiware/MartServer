@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -35,6 +36,8 @@ public abstract class AbstractDeleteQuery extends AbstractEntryPoint implements 
     public abstract Response deleteEntityCollection(String path);
 
     @Override
-    public abstract Response deleteEntity(String path);
+    public abstract Response deleteEntity(String path, Map<String, String> attrs);
+
+    
 
 }

@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
@@ -70,28 +71,32 @@ public class DeleteQuery extends AbstractDeleteQuery {
                 throw new InternalServerErrorException(ex);
             }
         }
-        String actionId = inputParser.getAction();
-        if (actionId != null) {
-            try {
-                response = outputParser.parseResponse("You cannot use an action with DELETE method.", Response.Status.BAD_REQUEST);
-                return response;
-            } catch (ResponseParseException ex) {
-                throw new InternalServerErrorException(ex);
+
+        // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
+        List<InputData> datas = inputParser.getInputDatas();
+        for (InputData data : datas) {
+            String actionId = data.getAction();
+            if (actionId != null) {
+                try {
+                    response = outputParser.parseResponse("You cannot use an action with DELETE method.", Response.Status.BAD_REQUEST);
+                    return response;
+                } catch (ResponseParseException ex) {
+                    throw new InternalServerErrorException(ex);
+                }
             }
-        }
 
-        // Delete an entity.
-        Map<String, String> attrs = inputParser.getOcciAttributes();
-        boolean isEntityRequest = Utils.isEntityRequest(path, attrs);
-        if (isEntityRequest) {
-            response = deleteEntity(path);
-            return response;
-        }
+            // Delete an entity.
+            Map<String, String> attrs = data.getAttrs();
+            boolean isEntityRequest = Utils.isEntityRequest(path, attrs);
+            if (isEntityRequest) {
+                response = deleteEntity(path, attrs);
+                return response;
+            }
 
-        // Remove mixin association.
-        boolean isMixinRemoveRequest = Utils.isMixinTagRequest(path, attrs, inputParser.getMixins(), inputParser.getMixinTagLocation());
-        if (isMixinRemoveRequest) {
-            LOGGER.info("Mixin remove request.");
+            // Remove mixin association.
+            boolean isMixinRemoveRequest = Utils.isMixinTagRequest(path, attrs, data.getMixins(), data.getMixinTagLocation());
+            if (isMixinRemoveRequest) {
+                LOGGER.info("Mixin remove request.");
 
 //            for (String mixin : inputParser.getMixins()) {
 //                LOGGER.info("Remove mixin : " + mixin);
@@ -103,24 +108,25 @@ public class DeleteQuery extends AbstractDeleteQuery {
 //            } catch (ResponseParseException ex) {
 //                throw new InternalServerErrorException(ex);
 //            }
-            try {
-                response = outputParser.parseResponse("Not implemented, this will coming soon", Response.Status.NOT_IMPLEMENTED);
-                return response;
-            } catch (ResponseParseException ex) {
-                throw new InternalServerErrorException(ex);
+                try {
+                    response = outputParser.parseResponse("Not implemented, this will coming soon", Response.Status.NOT_IMPLEMENTED);
+                    return response;
+                } catch (ResponseParseException ex) {
+                    throw new InternalServerErrorException(ex);
+                }
             }
-        }
 
-        response = deleteEntityCollection(path);
+            response = deleteEntityCollection(path);
 
-        if (response == null) {
-            try {
-                response = outputParser.parseResponse("Unknown DELETE query type.", Response.Status.BAD_REQUEST);
-            } catch (ResponseParseException ex) {
-                throw new InternalServerErrorException(ex);
+            if (response == null) {
+                try {
+                    response = outputParser.parseResponse("Unknown DELETE query type.", Response.Status.BAD_REQUEST);
+                } catch (ResponseParseException ex) {
+                    throw new InternalServerErrorException(ex);
+                }
             }
-        }
-
+        } // End for each data.
+        
         return response;
     }
 
@@ -132,11 +138,10 @@ public class DeleteQuery extends AbstractDeleteQuery {
     @Override
     public Response deleteEntityCollection(String path) {
         Response response = null;
-        Map<String, String> attrs = inputParser.getOcciAttributes();
         // Delete a collection of entities.
         List<Entity> entities;
         // Collection on categories. // Like : get on myhost/compute/
-        boolean isCollectionOnCategoryPath = Utils.isCollectionOnCategory(path, attrs);
+        boolean isCollectionOnCategoryPath = Utils.isCollectionOnCategory(path);
         // Collections part.
         // Get pagination if any (current page number and number max of items, for the last if none defined, used to 20 items per page by default).
         String pageTmp = inputParser.getParameter(Constants.CURRENT_PAGE_KEY);
@@ -241,8 +246,8 @@ public class DeleteQuery extends AbstractDeleteQuery {
     }
 
     @Override
-    public Response deleteEntity(String path) {
-        Map<String, String> attrs = inputParser.getOcciAttributes();
+    public Response deleteEntity(String path, Map<String, String> attrs) {
+
         boolean isEntityUUIDProvided = Utils.isEntityUUIDProvided(path, attrs);
         Entity entity;
         String entityId;

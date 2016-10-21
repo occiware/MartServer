@@ -29,6 +29,7 @@ import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 
 /**
  * Utility interface for parsing request entry and transform a response to
@@ -79,40 +80,6 @@ public interface IRequestParser {
     public void parseRequestParameters(final HttpServletRequest request);
 
     /**
-     * Get the kind scheme # + term.
-     *
-     * @return may return null if no kind is in the query.
-     */
-    public String getKind();
-
-    /**
-     * Get the action sheme + term.
-     *
-     * @return
-     */
-    public String getAction();
-
-    /**
-     * Get the scheme # + term of all mixins in parser.
-     *
-     * @return may return empty list if no mixin found.
-     */
-    public List<String> getMixins();
-
-    /**
-     * Get all occi attributes from input query.
-     *
-     * @return
-     */
-    public Map<String, String> getOcciAttributes();
-
-    /**
-     *
-     * @return a universal unique identifier (v4).
-     */
-    public String getEntityUUID();
-
-    /**
      * Parse the Object to a valid response with accept media type output.
      *
      * @param object, if object is instance of Response, this must be not
@@ -135,34 +102,6 @@ public interface IRequestParser {
      * @return a response object to return to client.
      */
     public Response getInterface(final String categoryFilter, final String user);
-
-    /**
-     * Set the kind scheme # + term.
-     *
-     * @param kind
-     */
-    public void setKind(String kind);
-
-    /**
-     * Set the action sheme + term.
-     *
-     * @param action
-     */
-    public void setAction(String action);
-
-    /**
-     * Set the scheme # + term of all mixins.
-     *
-     * @param mixins
-     */
-    public void setMixins(List<String> mixins);
-
-    /**
-     * Set all occi attributes from input query.
-     *
-     * @param attributes
-     */
-    public void setOcciAttributes(Map<String, String> attributes);
 
     public List<Kind> getKindsConf();
 
@@ -199,8 +138,10 @@ public interface IRequestParser {
      */
     public String getAcceptedTypes();
     
-    public String getMixinTagLocation();
+    public List<InputData> getInputDatas();
     
-    public void setMixinTagLocation(String location);
-
+    public void setInputDatas(List<InputData> inputDatas);
+    
+    public InputData getInputDataForEntityUUID(final String entityUUID);
+    
 }

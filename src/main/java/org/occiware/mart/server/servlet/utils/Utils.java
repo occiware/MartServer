@@ -869,10 +869,9 @@ public class Utils {
      * Is that path is on a category ? like compute/
      *
      * @param path
-     * @param attrs
      * @return
      */
-    public static boolean isCollectionOnCategory(String path, Map<String, String> attrs) {
+    public static boolean isCollectionOnCategory(String path) {
         String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
 
         return categoryId != null;

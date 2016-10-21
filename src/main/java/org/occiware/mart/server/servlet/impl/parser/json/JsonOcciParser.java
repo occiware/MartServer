@@ -99,11 +99,6 @@ public class JsonOcciParser extends AbstractRequestParser {
     }
 
     @Override
-    public String getEntityUUID() {
-        return super.getEntityUUID();
-    }
-
-    @Override
     public Response getInterface(String categoryFilter, String user) {
         super.getInterface(categoryFilter, user);
         Response response;

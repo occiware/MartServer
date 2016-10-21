@@ -19,7 +19,6 @@
 package org.occiware.mart.server.servlet.facade;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -35,6 +34,7 @@ import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Constants;
 
@@ -44,23 +44,7 @@ import org.occiware.mart.server.servlet.utils.Constants;
  */
 public abstract class AbstractRequestParser implements IRequestParser {
 
-    private Map<String, String> attrs = new HashMap<>();
-    /**
-     * Scheme # + term.
-     */
-    private String kind = null;
-    /**
-     * Scheme # + term list.
-     */
-    private List<String> mixins = new ArrayList<>();
-    
-    private String mixinTagLocation = null;
-    /**
-     * Action scheme + term.
-     */
-    private String action = null;
-
-    private String entityUUID = null;
+    private List<InputData> inputDatas = new LinkedList<>();
 
     // For interface, used in configurations.
     protected List<Kind> kindsConf = null;
@@ -131,69 +115,10 @@ public abstract class AbstractRequestParser implements IRequestParser {
     public abstract void parseOcciAttributes(HttpHeaders headers, HttpServletRequest request) throws AttributeParseException;
 
     @Override
-    public String getKind() {
-        return kind;
-    }
-
-    @Override
-    public String getAction() {
-        return action;
-    }
-
-    @Override
-    public List<String> getMixins() {
-        if (mixins == null) {
-            mixins = new ArrayList<>();
-        }
-        return mixins;
-    }
-
-    @Override
-    public Map<String, String> getOcciAttributes() {
-        if (attrs == null) {
-            attrs = new HashMap<>();
-        }
-
-        return attrs;
-    }
-
-    @Override
     public abstract Response parseResponse(Object object) throws ResponseParseException;
 
     @Override
     public abstract Response parseResponse(Object object, Response.Status status) throws ResponseParseException;
-
-    @Override
-    public String getEntityUUID() {
-        if (!getOcciAttributes().isEmpty()) {
-            entityUUID = attrs.get(Constants.OCCI_CORE_ID);
-
-            if (entityUUID != null && entityUUID.startsWith(Constants.URN_UUID_PREFIX)) {
-                entityUUID = entityUUID.replace(Constants.URN_UUID_PREFIX, "");
-            }
-        }
-        return entityUUID;
-    }
-
-    @Override
-    public void setOcciAttributes(Map<String, String> attributes) {
-        attrs = attributes;
-    }
-
-    @Override
-    public void setMixins(List<String> mixins) {
-        this.mixins = mixins;
-    }
-
-    @Override
-    public void setAction(String action) {
-        this.action = action;
-    }
-
-    @Override
-    public void setKind(String kind) {
-        this.kind = kind;
-    }
 
     /**
      * Be warned that categoryFilter is the term only.
@@ -291,14 +216,41 @@ public abstract class AbstractRequestParser implements IRequestParser {
         return Constants.MEDIA_TYPE_TEXT_OCCI + ";" + Constants.MEDIA_TYPE_JSON + ";" + Constants.MEDIA_TYPE_JSON_OCCI + ";" + MediaType.TEXT_PLAIN;
     }
 
+    /**
+     * Return input data for an entity uuid if exist, if not exist, return null.
+     *
+     * @param entityUUID
+     * @return
+     */
     @Override
-    public String getMixinTagLocation() {
-        return mixinTagLocation;
+    public InputData getInputDataForEntityUUID(String entityUUID) {
+        List<InputData> tmp = getInputDatas();
+        InputData dataToReturn = null;
+        String entityUUIDCompare;
+        for (InputData data : tmp) {
+            if (data != null) {
+                entityUUIDCompare = data.getEntityUUID();
+
+                if (entityUUIDCompare != null && entityUUID.equals(entityUUID)) {
+                    data = dataToReturn;
+                }
+            }
+        }
+        return dataToReturn;
+
     }
 
     @Override
-    public void setMixinTagLocation(String location) {
-        this.mixinTagLocation = location;
+    public void setInputDatas(List<InputData> inputData) {
+        this.inputDatas = inputData;
     }
-    
+
+    @Override
+    public List<InputData> getInputDatas() {
+        if (inputDatas == null) {
+            inputDatas = new LinkedList<>();
+        }
+        return inputDatas;
+    }
+
 }
