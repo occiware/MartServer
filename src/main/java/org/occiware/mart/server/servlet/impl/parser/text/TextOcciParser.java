@@ -479,18 +479,6 @@ public class TextOcciParser extends AbstractRequestParser {
     }
 
     /**
-     * Default with response status ok.
-     *
-     * @param object
-     * @return
-     * @throws ResponseParseException
-     */
-    @Override
-    public Response parseResponse(Object object) throws ResponseParseException {
-        return parseResponse(object, Response.Status.OK);
-    }
-
-    /**
      * Render a response with entity object input.
      *
      * @param entity

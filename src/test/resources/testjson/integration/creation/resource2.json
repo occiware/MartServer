@@ -1,0 +1,60 @@
+{
+    "resources": [
+        {
+            "id": "urn:uuid:b7d55bf4-7057-5113-85c8-141871bf7635",
+            "title": "network1",
+            "summary": "My main network",
+            "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+            "mixins": [
+                "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+            ],
+            "attributes": {
+                "occi.network.vlan": 12,
+                "occi.network.label": "private",
+                "occi.network.address" : "10.1.0.0/16",
+                "occi.network.gateway" : "10.1.255.254"
+            }
+        },
+        {
+            "id": "urn:uuid:31cf3896-500e-48d8-a3f5-a8b3601bcdd9",
+            "title": "compute2",
+            "summary": "My other compute",
+            "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+            "attributes": {
+                "occi.compute.speed": 1,
+                "occi.compute.memory": 2,
+                "occi.compute.cores": 1,
+                "occi.compute.architecture" : "x86",
+                "occi.compute.state" : "active"
+            },
+            "links":[
+        	{
+        	    "kind":"http://schemas.ogf.org/occi/infrastructure#networkinterface",
+        	    "mixins":[
+        		"http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"
+        	    ],
+        	    "attributes":{
+        		"occi.infrastructure.networkinterface.interface":"eth0",
+        		"occi.infrastructure.networkinterface.mac":"00:80:41:ae:fd:7e",
+        		"occi.infrastructure.networkinterface.address":"192.168.0.100",
+        		"occi.infrastructure.networkinterface.gateway":"192.168.0.1",
+        		"occi.infrastructure.networkinterface.allocation":"dynamic"
+        	    },
+        	    "actions":[
+        		"http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up",
+        		"http://schemas.ogf.org/occi/infrastructure/networkinterface/action#down"
+        	    ],
+        	    "id":"urn:uuid:22fe83ae-a20f-54fc-b436-cec85c94c5e8",
+        	    "target": {
+                        "location":"/network/b7d55bf4-7057-5113-85c8-141871bf7635",
+                        "kind":"http://schemas.ogf.org/occi/infrastructure#network"
+                    },
+        	    "source": {
+                        "location":"/compute/31cf3896-500e-48d8-a3f5-a8b3601bcdd9"
+                    }
+                }
+            ]
+        }
+        
+    ]
+}

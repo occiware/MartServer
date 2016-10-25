@@ -49,8 +49,10 @@ public class Constants {
 
     public static final String URN_UUID_PREFIX = "urn:uuid:";
     public static final String OCCI_CORE_ID = "occi.core.id";
+    public static final String OCCI_CORE_TITLE = "occi.core.title";
     public static final String OCCI_CORE_SOURCE = "occi.core.source";
     public static final String OCCI_CORE_TARGET = "occi.core.target";
+    public static final String OCCI_CORE_SUMMARY = "occi.core.summary";
     public static final Float OCCI_SERVER_VERSION_NUMBER = 1.2f;
     public static final String OCCI_SERVER_VERSION = "OCCI/1.2";
     public static final String OCCI_SERVER_NAME = "OCCIWare MART Server v1.0";

@@ -114,8 +114,17 @@ public abstract class AbstractRequestParser implements IRequestParser {
     @Override
     public abstract void parseOcciAttributes(HttpHeaders headers, HttpServletRequest request) throws AttributeParseException;
 
+    /**
+     * Default with response status ok.
+     *
+     * @param object
+     * @return
+     * @throws ResponseParseException
+     */
     @Override
-    public abstract Response parseResponse(Object object) throws ResponseParseException;
+    public Response parseResponse(Object object) throws ResponseParseException {
+        return parseResponse(object, Response.Status.OK);
+    }
 
     @Override
     public abstract Response parseResponse(Object object, Response.Status status) throws ResponseParseException;
