@@ -18,10 +18,33 @@
  */
 package org.occiware.mart.server.servlet.impl.parser.json.render;
 
+import java.util.Map;
+
 /**
  *
  * @author Christophe Gourdin
  */
 public class ActionJson {
+    private String action;
+    
+    private Map<String, Object> attributes;
+
+    public String getAction() {
+        return action;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
+    
+    
     
 }

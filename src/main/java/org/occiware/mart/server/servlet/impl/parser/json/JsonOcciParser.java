@@ -20,6 +20,7 @@ package org.occiware.mart.server.servlet.impl.parser.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,6 +31,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -38,12 +40,24 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Attribute;
+import org.occiware.clouddesigner.occi.AttributeState;
+import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Kind;
+import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
+import org.occiware.clouddesigner.occi.Resource;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractRequestParser;
+import org.occiware.mart.server.servlet.impl.parser.json.render.ActionJson;
+import org.occiware.mart.server.servlet.impl.parser.json.render.KindJson;
+import org.occiware.mart.server.servlet.impl.parser.json.render.LinkJson;
+import org.occiware.mart.server.servlet.impl.parser.json.render.MixinJson;
+import org.occiware.mart.server.servlet.impl.parser.json.render.OcciMainJson;
+import org.occiware.mart.server.servlet.impl.parser.json.render.ResourceJson;
+import org.occiware.mart.server.servlet.impl.parser.json.render.SourceJson;
+import org.occiware.mart.server.servlet.impl.parser.json.render.TargetJson;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.ValidatorUtils;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
@@ -84,34 +98,17 @@ public class JsonOcciParser extends AbstractRequestParser {
     private void parseInputQueryToDatas(HttpServletRequest request) throws CategoryParseException, AttributeParseException {
         InputStream jsonInput = null;
         LOGGER.info("Parsing input uploaded datas...");
+        OcciMainJson occiMain;
         try {
             jsonInput = request.getInputStream();
 
             if (jsonInput == null) {
                 throw new CategoryParseException("The input has no content delivered.");
             }
-            // Get root json node.
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode rootNode = mapper.readTree(jsonInput);
-            Iterator<Map.Entry<String, JsonNode>> nodeIterator = rootNode.fields();
-            String rootKey;
-            JsonNode node;
-            while (nodeIterator.hasNext()) {
-                Map.Entry<String, JsonNode> entry = nodeIterator.next();
-                LOGGER.info("Key --> " + entry.getKey() + " --< value: " + entry.getValue());
-                // Key --> resources 
-                // value: [{"id":"urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0","title":"compute1","summary":"My compute","kind":"http://schemas.ogf.org/occi/infrastructure#compute","attributes":{"occi.compute.speed":2,"occi.compute.memory":4,"occi.compute.cores":2,"occi.compute.architecture":"x64","occi.compute.state":"active"}}]
-                rootKey = entry.getKey();
-                node = entry.getValue();
-
-                parseInputNode(rootKey, node);
-
-            }
-
-            LOGGER.info("Read nodes finished !");
-
-            throw new CategoryParseException("Not supported yet !");
-
+            // Parse to OcciMainJson object based on collections objects.
+            occiMain = mapper.readValue(jsonInput, OcciMainJson.class);
+            parseMainInput(occiMain);
         } catch (IOException ex) {
             LOGGER.error("Error while loading input stream from json file upload : " + ex.getMessage());
             throw new CategoryParseException("Error on reading stream json file.");
@@ -121,358 +118,199 @@ public class JsonOcciParser extends AbstractRequestParser {
         }
     }
 
-    /**
-     * This method select the node to parse in.
-     *
-     * @param nodeKey
-     * @param node
-     * @throws CategoryParseException
-     * @throws AttributeParseException
-     */
-    private void parseInputNode(final String nodeKey, final JsonNode node) throws CategoryParseException, AttributeParseException {
-
-        switch (nodeKey) {
-            case "resources":
-                // The json file contains resource(s).
-                LOGGER.info("input json has resources, setting to input data...");
-                // For each resource in array "resources", it set an InputData object.
-                parseInputResources(node);
-
-                break;
-            case "links":
-                // The json file contains link(s).
-                // For each links in array links, it set an InputData object.
-                LOGGER.info("input json has links, setting to input data...");
-                List<JsonNode> linksNode = new LinkedList<>();
-                linksNode.add(node);
-                parseInputLinks(linksNode);
-                break;
-
-            case "kinds":
-                // The json file contains kind(s) to describe.
-                // For each kind describe, it set an InputData object.
-                LOGGER.info("input json has kinds, setting to input data...");
-                // parseInputKinds(node);
-
-                break;
-
-            case "mixins":
-                // The json file contains mixin(s).
-                LOGGER.info("input json has mixins definitions, setting to input data...");
-                // parseInputMixins(node);
-
-                break;
-            case "actions":
-                // The json file contains action(s).
-                LOGGER.info("input json has actions, setting to input data...");
-                // parseInputActions(node);
-                break;
-
-            default:
-                throw new CategoryParseException("Unknown json key: " + nodeKey);
-
+    public void parseMainInput(final OcciMainJson mainJson) throws CategoryParseException, AttributeParseException {
+        if (mainJson == null) {
+            throw new CategoryParseException("unknown json format.");
         }
-    }
 
-    private void parseInputResources(final JsonNode node) throws CategoryParseException, AttributeParseException {
-        if (node == null) {
-            throw new CategoryParseException("The resource node has no value.");
-        }
-        // Example from resource3.json (see testjson directory).
-//        INFO  JsonOcciParser - Parsing input uploaded datas...
-//INFO  JsonOcciParser - Key --> resources --< value: [{"id":"urn:uuid:b7d55bf4-7057-5113-85c8-141871bf7635","title":"network1","summary":"My main network","kind":"http://schemas.ogf.org/occi/infrastructure#network","mixins":["http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"],"attributes":{"occi.network.vlan":12,"occi.network.label":"private","occi.network.address":"10.1.0.0/16","occi.network.gateway":"10.1.255.254"}},{"id":"urn:uuid:31cf3896-500e-48d8-a3f5-a8b3601bcdd9","title":"compute2","summary":"My other compute","kind":"http://schemas.ogf.org/occi/infrastructure#compute","attributes":{"occi.compute.speed":1,"occi.compute.memory":2,"occi.compute.cores":1,"occi.compute.architecture":"x86","occi.compute.state":"active"},"links":[{"kind":"http://schemas.ogf.org/occi/infrastructure#networkinterface","mixins":["http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"],"attributes":{"occi.infrastructure.networkinterface.interface":"eth0","occi.infrastructure.networkinterface.mac":"00:80:41:ae:fd:7e","occi.infrastructure.networkinterface.address":"192.168.0.100","occi.infrastructure.networkinterface.gateway":"192.168.0.1","occi.infrastructure.networkinterface.allocation":"dynamic"},"actions":["http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up","http://schemas.ogf.org/occi/infrastructure/networkinterface/action#down"],"id":"urn:uuid:22fe83ae-a20f-54fc-b436-cec85c94c5e8","target":{"location":"/network/b7d55bf4-7057-5113-85c8-141871bf7635","kind":"http://schemas.ogf.org/occi/infrastructure#network"},"source":{"location":"/compute/31cf3896-500e-48d8-a3f5-a8b3601bcdd9"}}]}]
-//INFO  JsonOcciParser - input json has resources, setting to input data...
-//INFO  JsonOcciParser - Field name : id --< fieldValue : "urn:uuid:b7d55bf4-7057-5113-85c8-141871bf7635"
-//INFO  JsonOcciParser - Field name : title --< fieldValue : "network1"
-//INFO  JsonOcciParser - Field name : summary --< fieldValue : "My main network"
-//INFO  JsonOcciParser - Field name : kind --< fieldValue : "http://schemas.ogf.org/occi/infrastructure#network"
-//INFO  JsonOcciParser - Field name : mixins --< fieldValue : ["http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"]
-//INFO  JsonOcciParser - Field name : attributes --< fieldValue : {"occi.network.vlan":12,"occi.network.label":"private","occi.network.address":"10.1.0.0/16","occi.network.gateway":"10.1.255.254"}
-//INFO  JsonOcciParser - Field name : id --< fieldValue : "urn:uuid:31cf3896-500e-48d8-a3f5-a8b3601bcdd9"
-//INFO  JsonOcciParser - Field name : title --< fieldValue : "compute2"
-//INFO  JsonOcciParser - Field name : summary --< fieldValue : "My other compute"
-//INFO  JsonOcciParser - Field name : kind --< fieldValue : "http://schemas.ogf.org/occi/infrastructure#compute"
-//INFO  JsonOcciParser - Field name : attributes --< fieldValue : {"occi.compute.speed":1,"occi.compute.memory":2,"occi.compute.cores":1,"occi.compute.architecture":"x86","occi.compute.state":"active"}
-//INFO  JsonOcciParser - Field name : links --< fieldValue : [{"kind":"http://schemas.ogf.org/occi/infrastructure#networkinterface","mixins":["http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"],"attributes":{"occi.infrastructure.networkinterface.interface":"eth0","occi.infrastructure.networkinterface.mac":"00:80:41:ae:fd:7e","occi.infrastructure.networkinterface.address":"192.168.0.100","occi.infrastructure.networkinterface.gateway":"192.168.0.1","occi.infrastructure.networkinterface.allocation":"dynamic"},"actions":["http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up","http://schemas.ogf.org/occi/infrastructure/networkinterface/action#down"],"id":"urn:uuid:22fe83ae-a20f-54fc-b436-cec85c94c5e8","target":{"location":"/network/b7d55bf4-7057-5113-85c8-141871bf7635","kind":"http://schemas.ogf.org/occi/infrastructure#network"},"source":{"location":"/compute/31cf3896-500e-48d8-a3f5-a8b3601bcdd9"}}]
-//INFO  JsonOcciParser - Key --> mixins --< value: [{"location":"/mixins/my_mixin/","scheme":"http://example.com/occi/tags#","term":"my_mixin","attributes":{},"title":"1"},{"location":"/mixins/my_mixin2/","scheme":"http://example.com/occi/tags#","term":"my_mixin2","attributes":{},"title":"2"}]
-//INFO  JsonOcciParser - Read nodes finished !
-
-        // Read the node contents.
-        Iterator<JsonNode> it = node.iterator();
-        Iterator<String> itField;
-        String fieldName;
-        JsonNode fieldValue;
-        InputData data;
+        List<ResourceJson> resources = mainJson.getResources();
+        List<LinkJson> links = mainJson.getLinks();
+        List<KindJson> kinds = mainJson.getKinds();
+        List<MixinJson> mixins = mainJson.getMixins();
+        List<ActionJson> actions = mainJson.getActions();
+        // For only one action invocation.
+        String action = mainJson.getAction();
         List<InputData> datas = getInputDatas();
-        String id;
-        String summary;
-        String title;
-        String kind;
-        List<String> mixins;
-        Map<String, String> attrs;
-        List<JsonNode> linksToSet = new LinkedList<>();
+        // if none objects is set, throw a category parse exception.
+        boolean hasResources = resources != null && !resources.isEmpty();
+        boolean hasLinks = links != null && !links.isEmpty();
+        boolean hasMixins = mixins != null && !mixins.isEmpty();
+        boolean hasActions = actions != null && !actions.isEmpty();
+        boolean hasActionInvocation = action != null;
+        boolean hasKinds = kinds != null && !kinds.isEmpty();
 
-        boolean hasLinks = false;
+        if (!hasResources
+                && !hasLinks && !hasMixins && !hasActions && !hasActionInvocation && !hasKinds) {
+            throw new CategoryParseException("No content upload parsed. Check your json file input.");
+        }
 
-        while (it.hasNext()) {
-            JsonNode currentNode = it.next();
-            itField = currentNode.fieldNames();
-            data = new InputData();
-
-            attrs = new HashMap<>();
-
-            while (itField.hasNext()) {
-                fieldName = itField.next();
-                fieldValue = currentNode.get(fieldName);
-
-                if (fieldValue == null || fieldValue.isNull()) {
-                    continue;
+        if (hasResources) {
+            for (ResourceJson resource : resources) {
+                Map<String, Object> attrs;
+                InputData data = new InputData();
+                String title = resource.getTitle();
+                String summary = resource.getSummary();
+                String id = resource.getId();
+                String kind = resource.getKind();
+                attrs = resource.getAttributes();
+                if (attrs == null) {
+                    attrs = new HashMap<>();
                 }
-                if (fieldName == null) {
-                    continue;
-                }
-                LOGGER.info("Field name : " + fieldName + " --< fieldValue : " + fieldValue.toString());
-                switch (fieldName) {
-                    case "id":
-                        id = fieldValue.textValue();
+                // set title, summary and id.
+                if (id != null) {
+                    if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
+                        attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
+                    } else {
                         attrs.put(Constants.OCCI_CORE_ID, id);
-                        if (id.startsWith(Constants.URN_UUID_PREFIX)) {
-                            id = id.replace(Constants.URN_UUID_PREFIX, "");
-                        }
-                        data.setEntityUUID(id);
+                        id = id.replace(Constants.URN_UUID_PREFIX, "");
+                    }
+                    data.setEntityUUID(id);
+                }
+                if (title != null && !title.isEmpty()) {
+                    attrs.put(Constants.OCCI_CORE_TITLE, title);
+                }
+                if (summary != null && !summary.isEmpty()) {
+                    attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
+                }
+                data.setAttrObjects(attrs);
 
-                        break;
-                    case "kind":
-                        kind = fieldValue.textValue();
-                        data.setKind(kind);
-                        break;
+                if (kind == null) {
+                    throw new CategoryParseException("Kind is not defined for resource: " + id);
+                }
+                data.setKind(kind);
 
-                    case "title":
-                        title = fieldValue.textValue();
-                        attrs.put(Constants.OCCI_CORE_TITLE, title);
-                        break;
-                    case "summary":
-                        summary = fieldValue.textValue();
-                        attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
-                        break;
-                    case "attributes":
-                        // Parse the attributes.
-                        attrs.putAll(parseInputAttributes(fieldValue));
-                        break;
-                    case "mixins":
-                        mixins = new ArrayList<>();
-                        if (!fieldValue.isArray()) {
-                            throw new CategoryParseException("The mixins defined on resource must be defined in a json array !");
-                        }
-                        Iterator<JsonNode> itMixin = fieldValue.elements();
-                        while (itMixin.hasNext()) {
-                            JsonNode mixinNode = itMixin.next();
-                            String mixin = mixinNode.asText();
-                            if (mixin != null && !mixin.isEmpty()) {
-                                mixins.add(mixinNode.asText());
-                            }
-                        }
-                        // Update inputdata object.
-                        data.setMixins(mixins);
-
-                        break;
-                    case "links":
-                        // if links are set on this resources, it must be included in the end of the inputdata linkedlist.
-                        hasLinks = true;
-                        linksToSet.add(fieldValue);
-                        break;
-                    default:
-                        throw new CategoryParseException("Unknown field : " + fieldName);
+                // We add the links on input data after the resources to be sure they are all exists if we are in create mode or update mode.
+                if (links != null && resource.getLinks() != null && !resource.getLinks().isEmpty()) {
+                    links.addAll(resource.getLinks());
+                    hasLinks = true;
                 }
 
-            } // End for each field.
-            data.setAttrs(attrs);
-            datas.add(data);
-        } // For each resources node.
-        setInputDatas(datas);
-        if (hasLinks) {
-            // Update inputdatas object list with declared links (added in the end of the list of resources.
-            // Node specifies the resources part, if links are setted on the resources part, this method has two way to create links, from links root node or /resources/links path.
-            parseInputLinks(linksToSet);
-
-        }
-    }
-
-    /**
-     * Parse input entry links. This method has two behavior : one from root
-     * node, second from resources node.
-     *
-     * @param node
-     * @throws CategoryParseException
-     * @throws AttributeParseException
-     */
-    private void parseInputLinks(final List<JsonNode> nodes) throws CategoryParseException, AttributeParseException {
-        Iterator<String> itField;
-        String fieldName;
-        JsonNode fieldValue;
-        InputData data;
-        List<InputData> datas = getInputDatas();
-        String id;
-        String summary;
-        String title;
-        String kind;
-        List<String> mixins;
-        Map<String, String> attrs;
-        Iterator<JsonNode> it;
-        for (JsonNode node : nodes) {
-
-            if (node.isArray()) {
-                it = node.elements();
-            } else {
-                it = node.iterator();
-            }
-            while (it.hasNext()) {
-                JsonNode currentNode = it.next();
-
-                if (currentNode.isArray()) {
-                    currentNode.elements();
-
+                List<String> mixinsRes = resource.getMixins();
+                if (mixinsRes != null && !mixinsRes.isEmpty()) {
+                    data.setMixins(mixinsRes);
                 }
-
-                itField = currentNode.fieldNames();
-                data = new InputData();
-
-                attrs = new HashMap<>();
-
-                while (itField.hasNext()) {
-                    fieldName = itField.next();
-                    fieldValue = currentNode.get(fieldName);
-
-                    if (fieldValue == null || fieldValue.isNull()) {
-                        continue;
-                    }
-                    if (fieldName == null) {
-                        continue;
-                    }
-                    LOGGER.info("Field name : " + fieldName + " --< fieldValue : " + fieldValue.toString());
-                    switch (fieldName) {
-                        case "id":
-                            id = fieldValue.textValue();
-                            attrs.put(Constants.OCCI_CORE_ID, id);
-                            if (id.startsWith(Constants.URN_UUID_PREFIX)) {
-                                id = id.replace(Constants.URN_UUID_PREFIX, "");
-                            }
-                            data.setEntityUUID(id);
-
-                            break;
-                        case "kind":
-                            kind = fieldValue.textValue();
-                            data.setKind(kind);
-                            break;
-
-                        case "title":
-                            title = fieldValue.textValue();
-                            attrs.put(Constants.OCCI_CORE_TITLE, title);
-                            break;
-                        case "summary":
-                            summary = fieldValue.textValue();
-                            attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
-                            break;
-                        case "attributes":
-                            // Parse the attributes.
-                            attrs.putAll(parseInputAttributes(fieldValue));
-                            break;
-                        case "mixins":
-                            mixins = new ArrayList<>();
-                            if (!fieldValue.isArray()) {
-                                throw new CategoryParseException("The mixins defined on resource must be defined in a json array !");
-                            }
-                            Iterator<JsonNode> itMixin = fieldValue.elements();
-                            while (itMixin.hasNext()) {
-                                JsonNode mixinNode = itMixin.next();
-                                String mixin = mixinNode.asText();
-                                if (mixin != null && !mixin.isEmpty()) {
-                                    mixins.add(mixinNode.asText());
-                                }
-                            }
-                            // Update inputdata object.
-                            data.setMixins(mixins);
-
-                            break;
-
-                        case "target":
-                            // We get here the location (relative path of the resource target link.
-                            JsonNode locationNode = fieldValue.get("location");
-                            if (locationNode == null || locationNode.isNull() || locationNode.isNumber() || locationNode.isArray()) {
-                                throw new AttributeParseException("target location is not set properly, check your json query.");
-                            }
-                            String location = locationNode.asText();
-                            LOGGER.info("Target location : " + location);
-                            attrs.put(Constants.OCCI_CORE_TARGET, location);
-                            break;
-                        case "source":
-                            JsonNode locationSrcNode = fieldValue.get("location");
-                            if (locationSrcNode == null || locationSrcNode.isNull() || locationSrcNode.isNumber() || locationSrcNode.isArray()) {
-                                throw new AttributeParseException("target location is not set properly, check your json query.");
-                            }
-                            String locationSrc = locationSrcNode.asText();
-                            LOGGER.info("Target location : " + locationSrc);
-                            attrs.put(Constants.OCCI_CORE_SOURCE, locationSrc);
-                            break;
-
-                        case "links":
-                            // Links are not set in resources.
-                            throw new CategoryParseException("Links cannot be within other links.");
-                        case "actions":
-                            // this is ignored.
-                            break;
-                        default:
-                            throw new CategoryParseException("Unknown field : " + fieldName);
-                    }
-
-                } // End for each field.
-                data.setAttrs(attrs);
+                List<String> actionRes = resource.getActions();
+                if (actionRes != null && !actionRes.isEmpty()) {
+                    data.setAction(actionRes.get(0));
+                    // We set the first action.
+                    // TODO : Define if actions is assigned to a resource if we must execute them...
+                }
                 datas.add(data);
-            } // For each links node.
-        } // End for each links root node.
-        setInputDatas(datas);
+            }
 
-    }
-
-    /**
-     * Parse des attributs en entrée (resources, links, mixins etc.).
-     *
-     * @param attrNode
-     * @return
-     * @throws AttributeParseException
-     */
-    private Map<String, String> parseInputAttributes(final JsonNode attrNode) throws AttributeParseException {
-        Map<String, String> attrsMap = new HashMap<>();
-        if (attrNode == null || attrNode.isNull()) {
-            throw new AttributeParseException();
         }
-        String fieldName;
-        Iterator<String> itField = attrNode.fieldNames();
-        JsonNode value;
-        String valueStr;
-        boolean boolVal;
-        while (itField.hasNext()) {
-            fieldName = itField.next();
-            valueStr = "";
-            value = attrNode.get(fieldName);
-            if (value.isBoolean()) {
-                boolVal = value.asBoolean();
-                if (boolVal) {
-                    valueStr = "true";
-                } else {
-                    valueStr = "false";
+        if (hasLinks) {
+            for (LinkJson link : links) {
+                Map<String, Object> attrs;
+                InputData data = new InputData();
+                String title = link.getTitle();
+                String summary = link.getSummary();
+                String id = link.getId();
+                String kind = link.getKind();
+                SourceJson source = link.getSource();
+                TargetJson target = link.getTarget();
+                String sourceLocation;
+                String targetLocation;
+                attrs = link.getAttributes();
+                if (attrs == null) {
+                    attrs = new HashMap<>();
                 }
-            }
-            if (valueStr.isEmpty()) {
-                valueStr = value.asText();
-            }
+                // set title, summary and id.
+                if (id != null) {
+                    if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
+                        attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
+                    } else {
+                        attrs.put(Constants.OCCI_CORE_ID, id);
+                        id = id.replace(Constants.URN_UUID_PREFIX, "");
+                    }
+                    data.setEntityUUID(id);
+                }
+                if (title != null && !title.isEmpty()) {
+                    attrs.put(Constants.OCCI_CORE_TITLE, title);
+                }
+                if (summary != null && !summary.isEmpty()) {
+                    attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
+                }
+                if (source == null) {
+                    throw new AttributeParseException("No source set for link: " + id + " , check your json query.");
+                }
+                if (target == null) {
+                    throw new AttributeParseException("No target set for link: " + id + " , check your json query.");
+                }
+                sourceLocation = source.getLocation();
+                targetLocation = target.getLocation();
+                if (sourceLocation == null || sourceLocation.isEmpty()) {
+                    throw new AttributeParseException("No source location set for link : " + id + " , check your json query.");
+                }
+                if (targetLocation == null || targetLocation.isEmpty()) {
+                    throw new AttributeParseException("No target location set for link : " + id + " , check your json query.");
+                }
+                attrs.put(Constants.OCCI_CORE_TARGET, targetLocation);
+                attrs.put(Constants.OCCI_CORE_SOURCE, sourceLocation);
+                data.setAttrObjects(attrs);
 
-            LOGGER.info("Attribute:--> " + fieldName);
-            LOGGER.info("Attribute value :--> " + valueStr);
+                if (kind == null) {
+                    throw new CategoryParseException("Kind is not defined for resource: " + id);
+                }
+                data.setKind(kind);
 
-            attrsMap.put(fieldName, valueStr);
+                List<String> mixinsRes = link.getMixins();
+                if (mixinsRes != null && !mixinsRes.isEmpty()) {
+                    data.setMixins(mixinsRes);
+                }
+//                List<String> actionRes = link.getActions();
+//                if (actionRes != null && !actionRes.isEmpty()) {
+//                    data.setAction(actionRes.get(0)); 
+//                    // We set the first action.
+//                    // TODO : Define if actions is assigned to a resource if we must execute them...
+//                }
+                datas.add(data);
+            }
         }
-        return attrsMap;
+
+        if (hasMixins) {
+            for (MixinJson mixin : mixins) {
+                InputData data = new InputData();
+                String location = mixin.getLocation();
+                String term = mixin.getTerm();
+                String title = mixin.getTitle();
+                String scheme = mixin.getScheme();
+                Map<String, Object> attrs = mixin.getAttributes();
+                if (term == null || scheme == null || scheme.isEmpty() || term.isEmpty()) {
+                    throw new AttributeParseException("The mixin must have scheme and term, check your json file.");
+                }
+                if (location == null || location.isEmpty()) {
+                    throw new AttributeParseException("The mixin must have a location, check your json file.");
+                }
+                data.setMixinTag(scheme + term);
+                data.setMixinTagLocation(location);
+                data.setMixinTagTitle(title);
+                data.setAttrObjects(attrs);
+                datas.add(data);
+            }
+        }
+
+        if (hasKinds) {
+            // TODO : Add filter on kinds if the query is a get with upload json file.
+
+        }
+        // Multiple Actions invocation.
+        if (hasActions) {
+            for (ActionJson json : actions) {
+                InputData data = new InputData();
+                data.setAction(json.getAction());
+                data.setAttrObjects(json.getAttributes());
+                datas.add(data);
+            }
+        }
+        // If we had an action invocation only.
+        if (hasActionInvocation) {
+            InputData data = new InputData();
+            data.setAction(action);
+            data.setAttrObjects(mainJson.getAttributes());
+            datas.add(data);
+        }
+        this.setInputDatas(datas);
     }
 
     @Override
@@ -490,8 +328,274 @@ public class JsonOcciParser extends AbstractRequestParser {
 
     @Override
     public Response parseResponse(Object object, Response.Status status) throws ResponseParseException {
-        // TODO : Add response json object.
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Response response = null;
+        ObjectMapper mapper = new ObjectMapper();
+        String msg;
+        try {
+            // Case 1 : Object is a Response object.
+            if (object instanceof Response) {
+
+                if (status != null && status.equals(Response.Status.OK)) {
+                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString("OK");
+                    response = Response.fromResponse((Response) object)
+                            .header("Server", Constants.OCCI_SERVER_HEADER)
+                            .header("Accept", getAcceptedTypes())
+                            .type(Constants.MEDIA_TYPE_JSON)
+                            .entity(msg)
+                            .status(status)
+                            .build();
+                } else {
+                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString((Response) ((Response) object).getEntity());
+
+                    response = Response.fromResponse((Response) object)
+                            .header("Server", Constants.OCCI_SERVER_HEADER)
+                            .header("Accept", getAcceptedTypes())
+                            .type(Constants.MEDIA_TYPE_JSON)
+                            .entity(msg)
+                            .status(status)
+                            .build();
+                }
+            }
+            // Case 2 : Object is a String.
+            if (object instanceof String) {
+
+                if (status != null && status.equals(Response.Status.OK)) {
+                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString("OK");
+                    response = Response.status(status)
+                            .header("Server", Constants.OCCI_SERVER_HEADER)
+                            .header("content", (String) object)
+                            .header("Accept", getAcceptedTypes())
+                            .entity(msg)
+                            .type(Constants.MEDIA_TYPE_JSON)
+                            .build();
+                } else {
+                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString((String) object);
+                    response = Response.status(status)
+                            .header("Server", Constants.OCCI_SERVER_HEADER)
+                            .header("content", (String) object)
+                            .header("Accept", getAcceptedTypes())
+                            .entity(msg)
+                            .type(Constants.MEDIA_TYPE_JSON)
+                            .build();
+                }
+            }
+
+            if (object instanceof Entity) {
+                // Build an object response from entity occiware object model.
+                Entity entity = (Entity) object;
+                List<Entity> entities = new LinkedList<>();
+                entities.add(entity);
+                response = renderEntityResponse(entities, status);
+            }
+
+            if (object instanceof List) {
+                LOGGER.info("Collection to render.");
+                List<Object> objects = (List<Object>) object;
+                List<String> locations = new LinkedList<>();
+                List<Entity> entities = new LinkedList<>();
+                String tmp;
+                Entity entityTmp;
+                // To determine if location or if entities to render..
+                for (Object objectTmp : objects) {
+                    if (objectTmp instanceof String) {
+                        // List of locations.
+                        tmp = (String) objectTmp;
+                        locations.add(tmp);
+
+                    } else if (objectTmp instanceof Entity) {
+                        // List of entities to render.
+                        entityTmp = (Entity) objectTmp;
+                        entities.add(entityTmp);
+
+                    } else {
+                        throw new ResponseParseException("unknown datatype collection.");
+                    }
+                }
+
+                if (!locations.isEmpty()) {
+                    
+                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(locations);
+                    Response.ResponseBuilder responseBuilder = Response.status(status)
+                            .header("Server", Constants.OCCI_SERVER_HEADER)
+                            .header("Accept", getAcceptedTypes())
+                            .entity(msg)
+                            .type(Constants.MEDIA_TYPE_JSON);
+//                    for (String location : locations) {
+//                        String absLocation = getServerURI().toString() + location;
+//                        responseBuilder.header(Constants.X_OCCI_LOCATION, absLocation);
+//                    }
+                    response = responseBuilder.build();
+                }
+                if (!entities.isEmpty()) {
+                    response = renderEntityResponse(entities, status);
+                }
+
+            }
+            
+            if (response == null) {
+                throw new ResponseParseException("Cannot parse the object to application/json representation.");
+            }
+
+            return response;
+
+        } catch (JsonProcessingException ex) {
+            throw new ResponseParseException(ex.getMessage());
+        }
+    }
+
+    private Response renderEntityResponse(List<Entity> entities, Response.Status status) throws JsonProcessingException {
+
+        Response response;
+        OcciMainJson mainJson = new OcciMainJson();
+        List<ResourceJson> resources = new LinkedList<>();
+        List<LinkJson> links = new LinkedList<>();
+        for (Entity entity : entities) {
+            // Rendering json of this entity.
+            String relativeLocation = ConfigurationManager.getLocation(entity);
+            String absoluteEntityLocation = getServerURI().toString() + relativeLocation;
+
+            // An entity may be a link or a resource.
+            if (entity instanceof Link) {
+                // This is a link.
+                LinkJson linkJson = buildLinkJsonFromEntity(entity);
+                links.add(linkJson);
+                
+            } else {
+                // This is a resource.
+                ResourceJson resJson = buildResourceJsonFromEntity(entity);
+                resources.add(resJson);
+            }
+            
+
+        } // End for each entities.
+
+        if (!resources.isEmpty()) {
+            mainJson.setResources(resources);
+        }
+        if (!links.isEmpty()) {
+            mainJson.setLinks(links);
+        }
+        String msg = mainJson.toStringJson();
+        // Build response object...
+        response = Response.status(status)
+                            .header("Server", Constants.OCCI_SERVER_HEADER)
+                            .header("Accept", getAcceptedTypes())
+                            .entity(msg)
+                            .type(Constants.MEDIA_TYPE_JSON)
+                            .build();
+        
+        return response;
+    }
+
+    private ResourceJson buildResourceJsonFromEntity(final Entity entity) {
+        ResourceJson resJson = new ResourceJson();
+        Resource res = (Resource) entity;
+        Kind kind = res.getKind();
+        List<Mixin> mixins;
+        List<String> mixinsStr = new LinkedList<>();
+        List<LinkJson> links = new LinkedList<>();
+        resJson.setKind(kind.getScheme() + kind.getTerm());
+        resJson.setId(res.getId());
+        resJson.setTitle(res.getTitle());
+        resJson.setSummary(res.getSummary());
+        resJson.setLocation("/" + ConfigurationManager.getLocation(entity));
+        
+        List<String> actionsStr = new LinkedList<>();
+        String actionStr;
+        for (Action action : kind.getActions()) {
+            actionStr = action.getScheme() + action.getTerm();
+            actionsStr.add(actionStr);
+        }
+        resJson.setActions(actionsStr);
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        // Attributes.
+        List<AttributeState> attrsState = res.getAttributes();
+        for (AttributeState attr : attrsState) {
+            String key = attr.getName();
+            String val = attr.getValue();
+            if (key.equals(Constants.OCCI_CORE_SUMMARY)) {
+                resJson.setSummary(val);
+            } else {
+                attributes.put(key, val);
+            }
+        }
+        
+        mixins = res.getMixins();
+        for (Mixin mixin : mixins) {
+            String mixinStr = mixin.getScheme() + mixin.getTerm();
+            mixinsStr.add(mixinStr);
+        }
+        resJson.setMixins(mixinsStr);
+        // resources has links ?
+        for (Link link : res.getLinks()) {
+            LinkJson linkJson = buildLinkJsonFromEntity(link);
+            links.add(linkJson);
+        }
+        if (!links.isEmpty()) {
+            resJson.setLinks(links);
+        }
+        
+        return resJson;
+    }
+
+    private LinkJson buildLinkJsonFromEntity(final Entity entity) {
+        LinkJson linkJson = new LinkJson();
+        Link link = (Link) entity;
+        Kind kind;
+        List<Mixin> mixins;
+        List<String> mixinsStr = new LinkedList<>();
+        List<Action> actions;
+        List<String> actionsStr = new LinkedList<>();
+        String actionStr;
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        kind = link.getKind();
+        linkJson.setKind(kind.getScheme() + kind.getTerm());
+        linkJson.setId(link.getId());
+        linkJson.setTitle(link.getTitle());
+        linkJson.setLocation("/" + ConfigurationManager.getLocation(entity));
+        actions = kind.getActions();
+        for (Action action : actions) {
+            actionStr = action.getScheme() + action.getTerm();
+            actionsStr.add(actionStr);
+        }
+        linkJson.setActions(actionsStr);
+
+        // Attributes.
+        List<AttributeState> attrsState = link.getAttributes();
+        for (AttributeState attr : attrsState) {
+            String key = attr.getName();
+            String val = attr.getValue();
+            attributes.put(key, val);
+        }
+        Resource resSrc = link.getSource();
+        Resource resTarget = link.getTarget();
+        SourceJson src = new SourceJson();
+        TargetJson target = new TargetJson();
+        String relativeLocation = ConfigurationManager.getLocation(resSrc);
+        src.setKind(resSrc.getKind().getScheme() + resSrc.getKind().getTerm());
+        if (!relativeLocation.startsWith("/")) {
+            relativeLocation = "/" + relativeLocation;
+        }
+        src.setLocation(relativeLocation);
+        relativeLocation = ConfigurationManager.getLocation(resTarget);
+        target.setKind(resTarget.getKind().getScheme() + resTarget.getKind().getTerm());
+        if (!relativeLocation.startsWith("/")) {
+            relativeLocation = "/" + relativeLocation;
+        }
+        target.setLocation(relativeLocation);
+        linkJson.setSource(src);
+        linkJson.setTarget(target);
+
+        linkJson.setAttributes(attributes);
+
+        mixins = link.getMixins();
+        for (Mixin mixin : mixins) {
+            String mixinStr = mixin.getScheme() + mixin.getTerm();
+            mixinsStr.add(mixinStr);
+        }
+        linkJson.setMixins(mixinsStr);
+
+        return linkJson;
     }
 
     @Override

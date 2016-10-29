@@ -18,10 +18,58 @@
  */
 package org.occiware.mart.server.servlet.impl.parser.json.render;
 
+import java.util.Map;
+
 /**
  *
  * @author Christophe Gourdin
  */
 public class MixinJson {
+    private String term;
+    private String scheme;
+    private String title;
+    private String location;
+    private Map<String,Object> attributes;
+
+    public String getTerm() {
+        return term;
+    }
+
+    public void setTerm(String term) {
+        this.term = term;
+    }
+
+    public String getScheme() {
+        return scheme;
+    }
+
+    public void setScheme(String scheme) {
+        this.scheme = scheme;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
+    
     
 }

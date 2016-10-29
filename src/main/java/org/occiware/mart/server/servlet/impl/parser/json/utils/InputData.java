@@ -26,20 +26,21 @@ import org.occiware.mart.server.servlet.utils.Constants;
 
 /**
  * Input datas from queries, this container object may has kind, mixins etc.
+ *
  * @author Christophe Gourdin
  */
 public class InputData {
+
     private Map<String, String> attrs = new HashMap<>();
     /**
      * Scheme # + term.
      */
     private String kind = null;
     /**
-     * Scheme # + term list.
+     * Scheme # + term list. for resources and links.
      */
     private List<String> mixins = new ArrayList<>();
-    
-    private String mixinTagLocation = null;
+
     /**
      * Action scheme + term.
      */
@@ -48,6 +49,12 @@ public class InputData {
      * Entity uuid if any.
      */
     private String entityUUID = null;
+
+    // For mixin association and mixin user tag.
+    private String mixinTagLocation = null;
+    // Mixin tag scheme+term.
+    private String mixinTag = null;
+    private String mixinTagTitle = null;
 
     public Map<String, String> getAttrs() {
         return attrs;
@@ -58,6 +65,19 @@ public class InputData {
             attrs = new HashMap<>();
         }
         this.attrs = attrs;
+    }
+    public void setAttrObjects(Map<String, Object> attrs) {
+        if (attrs == null) {
+            attrs = new HashMap<>();
+        }
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            String valStr = value.toString();
+            result.put(key, valStr);
+        }
+        this.attrs = result;
     }
 
     public String getKind() {
@@ -97,10 +117,11 @@ public class InputData {
 
     /**
      * Get entity UUID with format urn:uuid:xxxx-xxxx-xxxx-xxxx
-     * @return 
+     *
+     * @return
      */
     public String getEntityUUID() {
-        
+
         if (!getAttrs().isEmpty()) {
             entityUUID = attrs.get(Constants.OCCI_CORE_ID);
 
@@ -114,7 +135,21 @@ public class InputData {
     public void setEntityUUID(String entityUUID) {
         this.entityUUID = entityUUID;
     }
-    
-    
-    
+
+    public String getMixinTag() {
+        return mixinTag;
+    }
+
+    public void setMixinTag(String mixinTag) {
+        this.mixinTag = mixinTag;
+    }
+
+    public String getMixinTagTitle() {
+        return mixinTagTitle;
+    }
+
+    public void setMixinTagTitle(String mixinTagTitle) {
+        this.mixinTagTitle = mixinTagTitle;
+    }
+
 }
