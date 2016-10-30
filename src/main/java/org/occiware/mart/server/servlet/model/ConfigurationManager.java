@@ -2363,8 +2363,19 @@ public class ConfigurationManager {
                 eDataType = ((EAttribute) eStructuralFeature).getEAttributeType();
             }
         }
-
         return eDataType;
+    }
+    
+    public static Object getEMFValueObject(Entity entity, String attrName) {
+        EAttribute eAttr = null;
+        String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
+        final EStructuralFeature eStructuralFeature = entity.eClass().getEStructuralFeature(eAttributeName);
+        if (eStructuralFeature != null) {
+            if ((eStructuralFeature instanceof EAttribute)) {
+                eAttr = (EAttribute) eStructuralFeature;
+            }
+        }
+        return eAttr;
     }
 
     /**

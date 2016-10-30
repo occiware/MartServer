@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -573,11 +574,11 @@ public class Utils {
         String term;
         String scheme;
         String id;
-        
+
         if (path == null) {
             return null;
         }
-        
+
         String pathTerm = path;
         if (pathTerm.startsWith("/")) {
             pathTerm = pathTerm.substring(1);
@@ -585,7 +586,7 @@ public class Utils {
         if (pathTerm.endsWith("/")) {
             pathTerm = pathTerm.substring(0, pathTerm.length() - 1);
         }
-        
+
         for (Kind kind : kinds) {
             for (Action action : kind.getActions()) {
                 term = action.getTerm();
@@ -876,6 +877,83 @@ public class Utils {
 
         return categoryId != null;
 
+    }
+
+    /**
+     * Parse a string to a number without knowning its type output.
+     * @param str
+     * @param instanceClassType can be null.
+     * @return a non null number object.
+     */
+    public static Number parseNumber(String str, String instanceClassType) {
+        Number number = null;
+        if (instanceClassType == null) {
+            
+            try {
+                number = Float.parseFloat(str);
+
+        } catch (NumberFormatException e) {
+            try {
+                number = Double.parseDouble(str);
+            } catch (NumberFormatException e1) {
+                try {
+                    number = Integer.parseInt(str);
+                } catch (NumberFormatException e2) {
+                    try {
+                        number = Long.parseLong(str);
+                    } catch (NumberFormatException e3) {
+                        throw e3;
+                    }
+                }
+            }
+        }
+        } else {
+            switch (instanceClassType) {
+            // We know here the instanceClass.
+                
+                case "int":
+                case "Integer":
+                    // Convert to integer.
+                    try {
+                        number = Integer.parseInt(str);
+                    } catch (NumberFormatException ex) {
+                        throw ex;
+                    }
+                    break;
+                case "float":
+                case "Float":
+                    try {
+                        number = Float.parseFloat(str);
+                    } catch (NumberFormatException ex) {
+                        throw ex;
+                    }
+                    break;
+                case "BigDecimal":
+                case "double":
+                case "Double":    
+                    try {
+                        number = Double.parseDouble(str);
+                    } catch (NumberFormatException ex) {
+                        throw ex;
+                    }
+                    
+                    break;
+                case "Long":
+                case "long":
+                    try {
+                        number = Long.parseLong(str);
+                    } catch (NumberFormatException ex) {
+                        throw ex;
+                    }
+                    break;
+                default:
+                    throw new NumberFormatException("Unknown format.");
+            }
+            
+            
+        }
+        
+        return number;
     }
 
 }

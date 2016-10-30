@@ -34,11 +34,11 @@
         		"http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"
         	    ],
         	    "attributes":{
-        		"occi.infrastructure.networkinterface.interface":"eth0",
-        		"occi.infrastructure.networkinterface.mac":"00:80:41:ae:fd:7e",
-        		"occi.infrastructure.networkinterface.address":"192.168.0.100",
-        		"occi.infrastructure.networkinterface.gateway":"192.168.0.1",
-        		"occi.infrastructure.networkinterface.allocation":"dynamic"
+        		"occi.networkinterface.interface":"eth0",
+        		"occi.networkinterface.mac":"00:80:41:ae:fd:7e",
+        		"occi.networkinterface.address":"192.168.0.100",
+        		"occi.networkinterface.gateway":"192.168.0.1",
+        		"occi.networkinterface.allocation":"dynamic"
         	    },
         	    "actions":[
         		"http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up",

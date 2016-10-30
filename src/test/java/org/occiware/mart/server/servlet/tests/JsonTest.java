@@ -17,20 +17,16 @@
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.tests;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
 import static org.junit.Assert.*;
-import org.apache.commons.io.IOUtils;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ws.rs.core.Response;
@@ -49,31 +45,32 @@ import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.ValidatorUtils;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Utils;
+
 /**
  *
  * @author Christophe Gourdin
  */
 public class JsonTest {
+
     @BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-	}
+    public static void setUpBeforeClass() throws Exception {
+    }
 
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-	}
+    @AfterClass
+    public static void tearDownAfterClass() throws Exception {
+    }
 
-	@Before
-	public void setUp() throws Exception {
-	}
+    @Before
+    public void setUp() throws Exception {
+    }
 
-	@After
-	public void tearDown() throws Exception {
-	}
-    
-    
+    @After
+    public void tearDown() throws Exception {
+    }
+
     // @Test
     public void testJsonValidator() {
-        
+
         try {
             // Get the resource.json inputstream.
             File resIn = getJsonResourceOneInput();
@@ -81,10 +78,9 @@ public class JsonTest {
             File schemaIn = getJsonSchemaControl();
             assertNotNull(schemaIn);
             boolean result = ValidatorUtils.isJsonValid(schemaIn, resIn);
-            
+
             // Utils.closeQuietly(resIn);
             // Utils.closeQuietly(schemaIn);
-            
             if (result) {
                 System.out.println("Valid!");
             } else {
@@ -94,13 +90,11 @@ public class JsonTest {
         } catch (ProcessingException | IOException ex) {
             Logger.getLogger(JsonTest.class.getName()).log(Level.SEVERE, null, ex);
             throw new RuntimeException(ex);
-            
+
         }
-        
-        
-        
+
     }
-    
+
     public File getJsonSchemaControl() {
         InputStream in = null;
         // File inputSchemaJsonFile = new File(this.getClass().getResource("/jsonschemas/OCCI-schema.json").getFile());
@@ -120,7 +114,7 @@ public class JsonTest {
         assertNotNull(inputSchemaJsonFile);
         return inputSchemaJsonFile;
     }
-    
+
     public File getJsonResourceOneInput() {
         InputStream in = null;
         File inputJsonFile = new File(this.getClass().getResource("/testjson/integration/creation/resource1.json").getFile());
@@ -139,10 +133,10 @@ public class JsonTest {
 //            }
 //        } catch (IOException ex) {
 //        }
-        
+
         return inputJsonFile;
     }
-    
+
     // @Test
     public void testJsonInterface() {
         JsonOcciParser parser = new JsonOcciParser();
@@ -151,25 +145,25 @@ public class JsonTest {
         Response response = parser.getInterface(null, ConfigurationManager.DEFAULT_OWNER);
         assertNotNull(response);
         assertTrue(response.hasEntity());
-        
+
         System.out.println(response.getEntity());
     }
-    
+
     @Test
     public void testJsonInputObject() {
         // load the input stream resources test json file.
-        
+
         InputStream in = null;
         File resourcesFile = getJsonResourceInput("/testjson/integration/creation/resource1.json");
         File resourcesFileTwo = getJsonResourceInput("/testjson/integration/creation/resource2.json");
         File resourcesFileThree = getJsonResourceInput("/testjson/integration/creation/resource3.json");
         File actionInvocFile = getJsonResourceInput("/testjson/action_invocation.json");
-        
+
         assertNotNull(resourcesFile);
         try {
             in = new FileInputStream(resourcesFile);
             ObjectMapper mapper = new ObjectMapper();
-            
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             OcciMainJson occiMain = mapper.readValue(in, OcciMainJson.class);
             assertNotNull(occiMain.getResources());
             Utils.closeQuietly(in);
@@ -186,23 +180,22 @@ public class JsonTest {
             in = new FileInputStream(actionInvocFile);
             ActionJson actionInvoc = mapper.readValue(in, ActionJson.class);
             assertNotNull(actionInvoc);
-            
+
             // Check if method parseMainInput works.
             JsonOcciParser occiParser = new JsonOcciParser();
             occiParser.parseMainInput(myRes3);
             List<InputData> datas = occiParser.getInputDatas();
             assertNotNull(datas);
             assertFalse(datas.isEmpty());
-            
+
         } catch (CategoryParseException | AttributeParseException | IOException ex) {
             Logger.getLogger(JsonTest.class.getName()).log(Level.SEVERE, null, ex);
             throw new RuntimeException(ex);
-            
+
         } finally {
             Utils.closeQuietly(in);
         }
-        
-        
+
     }
 
     private File getJsonResourceInput(String path) {

@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.impl.parser.json;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +40,10 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.eclipse.core.databinding.conversion.StringToNumberConverter;
+import org.eclipse.emf.ecore.EAttribute;
+import org.eclipse.emf.ecore.EDataType;
+import org.eclipse.emf.ecore.EEnum;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Attribute;
 import org.occiware.clouddesigner.occi.AttributeState;
@@ -46,6 +52,7 @@ import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.Resource;
+import org.occiware.mart.MART;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -106,6 +113,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 throw new CategoryParseException("The input has no content delivered.");
             }
             ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             // Parse to OcciMainJson object based on collections objects.
             occiMain = mapper.readValue(jsonInput, OcciMainJson.class);
             parseMainInput(occiMain);
@@ -180,7 +188,10 @@ public class JsonOcciParser extends AbstractRequestParser {
                 data.setKind(kind);
 
                 // We add the links on input data after the resources to be sure they are all exists if we are in create mode or update mode.
-                if (links != null && resource.getLinks() != null && !resource.getLinks().isEmpty()) {
+                if (resource.getLinks() != null && !resource.getLinks().isEmpty()) {
+                    if (links == null) {
+                        links = new LinkedList<>();
+                    }
                     links.addAll(resource.getLinks());
                     hasLinks = true;
                 }
@@ -330,6 +341,7 @@ public class JsonOcciParser extends AbstractRequestParser {
     public Response parseResponse(Object object, Response.Status status) throws ResponseParseException {
         Response response = null;
         ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String msg;
         try {
             // Case 1 : Object is a Response object.
@@ -498,7 +510,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         resJson.setId(res.getId());
         resJson.setTitle(res.getTitle());
         resJson.setSummary(res.getSummary());
-        resJson.setLocation("/" + ConfigurationManager.getLocation(entity));
+        resJson.setLocation(ConfigurationManager.getLocation(entity));
         
         List<String> actionsStr = new LinkedList<>();
         String actionStr;
@@ -513,12 +525,39 @@ public class JsonOcciParser extends AbstractRequestParser {
         for (AttributeState attr : attrsState) {
             String key = attr.getName();
             String val = attr.getValue();
-            if (key.equals(Constants.OCCI_CORE_SUMMARY)) {
-                resJson.setSummary(val);
-            } else {
-                attributes.put(key, val);
+            if (val != null) {
+                if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE) 
+                        && !key.equals(Constants.OCCI_CORE_ID)) {
+                    
+                    EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, key);
+
+                    if (eAttrType != null 
+                            && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
+                        // value with quote only for String and EEnum type.
+                        attributes.put(key, val);
+                    } else if (eAttrType == null) {
+                        // Cant determine the type.
+                        attributes.put(key, val);
+                    } else {
+                        // Not a string nor an enum val.
+                        try {
+                            Number num = Utils.parseNumber(val, eAttrType.getInstanceClassName());
+                            attributes.put(key, num);
+                        } catch (NumberFormatException ex) {
+                            attributes.put(key, val);
+                        }
+                    }
+                    
+                }
+                if (key.equals(Constants.OCCI_CORE_ID)) {
+                    if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
+                        val = Constants.URN_UUID_PREFIX + val; 
+                    }
+                    attributes.put(key, val);
+                }
             }
         }
+        resJson.setAttributes(attributes);
         
         mixins = res.getMixins();
         for (Mixin mixin : mixins) {
@@ -552,7 +591,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         linkJson.setKind(kind.getScheme() + kind.getTerm());
         linkJson.setId(link.getId());
         linkJson.setTitle(link.getTitle());
-        linkJson.setLocation("/" + ConfigurationManager.getLocation(entity));
+        linkJson.setLocation(ConfigurationManager.getLocation(entity));
         actions = kind.getActions();
         for (Action action : actions) {
             actionStr = action.getScheme() + action.getTerm();
@@ -565,7 +604,38 @@ public class JsonOcciParser extends AbstractRequestParser {
         for (AttributeState attr : attrsState) {
             String key = attr.getName();
             String val = attr.getValue();
-            attributes.put(key, val);
+            if (val != null) {
+                if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE) 
+                        && !key.equals(Constants.OCCI_CORE_ID) 
+                        && !key.equals(Constants.OCCI_CORE_SOURCE) 
+                        && !key.equals(Constants.OCCI_CORE_TARGET)) {
+                   
+                    EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, key);
+
+                    if (eAttrType != null 
+                            && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
+                        // value with quote only for String and EEnum type.
+                        attributes.put(key, val);
+                    } else if (eAttrType == null) {
+                        // Cant determine the type.
+                        attributes.put(key, val);
+                    } else {
+                        // Not a string nor an enum val.
+                        try {
+                            Number num = Utils.parseNumber(val, eAttrType.getInstanceClassName());
+                            attributes.put(key, num);
+                        } catch (NumberFormatException ex) {
+                            attributes.put(key, val);
+                        }
+                    }
+                }
+                if (key.equals(Constants.OCCI_CORE_ID)) {
+                    if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
+                        val = Constants.URN_UUID_PREFIX + val; 
+                    }
+                    attributes.put(key, val);
+                }
+            }
         }
         Resource resSrc = link.getSource();
         Resource resTarget = link.getTarget();
@@ -653,8 +723,8 @@ public class JsonOcciParser extends AbstractRequestParser {
 
         sb.append("}");
 
-        // TO check if we add json output and to format the output (pretty print).
         ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         Object json = mapper.readValue(sb.toString(), Object.class);
         sb = new StringBuilder().append(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json));
 

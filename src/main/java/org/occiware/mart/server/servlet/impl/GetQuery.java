@@ -85,11 +85,17 @@ public class GetQuery extends AbstractGetQuery {
             String entityId;
 
             Map<String, String> attrs = data.getAttrs();
+            String acceptType = getAcceptType();
+            if (acceptType == null || acceptType.isEmpty()) { 
+                // Default to MEDIA_TYPE_TEXT_OCCI.
+                acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
+            }
+            
             // Get one entity check with uuid provided.
             // path with category/kind : http://localhost:8080/compute/uuid
             // custom location: http://localhost:8080/foo/bar/myvm/uuid
             boolean isEntityRequest = Utils.isEntityRequest(path, attrs);
-            if (isEntityRequest && !getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+            if (isEntityRequest && !acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                 // Get uuid.
                 if (Utils.isEntityUUIDProvided(path, attrs)) {
                     entityId = Utils.getUUIDFromPath(path, attrs);
@@ -120,7 +126,7 @@ public class GetQuery extends AbstractGetQuery {
                 }
             }
             // case if entity request on custom path like vms/foo/bar/ (without uuid provided). 
-            if (isEntityRequest && getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST) && !Utils.isEntityUUIDProvided(path, attrs)) {
+            if (isEntityRequest && acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST) && !Utils.isEntityUUIDProvided(path, attrs)) {
                 entity = ConfigurationManager.getEntityFromPath(path);
                 if (entity == null) {
                     try {
@@ -148,7 +154,7 @@ public class GetQuery extends AbstractGetQuery {
             }
 
             // Case if entity request with uuid provided but accept type is text/uri-list => bad request.
-            if (isEntityRequest && getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST) && Utils.isEntityUUIDProvided(path, attrs)) {
+            if (isEntityRequest && acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST) && Utils.isEntityUUIDProvided(path, attrs)) {
                 // To be compliant with occi specification (text/rendering and all others), it must check if uri-list is used with entity request, if this is the case ==> badrequest.
                 try {
                     response = outputParser.parseResponse("you must not use the accept type " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " in this way.", Response.Status.BAD_REQUEST);
@@ -247,7 +253,7 @@ public class GetQuery extends AbstractGetQuery {
             try {
                 entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
 
-                if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+                if (acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                     List<String> locations = new LinkedList<>();
                     String location;
                     for (Entity entityTmp : entities) {

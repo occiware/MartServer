@@ -15,6 +15,7 @@
  */
 package org.occiware.mart.server.servlet.impl.parser.json.render;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -102,6 +103,7 @@ public class OcciMainJson {
     public String toStringJson() throws JsonProcessingException {
         String result;
         ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         result = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(this);
         return result;
     }

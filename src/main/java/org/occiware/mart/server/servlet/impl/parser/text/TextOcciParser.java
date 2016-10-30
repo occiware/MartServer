@@ -665,7 +665,6 @@ public class TextOcciParser extends AbstractRequestParser {
             }
 
             // Used only to define the datatype.
-            // TODO : Export this to a method in configuration manager getEAttributeType(AttributeState attr) method.
             EDataType eAttributeType = ConfigurationManager.getEAttributeType(entity, name);
 
             if (eAttributeType != null && (eAttributeType instanceof EEnum || eAttributeType.getInstanceClass() == String.class)) {
