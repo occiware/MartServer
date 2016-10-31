@@ -31,12 +31,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.mart.server.servlet.exception.EntityAddException;
 import org.occiware.mart.server.servlet.exception.EntityConflictException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractPutQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
@@ -106,15 +106,19 @@ public class PutQuery extends AbstractPutQuery {
                     throw new InternalServerErrorException(ex);
                 }
             }
-
-            // TODO : Check if the query is a create mixin definition.
-            // if (kind == null && mixins != null && ConfigurationManager.checkIfMixinsExist(mixins)) {
-            // TODO: create mixin method then return response.
-            //        }
+            
+            // Check if the query is a create/overwrite mixin tag definition.
+            String mixinTag = data.getMixinTag();
+            if (mixinTag != null) {
+                LOGGER.info("Define or overwrite mixin tag definitions");
+                response = defineMixinTag(data);
+                continue;
+            }
+            
             String entityId = data.getEntityUUID();
             if (entityId == null) {
                 entityId = Utils.getUUIDFromPath(path, data.getAttrs());
-                // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
+               // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
             }
 
             if (kind != null) {
@@ -244,9 +248,9 @@ public class PutQuery extends AbstractPutQuery {
                 attributes.put("occi.core.id", coreId);
                 ConfigurationManager.addLinkToConfiguration(entityId, kind, mixins, src, target, attributes, owner, path);
             }
-        } catch (EntityAddException ex) {
+        } catch (ConfigurationException ex) {
             try {
-                response = outputParser.parseResponse("The entity has not been added, it may be produce if you use forbidden attributes. \r\n Message : " + ex.getMessage(), Response.Status.BAD_REQUEST);
+                response = outputParser.parseResponse("The entity has not been added, it may be produce if you use non referenced attributes. \r\n Message : " + ex.getMessage(), Response.Status.BAD_REQUEST);
                 return response;
             } catch (ResponseParseException e) {
                 throw new InternalServerErrorException(e);
@@ -275,23 +279,54 @@ public class PutQuery extends AbstractPutQuery {
                     .header("Accept", getAcceptType())
                     .build();
 
-            return response;
         } catch (URISyntaxException ex) {
             response = Response.created(getUri().getAbsolutePath())
                     .header("Server", Constants.OCCI_SERVER_HEADER)
                     .type(getContentType())
                     .header("Accept", getAcceptType())
                     .build();
-
-            return response;
         }
+        return response;
 
     }
 
     @Override
-    public Response defineMixinTag(String mixinTagKind, String relativeLocationApply) {
-        // TODO : Implement this.
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Response defineMixinTag(final InputData data) {
+        
+        Response response;
+        String mixinTag = data.getMixinTag();
+        LOGGER.info("Define mixin tag : " + mixinTag);
+        String mixinLocation = data.getMixinTagLocation();
+        String title = data.getMixinTagTitle();
+        
+        try {
+            if (mixinLocation == null || mixinLocation.isEmpty()) {
+                throw new ConfigurationException("No location is defined for this mixin.");
+            }
+            ConfigurationManager.addUserMixinOnConfiguration(mixinTag, title, mixinLocation, ConfigurationManager.DEFAULT_OWNER);
+        } catch (ConfigurationException ex) {
+            try {
+                response = outputParser.parseResponse(ex.getMessage(), Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException e) {
+                throw new InternalServerErrorException(ex.getMessage());
+            }
+        }
+        try {
+            response = Response.created(new URI(mixinLocation))
+                    .header("Server", Constants.OCCI_SERVER_HEADER)
+                    .type(getContentType())
+                    .header("Accept", getAcceptType())
+                    .build();
+        } catch (URISyntaxException ex) {
+            response = Response.created(getUri().getAbsolutePath())
+                    .header("Server", Constants.OCCI_SERVER_HEADER)
+                    .type(getContentType())
+                    .header("Accept", getAcceptType())
+                    .build();
+        }
+        
+        return response;
     }
 
 }

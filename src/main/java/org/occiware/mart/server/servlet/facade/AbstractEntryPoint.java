@@ -32,11 +32,11 @@ import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
-import org.occiware.mart.server.servlet.exception.MixinNotFoundOnModelException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.impl.parser.ParserFactory;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,7 +153,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
 
                             try {
                                 mixinsModel = Utils.loadMixinFromSchemeTerm(data.getMixins());
-                            } catch (MixinNotFoundOnModelException ex) {
+                            } catch (ConfigurationException ex) {
                                 error += " \n ";
                                 error += "Mixin model error cause : " + ex.getMessage();
                                 hasError = true;

@@ -101,8 +101,15 @@ public class TextOcciParser extends AbstractRequestParser {
                             continue;
                         }
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_MIXIN)) {
-                            mixinsToAdd.add(scheme + term);
-                            data.setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
+                            if (matcher.group(Constants.GROUP_LOCATION) != null) {
+                                // is a mixin tag.
+                                data.setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
+                                data.setMixinTag(scheme+term);
+                                
+                            } else {
+                                // is a simple mixin.
+                                mixinsToAdd.add(scheme + term);
+                            }
                             continue;
                         }
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_ACTION)) {

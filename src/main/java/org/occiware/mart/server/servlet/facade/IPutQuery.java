@@ -21,6 +21,7 @@ package org.occiware.mart.server.servlet.facade;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 
 /**
  *
@@ -42,9 +43,8 @@ public interface IPutQuery extends IEntryPoint {
     
     /**
      * Define a mixin tag on a location
-     * @param mixinTagKind
-     * @param relativeLocationApply
+     * @param data
      * @return 
      */
-    public Response defineMixinTag(String mixinTagKind, String relativeLocationApply);
+    public Response defineMixinTag(final InputData data);
 }

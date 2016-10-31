@@ -114,7 +114,15 @@ public class ServerTest {
         statusResponse = response.getStatus();
         assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
         
-        
+        File resource3 = getResourceInputFile("/testjson/integration/creation/resource3.json");
+        response = httpClient.newRequest("localhost", 9090)
+                .accept("application/json")
+                .method(HttpMethod.PUT)
+                .file(resource3.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
         
     }
     

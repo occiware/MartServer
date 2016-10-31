@@ -43,6 +43,7 @@ import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractPostQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
@@ -222,7 +223,7 @@ public class PostQuery extends AbstractPostQuery {
                 // Check if this is a mixin tag association or a collection of entities..
 
                 // Check if this is a mixin without attribute.
-                Mixin mixin = ConfigurationManager.findUserMixinOnConfigurations(categoryId);
+                Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(categoryId, ConfigurationManager.DEFAULT_OWNER);
                 if (mixin != null) {
                     // This is a mixin tag.
                     mixinTagAsso = true;
@@ -250,9 +251,17 @@ public class PostQuery extends AbstractPostQuery {
             }
 
             // - update a mixin association (mixin tag included) 
-            if (mixinTagAsso) {
-                // Get X-OCCI-Location attribute.
-                String location = attrs.get(Constants.X_OCCI_LOCATION);
+            if (mixinTagAsso || (data.getMixinTag() != null && ConfigurationManager.isMixinTags(ConfigurationManager.DEFAULT_OWNER, data.getMixinTag()))) {
+                String location = data.getMixinTagLocation();
+                if (location == null) {
+                    try {
+                        response = outputParser.parseResponse("Request is invalid, mixin tag location is unknown", Response.Status.BAD_REQUEST);
+                        return response;
+                    } catch (ResponseParseException ex) {
+                        throw new InternalServerErrorException(ex);
+                    }
+                }
+                
                 response = updateMixinTagAssociation(categoryId, location);
                 return response;
             } else {
@@ -359,7 +368,16 @@ public class PostQuery extends AbstractPostQuery {
         if (entity == null) {
             throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore");
         }
-        ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, true);
+        
+        try {
+            ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, true);
+        } catch (ConfigurationException ex) {
+            try {
+                response = outputParser.parseResponse(ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+            } catch (ResponseParseException e) {
+                throw new InternalServerErrorException(e);
+            }
+        }
 
         try {
             response = outputParser.parseResponse("OK");

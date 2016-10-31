@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.utils.Utils;
 
 /**
@@ -49,7 +50,7 @@ public abstract class AbstractPutQuery extends AbstractEntryPoint implements IPu
     }
 
     @Override
-    public abstract Response defineMixinTag(String mixinTagKind, String relativeLocationApply);
+    public abstract Response defineMixinTag(final InputData data);
     
     
     

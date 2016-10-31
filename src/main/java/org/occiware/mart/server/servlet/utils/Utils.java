@@ -45,8 +45,8 @@ import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.Resource;
-import org.occiware.mart.server.servlet.exception.MixinNotFoundOnModelException;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -693,14 +693,14 @@ public class Utils {
      * @return
      * @throws MixinNotFoundOnModelException
      */
-    public static List<Mixin> loadMixinFromSchemeTerm(List<String> mixins) throws MixinNotFoundOnModelException {
+    public static List<Mixin> loadMixinFromSchemeTerm(List<String> mixins) throws ConfigurationException {
         List<Mixin> mixinModel = new LinkedList<>();
 
         Mixin mixinTmp;
         for (String mixinId : mixins) {
             mixinTmp = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, mixinId);
             if (mixinTmp == null) {
-                throw new MixinNotFoundOnModelException("Mixin : " + mixinId + " not found on used extensions models");
+                throw new ConfigurationException("Mixin : " + mixinId + " not found on used extensions models");
             } else {
                 mixinModel.add(mixinTmp);
             }

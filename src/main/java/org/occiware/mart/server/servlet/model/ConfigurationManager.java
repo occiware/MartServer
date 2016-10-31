@@ -48,7 +48,7 @@ import org.occiware.clouddesigner.occi.Resource;
 import org.occiware.clouddesigner.occi.util.Occi2Ecore;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.MART;
-import org.occiware.mart.server.servlet.exception.EntityAddException;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
@@ -167,7 +167,7 @@ public class ConfigurationManager {
      * @throws org.occiware.mart.server.servlet.exception.EntityAddException
      */
     public static void addResourceToConfiguration(String id, String kind, List<String> mixins,
-            Map<String, String> attributes, String owner, String relativePath) throws EntityAddException {
+            Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
             // Assume if owner is not used to a default user uuid "anonymous".
@@ -209,8 +209,10 @@ public class ConfigurationManager {
 
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + id);
-
-                throw new EntityAddException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
+                if (ex instanceof ConfigurationException) {
+                    throw ex;
+                }
+                throw new ConfigurationException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
             }
         } else {
             LOGGER.info("resource already exist, overwriting...");
@@ -248,10 +250,10 @@ public class ConfigurationManager {
      * @param attributes
      * @param owner
      * @param relativePath
-     * @throws org.occiware.mart.server.servlet.exception.EntityAddException
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void addLinkToConfiguration(String id, String kind, java.util.List<String> mixins, String src,
-            String target, Map<String, String> attributes, String owner, String relativePath) throws EntityAddException {
+            String target, Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
             // Assume if owner is not used to a default user uuid "anonymous".
@@ -263,10 +265,10 @@ public class ConfigurationManager {
         Resource resourceDest = findResource(owner, target);
 
         if (resourceSrc == null) {
-            throw new EntityAddException("Cannot find the source of the link: " + id);
+            throw new ConfigurationException("Cannot find the source of the link: " + id);
         }
         if (resourceDest == null) {
-            throw new EntityAddException("Cannot find the target of the link: " + id);
+            throw new ConfigurationException("Cannot find the target of the link: " + id);
         }
 
         Link link = findLink(owner, id);
@@ -294,7 +296,11 @@ public class ConfigurationManager {
 
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + id);
-                throw new EntityAddException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
+                if (ex instanceof ConfigurationException) {
+                    throw ex;
+                }
+                
+                throw new ConfigurationException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
             }
         } else {
             // Link exist upon our configuration, we update it.
@@ -473,50 +479,6 @@ public class ConfigurationManager {
                 attributeStates.add(attributeState);
             }
         }
-    }
-
-    /**
-     * Set an attribute of an OCCI entity, patched from OcciHelper.
-     *
-     * @param entity the given entity.
-     * @param attributeName the attribute name.
-     * @param attributeValue the attribute value.
-     * @throws java.lang.IllegalArgumentException Thrown when the attribute name
-     * is unknown or the attribute value is invalid.
-     */
-    private static void setAttributeFromOcciHelper(Entity entity, String attributeName, String attributeValue) {
-        // Check that attribute name exists from this entity.
-        OcciHelper.getAttribute(entity, attributeName);
-
-        // Search the Ecore structural feature associated to the OCCI attribute.
-        String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attributeName);
-
-        final EStructuralFeature eStructuralFeature = entity.eClass().getEStructuralFeature(eAttributeName);
-
-        if (eStructuralFeature == null) {
-            // Create the attribute state and update it, if none, create it.
-            AttributeState attrState = getAttributeStateObject(entity, attributeName);
-            if (attrState == null) {
-                // Create the attribute.
-                attrState = createAttributeState(attributeName, attributeValue);
-                entity.getAttributes().add(attrState);
-            }
-
-            return;
-            // throw new IllegalArgumentException("Ecore structural feature '" + eAttributeName + "' not found!");
-        }
-        if (!(eStructuralFeature instanceof EAttribute)) {
-            throw new IllegalArgumentException("Ecore structural feature '" + eAttributeName + "' is not an Ecore attribute!");
-        }
-
-        // Obtain the attribute type.
-        EDataType eAttributeType = ((EAttribute) eStructuralFeature).getEAttributeType();
-
-        // Convert the attribute value according to the attribute type.
-        Object eAttributeValue = eAttributeType.getEPackage().getEFactoryInstance().createFromString(eAttributeType, attributeValue);
-
-        // Set the Ecore attribute.
-        entity.eSet(eStructuralFeature, eAttributeValue);
     }
 
     /**
@@ -1454,8 +1416,9 @@ public class ConfigurationManager {
      * @param updateMode (if updateMode is true, reset existing and replace with
      * new ones)
      * @return
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
-    public static boolean addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) {
+    public static boolean addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) throws ConfigurationException {
         boolean result = false;
         if (updateMode) {
             entity.getMixins().clear();
@@ -1472,8 +1435,7 @@ public class ConfigurationManager {
                     mixin = findMixinOnEntities(owner, mixinStr);
 
                     if (mixin == null) {
-                        LOGGER.info("Create the mixin : --> Term : " + mixinStr);
-                        mixin = createMixin(mixinStr);
+                        throw new ConfigurationException("Mixin " + mixinStr + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
                     }
 
                 } else {
@@ -1593,32 +1555,16 @@ public class ConfigurationManager {
 
     /**
      * Associate a list of entities with a mixin, replacing existing list if
-     * any. if mixin doest exist, this will create it.
-     *
-     * @param mixinId
-     * @param entityIds
-     * @param updateMode
-     */
-    public static void saveMixinForEntities(final String mixinId, final List<String> entityIds,
-            final boolean updateMode) {
-        // TODO : Pass owner on coreImpl saveMixin and UpdateMixin method.
-        for (String owner : configurations.keySet()) {
-            saveMixinForEntities(owner, mixinId, entityIds, updateMode);
-        }
-
-    }
-
-    /**
-     * Associate a list of entities with a mixin, replacing existing list if
-     * any. if mixin doest exist, this will create it.
+     * any. if mixin doest exist, this will throw a new exception.
      *
      * @param owner
      * @param mixinId
      * @param entityIds
      * @param updateMode
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
-    public static void saveMixinForEntities(final String owner, final String mixinId, final List<String> entityIds,
-            final boolean updateMode) {
+    public static void saveMixinForEntities(final String mixinId, final List<String> entityIds,
+            final boolean updateMode, final String owner) throws ConfigurationException {
 
         // searching for the mixin to register.
         Mixin mixin = findMixinOnExtension(owner, mixinId);
@@ -1627,8 +1573,7 @@ public class ConfigurationManager {
             mixin = findMixinOnEntities(owner, mixinId);
 
             if (mixin == null) {
-                // TODO : Check this : User mixin tag ?
-                mixin = createMixin(mixinId);
+                throw new ConfigurationException("The mixin : " + mixinId + " doesnt exist on configuration.");
             }
         }
         LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
@@ -1676,17 +1621,32 @@ public class ConfigurationManager {
      * Add a user mixin to configuration's Object (user tag).
      *
      * @param id
+     * @param title
      * @param location
      * @param owner
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
-    public static void addUserMixinOnConfiguration(final String id, final String location, final String owner) {
+    public static void addUserMixinOnConfiguration(final String id, final String title, final String location, final String owner) throws ConfigurationException {
         if (owner == null || id == null || location == null) {
             return;
         }
 
         Configuration configuration = getConfigurationForOwner(owner);
-        Mixin mixin = createMixin(id);
 
+        // Check if this mixin already exist on configuration, if this is the case, overwrite mixin definition.
+        Mixin mixin = findUserMixinOnConfiguration(id, owner);
+        if (mixin == null) {
+            mixin = createMixin(id);
+            mixin.setTitle(title);
+        } else {
+            // Check if this mixin is a mixin extension..
+            if (!isMixinTags(owner, id)) {
+                throw new ConfigurationException("This mixin : " + id + " is not a mixin tag, but it exist on referenced extension and configuration.");
+            }
+            LOGGER.info("Overwriting mixin on configuration : " + id);
+            configuration.getMixins().remove(mixin);
+        }
+        LOGGER.info("Adding mixin on configuration : " + id);
         // We add the mixin location to the userMixin map.
         userMixinLocationMap.put(id, location);
 
@@ -1724,11 +1684,34 @@ public class ConfigurationManager {
     }
 
     /**
+     * Get a mixin from configuration object.
+     * @param mixinId
+     * @param owner
+     * @return 
+     */
+    public static Mixin findUserMixinOnConfiguration(final String mixinId, final String owner) {
+        Mixin mixinToReturn = null;
+        Configuration config;
+        EList<Mixin> mixins;
+        config = getConfigurationForOwner(owner);
+        mixins = config.getMixins();
+        for (Mixin mixin : mixins) {
+            if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
+                mixinToReturn = mixin;
+                break;
+            }
+        }
+        return mixinToReturn;
+    }
+
+    /**
      * Delete a user mixin from configuration's Object (user tag).
      *
      * @param mixinId
+     * @param owner
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
-    public static void removeUserMixinFromConfiguration(final String mixinId) {
+    public static void removeUserMixinFromConfiguration(final String mixinId, final String owner) throws ConfigurationException {
         if (mixinId == null) {
             return;
         }
@@ -1737,22 +1720,17 @@ public class ConfigurationManager {
         Mixin mixin = findUserMixinOnConfigurations(mixinId);
 
         if (mixin == null) {
-            // TODO : Throw an exception mixinNotFound.
             LOGGER.info("mixin not found on configurations.");
-            return;
+            throw new ConfigurationException("mixin : " + mixinId + " not found on configuration.");
+            
         }
 
         // We remove the mixin location from the userMixin map.
         userMixinLocationMap.remove(mixinId);
 
         // Delete from configuration.
-        Set<String> owners = configurations.keySet();
-        Configuration config;
-        for (String owner : owners) {
-            config = getConfigurationForOwner(owner);
-            config.getMixins().remove(mixin);
-        }
-
+        Configuration config = getConfigurationForOwner(owner);
+        config.getMixins().remove(mixin);
     }
 
     /**
@@ -1924,7 +1902,7 @@ public class ConfigurationManager {
     }
 
     /**
-     * Find all user mixins kind that have this location.
+     * Find all user mixins scheme+term that have this location.
      *
      * @param location (http://localhost:8080/mymixincollection/
      * @return a map by owner and list of user mixins, map is empty if none
@@ -1975,8 +1953,9 @@ public class ConfigurationManager {
      *
      * @param entityId , relative path of the entity
      * @param attributes , attributes to update
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
-    public static void updateAttributesForEntity(final String entityId, Map<String, String> attributes) {
+    public static void updateAttributesForEntity(final String entityId, Map<String, String> attributes) throws ConfigurationException {
         String ownerFound = null;
         Entity entity = findEntityOnAllOwner(ownerFound, entityId);
 
@@ -1988,12 +1967,10 @@ public class ConfigurationManager {
             // printEntity(entity);
 
         } else {
-            // TODO : Report an exception, impossible to update entity, it
-            // doesnt exist.
             LOGGER.error("The entity " + entityId + " doesnt exist, can''t update ! ");
+            throw new ConfigurationException("The entity " + entityId + " doesnt exist, can''t update ! ");
         }
 
-        // return entity;
     }
 
     /**
@@ -2027,7 +2004,6 @@ public class ConfigurationManager {
         for (AttributeState attr : attributes) {
             mapResult.put(attr.getName(), attr.getValue());
         }
-
         return mapResult;
     }
 
@@ -2226,19 +2202,6 @@ public class ConfigurationManager {
 //        // Generate eTag.
 //        return Utils.createEtagNumber(id, owner, version);
 //    }
-    /**
-     * Create an attribute without add this to the entity object.
-     *
-     * @param name
-     * @param value
-     * @return AttributeState object.
-     */
-    private static AttributeState createAttributeState(final String name, final String value) {
-        AttributeState attr = OCCIFactory.eINSTANCE.createAttributeState();
-        attr.setName(name);
-        attr.setValue(value);
-        return attr;
-    }
 
     /**
      * Get an attribute state object for key parameter.
@@ -2365,7 +2328,7 @@ public class ConfigurationManager {
         }
         return eDataType;
     }
-    
+
     public static Object getEMFValueObject(Entity entity, String attrName) {
         EAttribute eAttr = null;
         String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
@@ -2459,6 +2422,18 @@ public class ConfigurationManager {
         }
 
         return entity;
+    }
+
+    public static boolean isMixinTags(final String owner, final String mixinTag) {
+        boolean result = false;
+        Configuration config = getConfigurationForOwner(owner);
+        
+        Mixin mixin = findUserMixinOnConfiguration(mixinTag, owner);
+        String location = userMixinLocationMap.get(mixinTag);
+        if (location != null && mixin != null) {
+            result = true;
+        } 
+        return result;
     }
 
 }
