@@ -2436,4 +2436,21 @@ public class ConfigurationManager {
         return result;
     }
 
+    public static Mixin getUserMixinFromLocation(final String locationMixin, final String owner) {
+        // Search for the mixin id.
+        Mixin mixin = null;
+        Set<String> keys = userMixinLocationMap.keySet();
+        for (String key : keys) {
+            String location = userMixinLocationMap.get(key);
+            if (location.equals(locationMixin)) {
+                // Search the mixin from this scheme+term.
+                mixin = findUserMixinOnConfiguration(key, owner);
+                break;
+            }
+            
+        }
+        return mixin;
+        
+    }
+
 }

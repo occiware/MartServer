@@ -30,6 +30,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
@@ -93,29 +94,6 @@ public class DeleteQuery extends AbstractDeleteQuery {
                 return response;
             }
 
-            // Remove mixin association.
-            boolean isMixinRemoveRequest = Utils.isMixinTagRequest(path, attrs, data.getMixins(), data.getMixinTagLocation());
-            if (isMixinRemoveRequest) {
-                LOGGER.info("Mixin remove request.");
-
-//            for (String mixin : inputParser.getMixins()) {
-//                LOGGER.info("Remove mixin : " + mixin);
-//                ConfigurationManager.removeOrDissociate(mixin);
-//            }
-//            try {
-//                LOGGER.info("Mixin removed: " + inputParser.getMixins());
-//                response = outputParser.parseResponse("Mixin removed from path : " + path);
-//            } catch (ResponseParseException ex) {
-//                throw new InternalServerErrorException(ex);
-//            }
-                try {
-                    response = outputParser.parseResponse("Not implemented, this will coming soon", Response.Status.NOT_IMPLEMENTED);
-                    return response;
-                } catch (ResponseParseException ex) {
-                    throw new InternalServerErrorException(ex);
-                }
-            }
-
             response = deleteEntityCollection(path);
 
             if (response == null) {
@@ -126,7 +104,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
                 }
             }
         } // End for each data.
-        
+
         return response;
     }
 
@@ -208,6 +186,26 @@ public class DeleteQuery extends AbstractDeleteQuery {
         }
 
         try {
+            boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
+            if (isMixinTagRequest) {
+                LOGGER.info("Mixin tag get request... ");
+                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
+                if (mixin == null) {
+                    try {
+                        response = outputParser.parseResponse("The mixin location : " + path + " is not defined", Response.Status.NOT_FOUND);
+                        return response;
+                    } catch (ResponseParseException ex) {
+                        throw new InternalServerErrorException("The mixin location : " + path + " is not defined");
+                    }
+                }
+                //entities = ConfigurationManager.findAllEntitiesForMixin(ConfigurationManager.DEFAULT_OWNER, mixin.getScheme()+mixin.getTerm());
+                // Add mixin filters.
+                filters.clear();
+                CollectionFilter filter = new CollectionFilter();
+                filter.setCategoryFilter(mixin.getScheme() + mixin.getTerm());
+                filter.setOperator(operator);
+                filters.add(filter);
+            }
             entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
 
             if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {

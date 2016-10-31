@@ -31,8 +31,8 @@ import org.occiware.mart.server.servlet.utils.Utils;
 public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGetQuery {
 
     @Override
-    public abstract Response getMixin(String mixinKind);
-
+    public abstract Response getEntityCollection(final String path);
+    
     @Override
     public Response getEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request) {
         if (Utils.isUriListContentTypeUsed(headers)) {

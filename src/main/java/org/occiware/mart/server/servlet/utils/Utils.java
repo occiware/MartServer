@@ -851,18 +851,13 @@ public class Utils {
      * depends).
      *
      * @param path
-     * @param attrs
-     * @param mixins
-     * @param mixinTagLocation
+     * @param owner
      * @return false if the path and request is not on mixin tag.
      */
-    public static boolean isMixinTagRequest(String path, Map<String, String> attrs, List<String> mixins, String mixinTagLocation) {
-        boolean result = false;
-        if (mixins == null
-                || mixins.isEmpty() || mixinTagLocation == null || mixins.size() > 1) {
-            return result;
-        }
-        result = true;
+    public static boolean isMixinTagRequest(final String path, final String owner) {
+        boolean result;
+        Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, owner);
+        result = mixin != null;
         return result;
     }
 
