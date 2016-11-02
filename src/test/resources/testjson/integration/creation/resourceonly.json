@@ -1,0 +1,13 @@
+{
+    "id": "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
+    "title": "compute4",
+    "summary": "My only compute for test with single resource",
+    "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+    "attributes": {
+        "occi.compute.speed": 3.0,
+        "occi.compute.memory": 4.0,
+        "occi.compute.cores": 4,
+        "occi.compute.architecture": "x86",
+        "occi.compute.state": "active"
+    }
+}

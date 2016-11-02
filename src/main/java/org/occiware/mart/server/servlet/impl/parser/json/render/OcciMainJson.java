@@ -39,9 +39,6 @@ public class OcciMainJson {
     
     private List<ActionJson> actions = null;
 
-    // For only one action invocation.
-    private String action;
-    
     private Map<String, Object> attributes;
     
     public List<ResourceJson> getResources() {
@@ -82,22 +79,6 @@ public class OcciMainJson {
 
     public void setKinds(List<KindJson> kinds) {
         this.kinds = kinds;
-    }
-    
-    public String getAction() {
-        return action;
-    }
-
-    public void setAction(String action) {
-        this.action = action;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
     }
 
     public String toStringJson() throws JsonProcessingException {

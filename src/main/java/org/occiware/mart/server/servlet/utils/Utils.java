@@ -37,6 +37,7 @@ import java.util.UUID;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import org.apache.commons.io.IOUtils;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Attribute;
 import org.occiware.clouddesigner.occi.AttributeState;
@@ -951,4 +952,28 @@ public class Utils {
         return number;
     }
 
+    /**
+     * Convert an input stream to a String object.
+     * @param jsonInput
+     * @return
+     * @throws IOException 
+     */
+    public static String convertInputStreamToString(InputStream jsonInput) throws IOException {
+        String contentStr;
+        StringBuilder content = new StringBuilder();
+        try {
+            List<String> lines = IOUtils.readLines(jsonInput, "UTF8");
+            for (String line : lines ) {
+                content.append(line);
+            }
+            if (content.toString().isEmpty()) {
+                throw new IOException("No input text file defined.");
+            }
+        } catch (IOException ex) {
+            LOGGER.error("This stream is not a text stream.");
+            throw new IOException("The input file is not a text file or has unknown characters.");
+        }
+        contentStr = content.toString();
+        return contentStr;
+    }
 }

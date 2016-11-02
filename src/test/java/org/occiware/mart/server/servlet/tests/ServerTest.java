@@ -16,8 +16,6 @@
 package org.occiware.mart.server.servlet.tests;
 
 import java.io.File;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
 import org.eclipse.jetty.client.HttpClient;
@@ -119,6 +117,17 @@ public class ServerTest {
                 .accept("application/json")
                 .method(HttpMethod.PUT)
                 .file(resource3.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
+        
+        // Now test a resource single load without "resources" key.
+        File resource4 = getResourceInputFile("/testjson/integration/creation/resourceonly.json");
+        response = httpClient.newRequest("localhost", 9090)
+                .accept("application/json")
+                .method(HttpMethod.PUT)
+                .file(resource4.toPath(), "application/json")
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();

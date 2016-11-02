@@ -20,6 +20,7 @@ package org.occiware.mart.server.servlet.impl.parser.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
@@ -106,222 +107,336 @@ public class JsonOcciParser extends AbstractRequestParser {
         InputStream jsonInput = null;
         LOGGER.info("Parsing input uploaded datas...");
         OcciMainJson occiMain;
+        ObjectMapper mapper = new ObjectMapper();
+        // Define those attributes have only non null values.
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        String contentJson;
         try {
             jsonInput = request.getInputStream();
-
             if (jsonInput == null) {
                 throw new CategoryParseException("The input has no content delivered.");
             }
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            // Parse to OcciMainJson object based on collections objects.
-            occiMain = mapper.readValue(jsonInput, OcciMainJson.class);
-            parseMainInput(occiMain);
+            contentJson = Utils.convertInputStreamToString(jsonInput);
+            
         } catch (IOException ex) {
-            LOGGER.error("Error while loading input stream from json file upload : " + ex.getMessage());
-            throw new CategoryParseException("Error on reading stream json file.");
+            throw new CategoryParseException("The server cant read the json file input --> " + ex.getMessage());
         } finally {
-            // Close input json stream.
             Utils.closeQuietly(jsonInput);
+        }
+        boolean isCollectionRes = false;
+        boolean isResourceSingle = false;
+        boolean isLinkSingle = false;
+        boolean isMixinTagSingle = false;
+        boolean isActionInvocation = false;
+        String messages = "";
+        
+        
+        // Try on occi main json (for multiple resources/links/mixins).
+        try {
+            occiMain = mapper.readValue(contentJson, OcciMainJson.class);
+            parseMainInput(occiMain);
+            isCollectionRes = true;
+        } catch (IOException ex) {
+            messages += ex.getMessage();
+            isCollectionRes = false;
+        }
+
+        // for one resource, if this is not a collection (resources,links etc..).
+        // it goes to try to get a single resource.
+        if (!isCollectionRes) {
+            try {
+                ResourceJson resJson = mapper.readValue(contentJson, ResourceJson.class);
+                parseResourceJsonInput(resJson);
+                isResourceSingle = true;
+            } catch (IOException ex) {
+                messages += "\r\n " + ex.getMessage();
+                isResourceSingle = false;
+            }
+
+            if (!isResourceSingle) {
+                try {
+                    LinkJson linkJson = mapper.readValue(contentJson, LinkJson.class);
+                    parseLinkJsonInput(linkJson);
+                    isLinkSingle = true;
+                } catch (IOException ex) {
+                    messages += "\r\n " + ex.getMessage();
+                    isLinkSingle = false;
+                }
+            }
+
+            // Try to parse single mixin tag.
+            if (!isResourceSingle && !isLinkSingle) {
+                try {
+                    MixinJson mixinJson = mapper.readValue(contentJson, MixinJson.class);
+                    parseMixinJsonTagInput(mixinJson);
+                    isMixinTagSingle = true;
+                } catch (IOException ex) {
+                    messages += "\r\n " + ex.getMessage();
+                    isMixinTagSingle = false;
+                }
+            }
+            // Try to read action json invocation.
+            if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle) {
+                try {
+                    ActionJson actionJson = mapper.readValue(contentJson, ActionJson.class);
+                    parseActionJsonInvocationInput(actionJson);
+                    isActionInvocation = true;
+                } catch (IOException ex) {
+                    messages += "\r\n " + ex.getMessage();
+                    isActionInvocation = false;
+                }
+            }
+
+            // If all tries are failed throw an exception with otherall exception messages.
+            if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle && !isActionInvocation) {
+                LOGGER.error("Unknown json input file, please check your file input. \r\n" + messages);
+                throw new CategoryParseException("Unknown json input file, please check your file. \r\n" + messages);
+            }
         }
     }
 
+    /**
+     * Parse collection input files, may defines resources, links, mixins+tag.
+     *
+     * @param mainJson
+     * @throws CategoryParseException
+     * @throws AttributeParseException
+     */
     public void parseMainInput(final OcciMainJson mainJson) throws CategoryParseException, AttributeParseException {
         if (mainJson == null) {
             throw new CategoryParseException("unknown json format.");
         }
-
         List<ResourceJson> resources = mainJson.getResources();
         List<LinkJson> links = mainJson.getLinks();
         List<KindJson> kinds = mainJson.getKinds();
         List<MixinJson> mixins = mainJson.getMixins();
         List<ActionJson> actions = mainJson.getActions();
-        // For only one action invocation.
-        String action = mainJson.getAction();
-        List<InputData> datas = getInputDatas();
         // if none objects is set, throw a category parse exception.
         boolean hasResources = resources != null && !resources.isEmpty();
         boolean hasLinks = links != null && !links.isEmpty();
         boolean hasMixins = mixins != null && !mixins.isEmpty();
         boolean hasActions = actions != null && !actions.isEmpty();
-        boolean hasActionInvocation = action != null;
         boolean hasKinds = kinds != null && !kinds.isEmpty();
 
         if (!hasResources
-                && !hasLinks && !hasMixins && !hasActions && !hasActionInvocation && !hasKinds) {
+                && !hasLinks && !hasMixins && !hasActions && !hasKinds) {
             throw new CategoryParseException("No content upload parsed. Check your json file input.");
         }
-
+        if (links == null) {
+            links = new LinkedList<>();
+        }
         if (hasResources) {
             for (ResourceJson resource : resources) {
-                Map<String, Object> attrs;
-                InputData data = new InputData();
-                String title = resource.getTitle();
-                String summary = resource.getSummary();
-                String id = resource.getId();
-                String kind = resource.getKind();
-                attrs = resource.getAttributes();
-                if (attrs == null) {
-                    attrs = new HashMap<>();
-                }
-                // set title, summary and id.
-                if (id != null) {
-                    if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
-                        attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
-                    } else {
-                        attrs.put(Constants.OCCI_CORE_ID, id);
-                        id = id.replace(Constants.URN_UUID_PREFIX, "");
-                    }
-                    data.setEntityUUID(id);
-                }
-                if (title != null && !title.isEmpty()) {
-                    attrs.put(Constants.OCCI_CORE_TITLE, title);
-                }
-                if (summary != null && !summary.isEmpty()) {
-                    attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
-                }
-                data.setAttrObjects(attrs);
-
-                if (kind == null) {
-                    throw new CategoryParseException("Kind is not defined for resource: " + id);
-                }
-                data.setKind(kind);
-
-                // We add the links on input data after the resources to be sure they are all exists if we are in create mode or update mode.
-                if (resource.getLinks() != null && !resource.getLinks().isEmpty()) {
-                    if (links == null) {
-                        links = new LinkedList<>();
-                    }
-                    links.addAll(resource.getLinks());
-                    hasLinks = true;
-                }
-
-                List<String> mixinsRes = resource.getMixins();
-                if (mixinsRes != null && !mixinsRes.isEmpty()) {
-                    data.setMixins(mixinsRes);
-                }
-                List<String> actionRes = resource.getActions();
-                if (actionRes != null && !actionRes.isEmpty()) {
-                    data.setAction(actionRes.get(0));
-                    // We set the first action.
-                    // TODO : Define if actions is assigned to a resource if we must execute them...
-                }
-                datas.add(data);
+                parseResourceJsonInput(resource);
             }
-
         }
         if (hasLinks) {
             for (LinkJson link : links) {
-                Map<String, Object> attrs;
-                InputData data = new InputData();
-                String title = link.getTitle();
-                String summary = link.getSummary();
-                String id = link.getId();
-                String kind = link.getKind();
-                SourceJson source = link.getSource();
-                TargetJson target = link.getTarget();
-                String sourceLocation;
-                String targetLocation;
-                attrs = link.getAttributes();
-                if (attrs == null) {
-                    attrs = new HashMap<>();
-                }
-                // set title, summary and id.
-                if (id != null) {
-                    if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
-                        attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
-                    } else {
-                        attrs.put(Constants.OCCI_CORE_ID, id);
-                        id = id.replace(Constants.URN_UUID_PREFIX, "");
-                    }
-                    data.setEntityUUID(id);
-                }
-                if (title != null && !title.isEmpty()) {
-                    attrs.put(Constants.OCCI_CORE_TITLE, title);
-                }
-                if (summary != null && !summary.isEmpty()) {
-                    attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
-                }
-                if (source == null) {
-                    throw new AttributeParseException("No source set for link: " + id + " , check your json query.");
-                }
-                if (target == null) {
-                    throw new AttributeParseException("No target set for link: " + id + " , check your json query.");
-                }
-                sourceLocation = source.getLocation();
-                targetLocation = target.getLocation();
-                if (sourceLocation == null || sourceLocation.isEmpty()) {
-                    throw new AttributeParseException("No source location set for link : " + id + " , check your json query.");
-                }
-                if (targetLocation == null || targetLocation.isEmpty()) {
-                    throw new AttributeParseException("No target location set for link : " + id + " , check your json query.");
-                }
-                attrs.put(Constants.OCCI_CORE_TARGET, targetLocation);
-                attrs.put(Constants.OCCI_CORE_SOURCE, sourceLocation);
-                data.setAttrObjects(attrs);
-
-                if (kind == null) {
-                    throw new CategoryParseException("Kind is not defined for resource: " + id);
-                }
-                data.setKind(kind);
-
-                List<String> mixinsRes = link.getMixins();
-                if (mixinsRes != null && !mixinsRes.isEmpty()) {
-                    data.setMixins(mixinsRes);
-                }
-//                List<String> actionRes = link.getActions();
-//                if (actionRes != null && !actionRes.isEmpty()) {
-//                    data.setAction(actionRes.get(0)); 
-//                    // We set the first action.
-//                    // TODO : Define if actions is assigned to a resource if we must execute them...
-//                }
-                datas.add(data);
+                parseLinkJsonInput(link);
             }
         }
 
         if (hasMixins) {
             for (MixinJson mixin : mixins) {
-                InputData data = new InputData();
-                String location = mixin.getLocation();
-                String term = mixin.getTerm();
-                String title = mixin.getTitle();
-                String scheme = mixin.getScheme();
-                Map<String, Object> attrs = mixin.getAttributes();
-                if (term == null || scheme == null || scheme.isEmpty() || term.isEmpty()) {
-                    throw new AttributeParseException("The mixin must have scheme and term, check your json file.");
-                }
-                if (location == null || location.isEmpty()) {
-                    throw new AttributeParseException("The mixin must have a location, check your json file.");
-                }
-                data.setMixinTag(scheme + term);
-                data.setMixinTagLocation(location);
-                data.setMixinTagTitle(title);
-                data.setAttrObjects(attrs);
-                datas.add(data);
+                parseMixinJsonTagInput(mixin);
             }
         }
 
         if (hasKinds) {
             // TODO : Add filter on kinds if the query is a get with upload json file.
-
         }
         // Multiple Actions invocation.
         if (hasActions) {
             for (ActionJson json : actions) {
-                InputData data = new InputData();
-                data.setAction(json.getAction());
-                data.setAttrObjects(json.getAttributes());
-                datas.add(data);
+                parseActionJsonInvocationInput(json);
             }
         }
-        // If we had an action invocation only.
-        if (hasActionInvocation) {
-            InputData data = new InputData();
-            data.setAction(action);
-            data.setAttrObjects(mainJson.getAttributes());
-            datas.add(data);
+    }
+
+    /**
+     * Load an input data from resource. If there are links on this resources.
+     *
+     * @param resource
+     * @throws CategoryParseException
+     * @throws AttributeParseException
+     */
+    private void parseResourceJsonInput(ResourceJson resource) throws CategoryParseException, AttributeParseException {
+        Map<String, Object> attrs;
+        InputData data = new InputData();
+        String title = resource.getTitle();
+        String summary = resource.getSummary();
+        String id = resource.getId();
+        String kind = resource.getKind();
+        attrs = resource.getAttributes();
+        List<InputData> datas = getInputDatas();
+        if (attrs == null) {
+            attrs = new HashMap<>();
+        }
+        // set title, summary and id.
+        if (id != null) {
+            if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
+                attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
+            } else {
+                attrs.put(Constants.OCCI_CORE_ID, id);
+                id = id.replace(Constants.URN_UUID_PREFIX, "");
+            }
+            data.setEntityUUID(id);
+        }
+        if (title != null && !title.isEmpty()) {
+            attrs.put(Constants.OCCI_CORE_TITLE, title);
+        }
+        if (summary != null && !summary.isEmpty()) {
+            attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
+        }
+        data.setAttrObjects(attrs);
+
+        if (kind == null) {
+            throw new CategoryParseException("Kind is not defined for resource: " + id);
+        }
+        data.setKind(kind);
+
+        List<String> mixinsRes = resource.getMixins();
+        if (mixinsRes != null && !mixinsRes.isEmpty()) {
+            data.setMixins(mixinsRes);
+        }
+        List<String> actionRes = resource.getActions();
+        if (actionRes != null && !actionRes.isEmpty()) {
+            data.setAction(actionRes.get(0));
+            // We set the first action.
+            // TODO : Define if actions is assigned to a resource if we must execute them...
+        }
+        datas.add(data);
+        // If there are links defined on this resource, we add them to the input datas linked list.
+        // We add the links on input data after the resources to be sure they are all exists if we are in create mode or update mode.
+        if (resource.getLinks() != null && !resource.getLinks().isEmpty()) {
+            List<LinkJson> links = resource.getLinks();
+            for (LinkJson link : links) {
+                parseLinkJsonInput(link);
+            }
         }
         this.setInputDatas(datas);
+    }
+
+    /**
+     * Parse a single link input and return the corresponding InputData object.
+     *
+     * @param link
+     * @return
+     */
+    private void parseLinkJsonInput(LinkJson link) throws CategoryParseException, AttributeParseException {
+        Map<String, Object> attrs;
+        InputData data = new InputData();
+        String title = link.getTitle();
+        String summary = link.getSummary();
+        String id = link.getId();
+        String kind = link.getKind();
+        SourceJson source = link.getSource();
+        TargetJson target = link.getTarget();
+        String sourceLocation;
+        String targetLocation;
+        attrs = link.getAttributes();
+        List<InputData> datas = getInputDatas();
+        if (attrs == null) {
+            attrs = new HashMap<>();
+        }
+        // set title, summary and id.
+        if (id != null) {
+            if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
+                attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
+            } else {
+                attrs.put(Constants.OCCI_CORE_ID, id);
+                id = id.replace(Constants.URN_UUID_PREFIX, "");
+            }
+            data.setEntityUUID(id);
+        }
+        if (title != null && !title.isEmpty()) {
+            attrs.put(Constants.OCCI_CORE_TITLE, title);
+        }
+        if (summary != null && !summary.isEmpty()) {
+            attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
+        }
+        if (source == null) {
+            throw new AttributeParseException("No source set for link: " + id + " , check your json query.");
+        }
+        if (target == null) {
+            throw new AttributeParseException("No target set for link: " + id + " , check your json query.");
+        }
+        sourceLocation = source.getLocation();
+        targetLocation = target.getLocation();
+        if (sourceLocation == null || sourceLocation.isEmpty()) {
+            throw new AttributeParseException("No source location set for link : " + id + " , check your json query.");
+        }
+        if (targetLocation == null || targetLocation.isEmpty()) {
+            throw new AttributeParseException("No target location set for link : " + id + " , check your json query.");
+        }
+        attrs.put(Constants.OCCI_CORE_TARGET, targetLocation);
+        attrs.put(Constants.OCCI_CORE_SOURCE, sourceLocation);
+        data.setAttrObjects(attrs);
+
+        if (kind == null) {
+            throw new CategoryParseException("Kind is not defined for resource: " + id);
+        }
+        data.setKind(kind);
+
+        List<String> mixinsRes = link.getMixins();
+        if (mixinsRes != null && !mixinsRes.isEmpty()) {
+            data.setMixins(mixinsRes);
+        }
+
+        datas.add(data);
+        this.setInputDatas(datas);
+    }
+
+    /**
+     * Parse mixin tag define in MixinJson object.
+     *
+     * @param mixinTag
+     * @throws CategoryParseException
+     * @throws AttributeParseException
+     */
+    private void parseMixinJsonTagInput(MixinJson mixinTag) throws CategoryParseException, AttributeParseException {
+        List<InputData> datas = this.getInputDatas();
+        String title = mixinTag.getTitle();
+        String term = mixinTag.getTerm();
+        String location = mixinTag.getLocation();
+        String scheme = mixinTag.getScheme();
+        Map<String, Object> attrs = mixinTag.getAttributes();
+        if (attrs != null && !attrs.isEmpty()) {
+            throw new AttributeParseException("The attributes on mixin tag must be empty.");
+        }
+        if (location == null || location.trim().isEmpty()) {
+            throw new CategoryParseException("The location on mixin tag must be set, like /mytag/my_stuff/");
+        }
+        if (term == null || term.trim().isEmpty()) {
+            throw new CategoryParseException("A term must be set for a mixin tag.");
+        }
+        if (scheme == null || scheme.trim().isEmpty()) {
+            throw new CategoryParseException("A scheme must be set for a mixin tag.");
+        }
+        // Set the input data object and add it to the global list.
+        InputData data = new InputData();
+        data.setAttrObjects(attrs);
+        data.setMixinTag(scheme + term);
+        data.setMixinTagTitle(title);
+        data.setMixinTagLocation(location);
+        datas.add(data);
+        this.setInputDatas(datas);
+    }
+
+    /**
+     * Parse action invocation.
+     *
+     * @param action
+     * @return
+     */
+    private InputData parseActionJsonInvocationInput(ActionJson action) {
+        List<InputData> datas = this.getInputDatas();
+        InputData data = new InputData();
+        data.setAction(action.getAction());
+        data.setAttrObjects(action.getAttributes());
+        datas.add(data);
+        this.setInputDatas(datas);
+        return data;
     }
 
     @Override
@@ -425,7 +540,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 }
 
                 if (!locations.isEmpty()) {
-                    
+
                     msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(locations);
                     Response.ResponseBuilder responseBuilder = Response.status(status)
                             .header("Server", Constants.OCCI_SERVER_HEADER)
@@ -443,7 +558,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 }
 
             }
-            
+
             if (response == null) {
                 throw new ResponseParseException("Cannot parse the object to application/json representation.");
             }
@@ -471,13 +586,12 @@ public class JsonOcciParser extends AbstractRequestParser {
                 // This is a link.
                 LinkJson linkJson = buildLinkJsonFromEntity(entity);
                 links.add(linkJson);
-                
+
             } else {
                 // This is a resource.
                 ResourceJson resJson = buildResourceJsonFromEntity(entity);
                 resources.add(resJson);
             }
-            
 
         } // End for each entities.
 
@@ -490,12 +604,12 @@ public class JsonOcciParser extends AbstractRequestParser {
         String msg = mainJson.toStringJson();
         // Build response object...
         response = Response.status(status)
-                            .header("Server", Constants.OCCI_SERVER_HEADER)
-                            .header("Accept", getAcceptedTypes())
-                            .entity(msg)
-                            .type(Constants.MEDIA_TYPE_JSON)
-                            .build();
-        
+                .header("Server", Constants.OCCI_SERVER_HEADER)
+                .header("Accept", getAcceptedTypes())
+                .entity(msg)
+                .type(Constants.MEDIA_TYPE_JSON)
+                .build();
+
         return response;
     }
 
@@ -511,7 +625,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         resJson.setTitle(res.getTitle());
         resJson.setSummary(res.getSummary());
         resJson.setLocation(ConfigurationManager.getLocation(entity));
-        
+
         List<String> actionsStr = new LinkedList<>();
         String actionStr;
         for (Action action : kind.getActions()) {
@@ -526,12 +640,12 @@ public class JsonOcciParser extends AbstractRequestParser {
             String key = attr.getName();
             String val = attr.getValue();
             if (val != null) {
-                if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE) 
+                if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE)
                         && !key.equals(Constants.OCCI_CORE_ID)) {
-                    
+
                     EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, key);
 
-                    if (eAttrType != null 
+                    if (eAttrType != null
                             && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
                         // value with quote only for String and EEnum type.
                         attributes.put(key, val);
@@ -547,18 +661,18 @@ public class JsonOcciParser extends AbstractRequestParser {
                             attributes.put(key, val);
                         }
                     }
-                    
+
                 }
                 if (key.equals(Constants.OCCI_CORE_ID)) {
                     if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
-                        val = Constants.URN_UUID_PREFIX + val; 
+                        val = Constants.URN_UUID_PREFIX + val;
                     }
                     attributes.put(key, val);
                 }
             }
         }
         resJson.setAttributes(attributes);
-        
+
         mixins = res.getMixins();
         for (Mixin mixin : mixins) {
             String mixinStr = mixin.getScheme() + mixin.getTerm();
@@ -573,7 +687,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         if (!links.isEmpty()) {
             resJson.setLinks(links);
         }
-        
+
         return resJson;
     }
 
@@ -605,14 +719,14 @@ public class JsonOcciParser extends AbstractRequestParser {
             String key = attr.getName();
             String val = attr.getValue();
             if (val != null) {
-                if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE) 
-                        && !key.equals(Constants.OCCI_CORE_ID) 
-                        && !key.equals(Constants.OCCI_CORE_SOURCE) 
+                if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE)
+                        && !key.equals(Constants.OCCI_CORE_ID)
+                        && !key.equals(Constants.OCCI_CORE_SOURCE)
                         && !key.equals(Constants.OCCI_CORE_TARGET)) {
-                   
+
                     EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, key);
 
-                    if (eAttrType != null 
+                    if (eAttrType != null
                             && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
                         // value with quote only for String and EEnum type.
                         attributes.put(key, val);
@@ -631,7 +745,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 }
                 if (key.equals(Constants.OCCI_CORE_ID)) {
                     if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
-                        val = Constants.URN_UUID_PREFIX + val; 
+                        val = Constants.URN_UUID_PREFIX + val;
                     }
                     attributes.put(key, val);
                 }
