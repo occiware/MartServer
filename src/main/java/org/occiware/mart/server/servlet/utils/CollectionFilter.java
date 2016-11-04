@@ -19,10 +19,13 @@
 package org.occiware.mart.server.servlet.utils;
 
 /**
- * This object represents a filter for collections listings. This is used with ConfigurationManager Object.
+ * This object represents a filter for collections listings. This is used with
+ * ConfigurationManager Object.
+ *
  * @author Christophe Gourdin
  */
 public class CollectionFilter {
+
     public static final int OPERATOR_EQUAL = 0;
     public static final int OPERATOR_LIKE = 1;
     /**
@@ -44,7 +47,7 @@ public class CollectionFilter {
      * For the case we filter on a single relative path.
      */
     private String filterOnPath = "";
-    
+
     /**
      * Constraint value from attribute values.
      */
@@ -75,7 +78,6 @@ public class CollectionFilter {
 //            }
 //        }
 //    }
-
     public int getOperator() {
         return operator;
     }
@@ -123,7 +125,5 @@ public class CollectionFilter {
     public void setFilterOnPath(String filterOnPath) {
         this.filterOnPath = filterOnPath;
     }
-    
-    
 
 }

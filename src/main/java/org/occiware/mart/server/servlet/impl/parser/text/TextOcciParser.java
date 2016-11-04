@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
 public class TextOcciParser extends AbstractRequestParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TextOcciParser.class);
-    
+
     private InputData data = new InputData();
 
     @Override
@@ -104,8 +104,8 @@ public class TextOcciParser extends AbstractRequestParser {
                             if (matcher.group(Constants.GROUP_LOCATION) != null) {
                                 // is a mixin tag.
                                 data.setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
-                                data.setMixinTag(scheme+term);
-                                
+                                data.setMixinTag(scheme + term);
+
                             } else {
                                 // is a simple mixin.
                                 mixinsToAdd.add(scheme + term);
@@ -124,7 +124,7 @@ public class TextOcciParser extends AbstractRequestParser {
         }
         // Update the data in the list of input datas. for this parser, there is only one inputdata.
         List<InputData> inputDatas = getInputDatas();
-        
+
         if (inputDatas.isEmpty()) {
             inputDatas.add(data);
             setInputDatas(inputDatas);
@@ -174,7 +174,7 @@ public class TextOcciParser extends AbstractRequestParser {
         data.setAttrs(attrs);
         // Update the data in the list of input datas. for this parser, there is only one inputdata.
         List<InputData> inputDatas = getInputDatas();
-        
+
         if (inputDatas.isEmpty()) {
             inputDatas.add(data);
             setInputDatas(inputDatas);

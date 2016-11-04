@@ -27,28 +27,27 @@ import javax.ws.rs.core.Response;
  * @author Christophe Gourdin
  */
 public interface IGetQuery extends IEntryPoint {
-    
-    
+
     /**
      * Get request on an entity valid path like : /compute/entity uuid
+     *
      * @param path
      * @param entityId
      * @param headers
      * @param request
-     * @return 
+     * @return
      */
     public Response getEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request);
-    
+
     public Response getEntityCollection(final String path);
-    
+
     /**
      * on path /-/
+     *
      * @param path
      * @param headers
-     * @return 
+     * @return
      */
-     public Response getQueryInterface(String path, HttpHeaders headers);
-     
-     
-     
+    public Response getQueryInterface(String path, HttpHeaders headers);
+
 }

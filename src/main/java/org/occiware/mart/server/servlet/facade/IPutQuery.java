@@ -28,23 +28,24 @@ import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
  * @author Christophe Gourdin
  */
 public interface IPutQuery extends IEntryPoint {
-    
+
     /**
      * Create a new entity.
+     *
      * @param path
      * @param entityId
      * @param kind
      * @param mixins
      * @param attributes
-     * @return 
+     * @return
      */
     public Response createEntity(final String path, String entityId, final String kind, final List<String> mixins, final Map<String, String> attributes);
-    
-    
+
     /**
      * Define a mixin tag on a location
+     *
      * @param data
-     * @return 
+     * @return
      */
     public Response defineMixinTag(final InputData data);
 }

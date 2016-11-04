@@ -106,7 +106,7 @@ public class PutQuery extends AbstractPutQuery {
                     throw new InternalServerErrorException(ex);
                 }
             }
-            
+
             // Check if the query is a create/overwrite mixin tag definition.
             String mixinTag = data.getMixinTag();
             if (mixinTag != null) {
@@ -114,11 +114,11 @@ public class PutQuery extends AbstractPutQuery {
                 response = defineMixinTag(data);
                 continue;
             }
-            
+
             String entityId = data.getEntityUUID();
             if (entityId == null) {
                 entityId = Utils.getUUIDFromPath(path, data.getAttrs());
-               // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
+                // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
             }
 
             if (kind != null) {
@@ -292,13 +292,13 @@ public class PutQuery extends AbstractPutQuery {
 
     @Override
     public Response defineMixinTag(final InputData data) {
-        
+
         Response response;
         String mixinTag = data.getMixinTag();
         LOGGER.info("Define mixin tag : " + mixinTag);
         String mixinLocation = data.getMixinTagLocation();
         String title = data.getMixinTagTitle();
-        
+
         try {
             if (mixinLocation == null || mixinLocation.isEmpty()) {
                 throw new ConfigurationException("No location is defined for this mixin.");
@@ -325,7 +325,7 @@ public class PutQuery extends AbstractPutQuery {
                     .header("Accept", getAcceptType())
                     .build();
         }
-        
+
         return response;
     }
 

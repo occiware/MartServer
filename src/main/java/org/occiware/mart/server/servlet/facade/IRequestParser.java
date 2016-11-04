@@ -46,7 +46,8 @@ public interface IRequestParser {
      * @param headers
      * @param request
      * @throws org.occiware.mart.server.servlet.exception.CategoryParseException
-     * @throws org.occiware.mart.server.servlet.exception.AttributeParseException
+     * @throws
+     * org.occiware.mart.server.servlet.exception.AttributeParseException
      */
     public void parseInputQuery(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException, AttributeParseException;
 
@@ -131,17 +132,18 @@ public interface IRequestParser {
     public void setRequestParameters(Map<String, String> parameters);
 
     public String getParameter(final String key);
-    
+
     /**
      * Return all accepted types by this server.
-     * @return 
+     *
+     * @return
      */
     public String getAcceptedTypes();
-    
+
     public List<InputData> getInputDatas();
-    
+
     public void setInputDatas(List<InputData> inputDatas);
-    
+
     public InputData getInputDataForEntityUUID(final String entityUUID);
-    
+
 }

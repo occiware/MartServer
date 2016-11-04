@@ -261,7 +261,7 @@ public class PostQuery extends AbstractPostQuery {
                         throw new InternalServerErrorException(ex);
                     }
                 }
-                
+
                 response = updateMixinTagAssociation(categoryId, location);
                 return response;
             } else {
@@ -368,7 +368,7 @@ public class PostQuery extends AbstractPostQuery {
         if (entity == null) {
             throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore");
         }
-        
+
         try {
             ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, true);
         } catch (ConfigurationException ex) {
@@ -397,7 +397,7 @@ public class PostQuery extends AbstractPostQuery {
     @Override
     public Response executeAction(String actionId, Entity entity) {
         Response response;
-        
+
         if (entity == null) {
             try {
                 response = outputParser.parseResponse("No entity found to execute the action : " + actionId, Response.Status.BAD_REQUEST);
@@ -407,9 +407,9 @@ public class PostQuery extends AbstractPostQuery {
                 throw new InternalServerErrorException(ex);
             }
         }
-        
+
         InputData data = inputParser.getInputDataForEntityUUID(entity.getId());
-        
+
         String[] actionParameters = Utils.getActionParametersArray(data.getAttrs());
         String entityKind = entity.getKind().getScheme() + entity.getKind().getTerm();
         Extension ext = ConfigurationManager.getExtensionForKind(ConfigurationManager.DEFAULT_OWNER, entityKind);

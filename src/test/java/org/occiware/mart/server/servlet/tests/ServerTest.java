@@ -1,17 +1,20 @@
 /**
- * Copyright 2016 - Christophe Gourdin
+ * Copyright (c) 2015-2017 Inria
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.tests;
 
@@ -57,7 +60,7 @@ public class ServerTest {
         ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
         ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
         server.start();
-        
+
         // manage jetty http client.
         // Instantiate and configure the SslContextFactory (only if we use https protocol).
         SslContextFactory sslContextFactory = new SslContextFactory();
@@ -67,17 +70,17 @@ public class ServerTest {
 
         // Configure HttpClient, for example:
         httpClient.setFollowRedirects(false);
-        
+
         // Start HttpClient
         httpClient.start();
-        
+
     }
 
     @AfterClass
     public static void stopJetty() {
         try {
             httpClient.stop();
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
         try {
@@ -87,7 +90,6 @@ public class ServerTest {
         }
     }
 
-    
     public void testCreateResourceInputJson() throws Exception {
         File resource1 = getResourceInputFile("/testjson/integration/creation/resource1.json");
         ContentResponse response = httpClient.newRequest("localhost", 9090)
@@ -100,7 +102,7 @@ public class ServerTest {
 
         // Must return "created" status. 
         assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
-        
+
         // Create the second resource with mixins.
         File resource2 = getResourceInputFile("/testjson/integration/creation/resource2.json");
         response = httpClient.newRequest("localhost", 9090)
@@ -111,7 +113,7 @@ public class ServerTest {
                 .send();
         statusResponse = response.getStatus();
         assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
-        
+
         File resource3 = getResourceInputFile("/testjson/integration/creation/resource3.json");
         response = httpClient.newRequest("localhost", 9090)
                 .accept("application/json")
@@ -121,7 +123,7 @@ public class ServerTest {
                 .send();
         statusResponse = response.getStatus();
         assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
-        
+
         // Now test a resource single load without "resources" key.
         File resource4 = getResourceInputFile("/testjson/integration/creation/resourceonly.json");
         response = httpClient.newRequest("localhost", 9090)
@@ -132,13 +134,13 @@ public class ServerTest {
                 .send();
         statusResponse = response.getStatus();
         assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
-        
+
     }
-    
+
     @Test
     public void getComputeResource() {
         // First create a compute resource.
-        
+
         try {
             testCreateResourceInputJson();
             System.out.println("GET Request on Compute kind... http://localhost:9090/compute/");
@@ -148,12 +150,12 @@ public class ServerTest {
                     .send();
             int statusResponse = response.getStatus();
             assertTrue(statusResponse == Response.Status.OK.getStatusCode());
-            
+
             String result = response.getContentAsString();
             assertNotNull(result);
             assertFalse(result.isEmpty());
             System.out.println(result);
-            
+
             // Test network kind.
             System.out.println("GET Request on Network kind... http://localhost:9090/compute/");
             response = httpClient.newRequest("http://localhost:9090/network/")
@@ -166,7 +168,7 @@ public class ServerTest {
             assertNotNull(result);
             assertFalse(result.isEmpty());
             System.out.println(result);
-            
+
             // Test network interface link.
             System.out.println("GET Request on Networkinterface kind... http://localhost:9090/networkinterface/");
             response = httpClient.newRequest("http://localhost:9090/networkinterface/")
@@ -179,19 +181,19 @@ public class ServerTest {
             assertNotNull(result);
             assertFalse(result.isEmpty());
             System.out.println(result);
-            
-            
+
         } catch (Exception ex) {
             ex.printStackTrace();
             throw new RuntimeException(ex);
         }
-        
-    } 
-    
+
+    }
+
     /**
      * Load file resource test (for json or others files).
+     *
      * @param path
-     * @return 
+     * @return
      */
     private File getResourceInputFile(String path) {
         File inputJsonFile = new File(this.getClass().getResource(path).getFile());

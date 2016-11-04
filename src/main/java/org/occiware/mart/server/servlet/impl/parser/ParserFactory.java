@@ -30,11 +30,13 @@ import org.slf4j.LoggerFactory;
  * @author cgourdin
  */
 public class ParserFactory {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ParserFactory.class);
     // TODO : Make parser as singleton to avoid memory leak.
-    
+
     /**
      * Build parser class to work with.
+     *
      * @param contentType (maybe content type or accept type).
      * @return an object parser.
      */
@@ -47,19 +49,19 @@ public class ParserFactory {
             case Constants.MEDIA_TYPE_TEXT_OCCI:
                 LOGGER.info("Parser input request: TextOcciParser");
                 return new TextOcciParser();
-            
+
             case Constants.MEDIA_TYPE_JSON:
             case Constants.MEDIA_TYPE_JSON_OCCI:
                 LOGGER.info("Parser input request: JsonOcciParser");
                 return new JsonOcciParser();
             // You can add here all other parsers you need without updating class like GetQuery, PostQuery etc.
-            
+
             default:
                 // Default content type if unknown.
                 LOGGER.info("Parser input request: TextOcciParser, warning: contentType/accept is unknown default parser is TextOcciParser");
                 return new TextOcciParser();
         }
-        
+
     }
-    
+
 }

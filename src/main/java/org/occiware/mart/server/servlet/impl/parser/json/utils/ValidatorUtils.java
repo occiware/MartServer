@@ -1,18 +1,18 @@
-/*
- * Copyright 2016 Christophe Gourdin.
+/**
+ * Copyright (c) 2015-2017 Inria
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
+
 /**
  * This class aims to validate a json schema (from input query and validate
  * response query).
@@ -45,16 +46,16 @@ public class ValidatorUtils {
 
     public static JsonNode getJsonNode(String jsonText) throws IOException {
         return JsonLoader.fromString(jsonText);
-    } 
+    }
 
     public static JsonNode getJsonNode(File jsonFile) throws IOException {
         return JsonLoader.fromFile(jsonFile);
-    } 
+    }
 
     public static JsonNode getJsonNode(URL url) throws IOException {
         return JsonLoader.fromURL(url);
     }
-    
+
     public static JsonNode getJsonNode(InputStream in) throws IOException {
         InputStreamReader reader = new InputStreamReader(in);
         return JsonLoader.fromReader(reader);
@@ -79,8 +80,8 @@ public class ValidatorUtils {
     public static JsonSchema getSchemaNode(URL schemaFile) throws IOException, ProcessingException {
         final JsonNode schemaNode = getJsonNode(schemaFile);
         return _getSchemaNode(schemaNode);
-    } 
-    
+    }
+
     public static JsonSchema getSchemaNode(InputStream in) throws IOException, ProcessingException {
         final JsonNode schemaNode = getJsonNode(in);
         return _getSchemaNode(schemaNode);
@@ -99,7 +100,7 @@ public class ValidatorUtils {
                 throw new ProcessingException(processingMessage);
             }
         }
-    } 
+    }
 
     public static boolean isJsonValid(JsonSchema jsonSchemaNode, JsonNode jsonNode) throws ProcessingException {
         ProcessingReport report = jsonSchemaNode.validate(jsonNode);
@@ -110,7 +111,7 @@ public class ValidatorUtils {
         final JsonSchema schemaNode = getSchemaNode(schemaText);
         final JsonNode jsonNode = getJsonNode(jsonText);
         return isJsonValid(schemaNode, jsonNode);
-    } 
+    }
 
     public static boolean isJsonValid(File schemaFile, File jsonFile) throws ProcessingException, IOException {
         final JsonSchema schemaNode = getSchemaNode(schemaFile);
@@ -123,21 +124,19 @@ public class ValidatorUtils {
         final JsonNode jsonNode = getJsonNode(jsonURL);
         return isJsonValid(schemaNode, jsonNode);
     }
-    
+
     public static boolean isJsonValid(InputStream schemaStream, InputStream jsonStream) throws ProcessingException, IOException {
         final JsonSchema schemaNode = getSchemaNode(schemaStream);
         final JsonNode jsonNode = getJsonNode(jsonStream);
-        
+
         return isJsonValid(schemaNode, jsonNode);
     }
-    
+
     public static boolean isJsonValid(File schemaFile, InputStream jsonStream) throws ProcessingException, IOException {
         final JsonSchema schemaNode = getSchemaNode(schemaFile);
         final JsonNode jsonNode = getJsonNode(jsonStream);
         return isJsonValid(schemaNode, jsonNode);
     }
-    
-    
 
     public static void validateJson(String schemaText, String jsonText) throws IOException, ProcessingException {
         final JsonSchema schemaNode = getSchemaNode(schemaText);
@@ -172,13 +171,12 @@ public class ValidatorUtils {
         final JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
         return factory.getJsonSchema(jsonNode);
     }
-    
-    
+
     private static JsonSchema _getSchemaNodeWithFileURI(File schemaFile) throws ProcessingException {
-        
+
         final URI uri = schemaFile.toURI();
         final JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
-        
+
         final JsonSchema schema = factory.getJsonSchema(uri.toString());
         return schema;
     }

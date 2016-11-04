@@ -32,7 +32,7 @@ public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGe
 
     @Override
     public abstract Response getEntityCollection(final String path);
-    
+
     @Override
     public Response getEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request) {
         if (Utils.isUriListContentTypeUsed(headers)) {

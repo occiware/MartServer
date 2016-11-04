@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * @author cgourdin
  */
 public class Constants {
-    
+
     // Filters and pagination constants.
     public static final int DEFAULT_NUMBER_ITEMS_PER_PAGE = 20;
     public static final String NUMBER_ITEMS_PER_PAGE_KEY = "number";
@@ -34,15 +34,15 @@ public class Constants {
     public static final int DEFAULT_OPERATOR_VAL = 0; // operator equal by default if 1 : like mode.
     public static final String OPERATOR_KEY = "operator";
     public static final String CATEGORY_KEY = "category";
-    
+
     public static final String PATH_SEPARATOR = "/";
     public static final String CRLF = "\r\n";
     public static final String MEDIA_TYPE_TEXT_OCCI = "text/occi";
-    
+
     public static final String MEDIA_TYPE_TEXT_URI_LIST = "text/uri-list";
     public static final String MEDIA_TYPE_JSON = "application/json";
     public static final String MEDIA_TYPE_JSON_OCCI = "application/occi+json";
-    
+
     public static final String CATEGORY = "Category";
     public static final String LINK = "Link";
     public static final String X_OCCI_LOCATION = "X-OCCI-Location";
@@ -59,10 +59,10 @@ public class Constants {
     public static final String OCCI_SERVER_HEADER = OCCI_SERVER_NAME + " " + OCCI_SERVER_VERSION;
 
     public static final String HEADER_USER_AGENT = "User-Agent";
-    
+
     public static final String HEADER_CONTENT_TYPE = "content-type";
     public static final String HEADER_ACCEPT = "accept";
-    
+
     public static final String X_OCCI_ATTRIBUTE = "X-OCCI-Attribute";
 
     public static final String CLASS_ACTION = "action";

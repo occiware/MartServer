@@ -26,7 +26,7 @@ import org.occiware.clouddesigner.occi.Entity;
  *
  * @author Christophe Gourdin
  */
-public abstract class AbstractPostQuery extends AbstractEntryPoint implements IPostQuery {   
+public abstract class AbstractPostQuery extends AbstractEntryPoint implements IPostQuery {
 
     @Override
     public abstract Response executeActionsOnEntities(String actionKind, List<Entity> entity);
@@ -42,7 +42,5 @@ public abstract class AbstractPostQuery extends AbstractEntryPoint implements IP
 
     @Override
     public abstract Response updateEntity(String path, Entity entity);
-  
-    
-    
+
 }

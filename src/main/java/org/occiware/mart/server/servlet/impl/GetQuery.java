@@ -334,7 +334,7 @@ public class GetQuery extends AbstractGetQuery {
             }
 
             entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
-            
+
             if (acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                 List<String> locations = new LinkedList<>();
                 String location;

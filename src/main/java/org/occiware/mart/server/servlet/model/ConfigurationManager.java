@@ -250,7 +250,8 @@ public class ConfigurationManager {
      * @param attributes
      * @param owner
      * @param relativePath
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws
+     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void addLinkToConfiguration(String id, String kind, java.util.List<String> mixins, String src,
             String target, Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
@@ -299,7 +300,7 @@ public class ConfigurationManager {
                 if (ex instanceof ConfigurationException) {
                     throw ex;
                 }
-                
+
                 throw new ConfigurationException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
             }
         } else {
@@ -1416,7 +1417,8 @@ public class ConfigurationManager {
      * @param updateMode (if updateMode is true, reset existing and replace with
      * new ones)
      * @return
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws
+     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static boolean addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) throws ConfigurationException {
         boolean result = false;
@@ -1561,7 +1563,8 @@ public class ConfigurationManager {
      * @param mixinId
      * @param entityIds
      * @param updateMode
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws
+     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void saveMixinForEntities(final String mixinId, final List<String> entityIds,
             final boolean updateMode, final String owner) throws ConfigurationException {
@@ -1624,7 +1627,8 @@ public class ConfigurationManager {
      * @param title
      * @param location
      * @param owner
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws
+     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void addUserMixinOnConfiguration(final String id, final String title, final String location, final String owner) throws ConfigurationException {
         if (owner == null || id == null || location == null) {
@@ -1685,9 +1689,10 @@ public class ConfigurationManager {
 
     /**
      * Get a mixin from configuration object.
+     *
      * @param mixinId
      * @param owner
-     * @return 
+     * @return
      */
     public static Mixin findUserMixinOnConfiguration(final String mixinId, final String owner) {
         Mixin mixinToReturn = null;
@@ -1709,7 +1714,8 @@ public class ConfigurationManager {
      *
      * @param mixinId
      * @param owner
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws
+     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void removeUserMixinFromConfiguration(final String mixinId, final String owner) throws ConfigurationException {
         if (mixinId == null) {
@@ -1722,7 +1728,7 @@ public class ConfigurationManager {
         if (mixin == null) {
             LOGGER.info("mixin not found on configurations.");
             throw new ConfigurationException("mixin : " + mixinId + " not found on configuration.");
-            
+
         }
 
         // We remove the mixin location from the userMixin map.
@@ -1953,7 +1959,8 @@ public class ConfigurationManager {
      *
      * @param entityId , relative path of the entity
      * @param attributes , attributes to update
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws
+     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void updateAttributesForEntity(final String entityId, Map<String, String> attributes) throws ConfigurationException {
         String ownerFound = null;
@@ -2202,7 +2209,6 @@ public class ConfigurationManager {
 //        // Generate eTag.
 //        return Utils.createEtagNumber(id, owner, version);
 //    }
-
     /**
      * Get an attribute state object for key parameter.
      *
@@ -2427,12 +2433,12 @@ public class ConfigurationManager {
     public static boolean isMixinTags(final String owner, final String mixinTag) {
         boolean result = false;
         Configuration config = getConfigurationForOwner(owner);
-        
+
         Mixin mixin = findUserMixinOnConfiguration(mixinTag, owner);
         String location = userMixinLocationMap.get(mixinTag);
         if (location != null && mixin != null) {
             result = true;
-        } 
+        }
         return result;
     }
 
@@ -2447,10 +2453,10 @@ public class ConfigurationManager {
                 mixin = findUserMixinOnConfiguration(key, owner);
                 break;
             }
-            
+
         }
         return mixin;
-        
+
     }
 
 }

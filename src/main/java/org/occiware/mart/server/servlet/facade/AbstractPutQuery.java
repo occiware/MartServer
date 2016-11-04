@@ -39,19 +39,17 @@ public abstract class AbstractPutQuery extends AbstractEntryPoint implements IPu
     @Override
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
         Response response = super.inputQuery(path, headers, request);
-        
+
         if (response == null && Utils.isUriListContentTypeUsed(headers)) {
             // We must here return a bad request.
             throw new BadRequestException("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/");
         }
-        
+
         return response;
-        
+
     }
 
     @Override
     public abstract Response defineMixinTag(final InputData data);
-    
-    
-    
+
 }

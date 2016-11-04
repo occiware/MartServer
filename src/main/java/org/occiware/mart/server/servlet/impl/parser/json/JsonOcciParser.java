@@ -19,21 +19,11 @@
 package org.occiware.mart.server.servlet.impl.parser.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.NumberFormat;
-import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,8 +31,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import org.eclipse.core.databinding.conversion.StringToNumberConverter;
-import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
 import org.occiware.clouddesigner.occi.Action;
@@ -53,7 +41,6 @@ import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.Resource;
-import org.occiware.mart.MART;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -117,7 +104,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 throw new CategoryParseException("The input has no content delivered.");
             }
             contentJson = Utils.convertInputStreamToString(jsonInput);
-            
+
         } catch (IOException ex) {
             throw new CategoryParseException("The server cant read the json file input --> " + ex.getMessage());
         } finally {
@@ -129,8 +116,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         boolean isMixinTagSingle = false;
         boolean isActionInvocation = false;
         String messages = "";
-        
-        
+
         // Try on occi main json (for multiple resources/links/mixins).
         try {
             occiMain = mapper.readValue(contentJson, OcciMainJson.class);

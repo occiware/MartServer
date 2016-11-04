@@ -23,21 +23,26 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 /**
- * This describe method for server first entry, one point method to redirect. All the query interface extends that interface.
+ * This describe method for server first entry, one point method to redirect.
+ * All the query interface extends that interface.
+ *
  * @author Christophe Gourdin
  */
 public interface IEntryPoint {
+
     /**
-     * All queries inputs here. for relative path without setting a category on path.
+     * All queries inputs here. for relative path without setting a category on
+     * path.
+     *
      * @param path
      * @param headers
      * @param request
-     * @return 
+     * @return
      */
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request);
-    
+
     public String getContentType();
-    
+
     public String getAcceptType();
-    
+
 }

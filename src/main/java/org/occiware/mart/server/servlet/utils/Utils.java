@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -877,6 +876,7 @@ public class Utils {
 
     /**
      * Parse a string to a number without knowning its type output.
+     *
      * @param str
      * @param instanceClassType can be null.
      * @return a non null number object.
@@ -884,29 +884,29 @@ public class Utils {
     public static Number parseNumber(String str, String instanceClassType) {
         Number number = null;
         if (instanceClassType == null) {
-            
+
             try {
                 number = Float.parseFloat(str);
 
-        } catch (NumberFormatException e) {
-            try {
-                number = Double.parseDouble(str);
-            } catch (NumberFormatException e1) {
+            } catch (NumberFormatException e) {
                 try {
-                    number = Integer.parseInt(str);
-                } catch (NumberFormatException e2) {
+                    number = Double.parseDouble(str);
+                } catch (NumberFormatException e1) {
                     try {
-                        number = Long.parseLong(str);
-                    } catch (NumberFormatException e3) {
-                        throw e3;
+                        number = Integer.parseInt(str);
+                    } catch (NumberFormatException e2) {
+                        try {
+                            number = Long.parseLong(str);
+                        } catch (NumberFormatException e3) {
+                            throw e3;
+                        }
                     }
                 }
             }
-        }
         } else {
             switch (instanceClassType) {
-            // We know here the instanceClass.
-                
+                // We know here the instanceClass.
+
                 case "int":
                 case "Integer":
                     // Convert to integer.
@@ -926,13 +926,13 @@ public class Utils {
                     break;
                 case "BigDecimal":
                 case "double":
-                case "Double":    
+                case "Double":
                     try {
                         number = Double.parseDouble(str);
                     } catch (NumberFormatException ex) {
                         throw ex;
                     }
-                    
+
                     break;
                 case "Long":
                 case "long":
@@ -945,25 +945,25 @@ public class Utils {
                 default:
                     throw new NumberFormatException("Unknown format.");
             }
-            
-            
+
         }
-        
+
         return number;
     }
 
     /**
      * Convert an input stream to a String object.
+     *
      * @param jsonInput
      * @return
-     * @throws IOException 
+     * @throws IOException
      */
     public static String convertInputStreamToString(InputStream jsonInput) throws IOException {
         String contentStr;
         StringBuilder content = new StringBuilder();
         try {
             List<String> lines = IOUtils.readLines(jsonInput, "UTF8");
-            for (String line : lines ) {
+            for (String line : lines) {
                 content.append(line);
             }
             if (content.toString().isEmpty()) {

@@ -24,35 +24,39 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 /**
- * 
+ *
  * @author Christophe Gourdin
  */
 public interface IDeleteQuery extends IEntryPoint {
-    
+
     /**
      * Remove an entity.
+     *
      * @param path
      * @param attrs
-     * @return 
+     * @return
      */
     public Response deleteEntity(String path, Map<String, String> attrs);
-    
+
     /**
      * Remove an entire collection of entities with path = kind (ex: compute).
+     *
      * @param path
-     * @return 
+     * @return
      */
     public Response deleteEntityCollection(String path);
-    
+
     /**
-     * if on other methods parameter kind is a mixin, remove a mixin by calling this method.
+     * if on other methods parameter kind is a mixin, remove a mixin by calling
+     * this method.
+     *
      * @param mixinKind
-     * @param entityId (entity uuid if any), if this is a mixin tag no entityId is provided and this will have null value.
+     * @param entityId (entity uuid if any), if this is a mixin tag no entityId
+     * is provided and this will have null value.
      * @param headers
      * @param request
      * @return a Response object.
      */
     public Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request);
-    
-    
+
 }
