@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Built-By: Christophe Gourdin
+Class-Path: ./lib/ 
+Created-By: Christophe Gourdin - (c) Inria 2016
+Build-Jdk: 1.8.0_71
+Main-Class: org.occiware.mart.server.MartServer
+
+ 

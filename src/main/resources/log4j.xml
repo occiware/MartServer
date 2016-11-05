@@ -9,9 +9,18 @@
             <param name="ConversionPattern" value="%-5p %c{1} - %m%n"/>
         </layout>
     </appender>
+<!--     <appender name="console2" class="org.apache.log4j.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%-5p %c{1} - %m%n"/>
+        </layout>
+    </appender>-->
     <root>
-        <priority value ="INFO" />  <!-- WARN for production -->
+        <priority value ="info" />  <!-- WARN for production -->
         <appender-ref ref="console" />
     </root>
-
+<!--    <logger name="org.occiware.clouddesigner.occi.infrastructure.connector.dummy">
+        <level value="debug"/>
+        <appender-ref ref="console2"/>
+    </logger>-->
 </log4j:configuration>
