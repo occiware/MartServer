@@ -29,12 +29,14 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.occiware.clouddesigner.occi.Configuration;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
@@ -65,11 +67,27 @@ public class DeleteQuery extends AbstractDeleteQuery {
 
         // Check if the query is not on interface query, this path is used only on GET method.
         if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
-            try {
-                response = outputParser.parseResponse("You cannot use interface query on DELETE method.", Response.Status.BAD_REQUEST);
-                return response;
-            } catch (ResponseParseException ex) {
-                throw new InternalServerErrorException(ex);
+            List<InputData> datas = inputParser.getInputDatas();
+            
+            boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
+            if (!isMixinTagRequest) {
+                // Check if there is inputdata referencing mixintag.
+                for (InputData data : datas) {
+                    if (data.getMixinTag() != null || !data.getMixins().isEmpty()) {
+                        // Has mixin tag we continue so.
+                        isMixinTagRequest = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!isMixinTagRequest) {
+                try {
+                    response = outputParser.parseResponse("You cannot use interface query on DELETE method.", Response.Status.BAD_REQUEST);
+                    return response;
+                } catch (ResponseParseException ex) {
+                    throw new InternalServerErrorException(ex);
+                }
             }
         }
 
@@ -85,6 +103,25 @@ public class DeleteQuery extends AbstractDeleteQuery {
                     throw new InternalServerErrorException(ex);
                 }
             }
+            
+            // Check if this is mixins remove association and remove from configuration if not referenced on extension (mixinusertag).
+            if (!data.getMixins().isEmpty() || data.getMixinTag() != null) {
+                
+                if (data.getMixinTag() != null) {
+                    return deleteMixin(data.getMixinTag(), ConfigurationManager.DEFAULT_OWNER, true);
+                }
+                if (!data.getMixins().isEmpty()) {
+                    // Remove association if there is mixins or remove it if mixins tag defined without locations.
+                    for (String mixinId : data.getMixins()) {
+                        response = Response.fromResponse(deleteMixin(mixinId, ConfigurationManager.DEFAULT_OWNER, false)).build();
+                    }
+                    return response;
+                }
+                
+                
+            }
+            
+            
 
             // Delete an entity.
             Map<String, String> attrs = data.getAttrs();
@@ -109,8 +146,48 @@ public class DeleteQuery extends AbstractDeleteQuery {
     }
 
     @Override
-    public Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Response deleteMixin(String mixinId, String owner, boolean isMixinTag) {
+        Response response = null;
+        
+        ConfigurationManager.removeOrDissociateFromConfiguration(owner, mixinId);
+        boolean hasError = false;
+        
+        // Check if mixinId is found in mixin tag area.
+        Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(mixinId, owner);
+        if (mixin != null) {
+            // This is a mixin tag, defined in query without location !.
+            isMixinTag = true;
+        }
+        if (mixin == null) {
+            try {
+                response = outputParser.parseResponse("ok", Response.Status.NO_CONTENT);
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
+            }
+        }
+        
+        // if mixin tag, remove the definition from Configuration object.
+        if (isMixinTag) {
+            try {
+                ConfigurationManager.removeUserMixinFromConfiguration(mixinId, ConfigurationManager.DEFAULT_OWNER);
+            } catch (ConfigurationException ex) {
+                LOGGER.error("Error while removing a mixin tag from configuration object: " + mixinId + " --> " + ex.getMessage());
+                hasError = true;
+                try {
+                    response = outputParser.parseResponse("error while removing a user mixin tag : " + mixinId + " --> " + ex.getMessage());
+                } catch (ResponseParseException e) {
+                    throw new InternalServerErrorException(e);
+                }
+            }
+        }
+        if (!hasError && response == null) {
+            try {
+                response = outputParser.parseResponse("ok");
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException();
+            }
+        } 
+        return response;
     }
 
     @Override
@@ -188,7 +265,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
         try {
             boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
             if (isMixinTagRequest) {
-                LOGGER.info("Mixin tag get request... ");
+                LOGGER.info("Mixin tag delete request... ");
                 Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
                 if (mixin == null) {
                     try {

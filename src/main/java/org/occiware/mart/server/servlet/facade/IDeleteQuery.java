@@ -47,16 +47,11 @@ public interface IDeleteQuery extends IEntryPoint {
     public Response deleteEntityCollection(String path);
 
     /**
-     * if on other methods parameter kind is a mixin, remove a mixin by calling
-     * this method.
-     *
-     * @param mixinKind
-     * @param entityId (entity uuid if any), if this is a mixin tag no entityId
-     * is provided and this will have null value.
-     * @param headers
-     * @param request
-     * @return a Response object.
+     * Remove mixin association and if mixin is a user tag, remove it from configuration.
+     * @param mixinId
+     * @param owner
+     * @param isMixinTag
+     * @return 
      */
-    public Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request);
-
+    public Response deleteMixin(String mixinId, String owner, boolean isMixinTag);
 }

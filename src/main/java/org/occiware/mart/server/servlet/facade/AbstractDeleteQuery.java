@@ -30,7 +30,7 @@ import javax.ws.rs.core.Response;
 public abstract class AbstractDeleteQuery extends AbstractEntryPoint implements IDeleteQuery {
 
     @Override
-    public abstract Response deleteMixin(String mixinKind, String entityId, HttpHeaders headers, HttpServletRequest request);
+    public abstract Response deleteMixin(String mixinId, String owner, boolean isMixinTag);
 
     @Override
     public abstract Response deleteEntityCollection(String path);
