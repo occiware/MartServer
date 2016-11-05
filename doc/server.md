@@ -163,7 +163,7 @@ Like this:
 
 ```    "title" : "Start the system"```
 
-```  }, {```
+```  }, { ```
 
 ```    "attributes" : {```
 
@@ -175,25 +175,25 @@ Like this:
 
 ```        "pattern" : {```
 
-```          "$schema" : "http://json-schema.org/draft-04/schema#",```
+```          "$schema" : "http://json-schema.org/draft-04/schema#", ```
 
 ```          "type" : "string"```
 
-```        },```
+```        }, ```
 
-```        "type" : "string"```
+```        "type" : "string" ```
 
-```      }```
+```      } ```
 
-```    },```
+```    }, ```
 
-```    "scheme" : "http://schemas.ogf.org/occi/infrastructure/compute/action#",```
+```    "scheme" : "http://schemas.ogf.org/occi/infrastructure/compute/action#", ```
 
-```    "term" : "stop",```
+```    "term" : "stop", ```
 
-```    "title" : "Stop the system (graceful, acpioff or poweroff)"```
+```    "title" : "Stop the system (graceful, acpioff or poweroff)" ```
 
-```  }, {```
+```  }, { ```
 
 ``` ... ```
 
