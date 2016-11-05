@@ -135,9 +135,9 @@ Like this:
 
 ```< Transfer-Encoding: chunked```
 
-```<```
+``` < ```
  
-```{```
+``` { ```
 
 ```  "actions" : [ {```
 
@@ -195,7 +195,7 @@ Like this:
 
 ```  }, {```
 
-```...```
+``` ... ```
 
 
 ## Logs output
