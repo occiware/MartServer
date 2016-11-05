@@ -74,18 +74,32 @@ public class PutQuery extends AbstractPutQuery {
             // There was a badrequest, the headers are maybe malformed..
             return response;
         }
+        List<InputData> datas = inputParser.getInputDatas();
         // Check if the query is not on interface query, this path is used only on GET method.
+            // One case is authorized here, if mixinTag definition.
+            boolean hasMixinTag = false;
         if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
-            try {
-                response = outputParser.parseResponse("you cannot use interface query on PUT method", Response.Status.BAD_REQUEST);
-                return response;
-            } catch (ResponseParseException ex) {
-                throw new InternalServerErrorException(ex);
+            // Check the input datas, if one mixin tag is defined on the first inputdata, we define the mixintag (this must have location field in inputdata).
+            
+            for (InputData data : datas) {
+                if (data.getMixinTag() != null) {
+                    // Has mixin tag we continue so.
+                    hasMixinTag = true;
+                    break;
+                }
+            }
+            if (!hasMixinTag) {
+            
+                try {
+                    response = outputParser.parseResponse("you cannot use interface query on PUT method", Response.Status.BAD_REQUEST);
+                    return response;
+                } catch (ResponseParseException ex) {
+                    throw new InternalServerErrorException(ex);
+                }
             }
         }
 
         // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
-        List<InputData> datas = inputParser.getInputDatas();
         for (InputData data : datas) {
             if (data.getAction() != null) {
                 try {
@@ -98,7 +112,8 @@ public class PutQuery extends AbstractPutQuery {
 
             String kind = data.getKind();
             List<String> mixins = data.getMixins();
-            if (kind == null && mixins == null) {
+            String mixinTag = data.getMixinTag();
+            if (kind == null && (mixins == null || mixins.isEmpty()) && mixinTag == null) {
                 try {
                     response = outputParser.parseResponse("No category provided !", Response.Status.BAD_REQUEST);
                     return response;
@@ -108,7 +123,6 @@ public class PutQuery extends AbstractPutQuery {
             }
 
             // Check if the query is a create/overwrite mixin tag definition.
-            String mixinTag = data.getMixinTag();
             if (mixinTag != null) {
                 LOGGER.info("Define or overwrite mixin tag definitions");
                 response = defineMixinTag(data);
