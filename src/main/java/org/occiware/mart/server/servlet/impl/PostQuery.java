@@ -136,7 +136,7 @@ public class PostQuery extends AbstractPostQuery {
                     LOGGER.info("Executing action: " + data.getAction() + " on Category: " + categoryId + " collection.");
                     // Load all entities 
                     entities = ConfigurationManager.findAllEntitiesForCategoryId(categoryId).get(ConfigurationManager.DEFAULT_OWNER);
-
+                    
                     response = executeActionsOnEntities(actionId, entities);
 
                 } else if (categoryId != null && isEntityUUIDProvided) {
@@ -407,10 +407,22 @@ public class PostQuery extends AbstractPostQuery {
                 throw new InternalServerErrorException(ex);
             }
         }
-
+        
         InputData data = inputParser.getInputDataForEntityUUID(entity.getId());
-
-        String[] actionParameters = Utils.getActionParametersArray(data.getAttrs());
+        if (data == null) {
+            // This is an action on collections or on a path.
+            List<InputData> datas = inputParser.getInputDatas();
+            for (InputData dataTmp : datas) {
+                data = dataTmp;
+                break;
+            }
+        }
+        String[] actionParameters = null;
+        
+        if (data != null && data.getAttrs() != null) {
+            actionParameters = Utils.getActionParametersArray(data.getAttrs());
+        }
+        
         String entityKind = entity.getKind().getScheme() + entity.getKind().getTerm();
         Extension ext = ConfigurationManager.getExtensionForKind(ConfigurationManager.DEFAULT_OWNER, entityKind);
 
