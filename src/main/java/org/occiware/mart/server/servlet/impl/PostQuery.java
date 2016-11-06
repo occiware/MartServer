@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
@@ -30,6 +31,7 @@ import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -44,6 +46,7 @@ import org.occiware.mart.server.servlet.facade.AbstractPostQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
+import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
@@ -253,16 +256,29 @@ public class PostQuery extends AbstractPostQuery {
             // - update a mixin association (mixin tag included) 
             if (mixinTagAsso || (data.getMixinTag() != null && ConfigurationManager.isMixinTags(ConfigurationManager.DEFAULT_OWNER, data.getMixinTag()))) {
                 String location = data.getMixinTagLocation();
+                List<String> xocciLocations = data.getXocciLocation();
                 if (location == null) {
-                    try {
-                        response = outputParser.parseResponse("Request is invalid, mixin tag location is unknown", Response.Status.BAD_REQUEST);
-                        return response;
-                    } catch (ResponseParseException ex) {
-                        throw new InternalServerErrorException(ex);
+                    // Check if X-OCCI-Location is used.
+                    if (xocciLocations.isEmpty()) {
+                        try {
+                            response = outputParser.parseResponse("Request is invalid, mixin tag location is unknown", Response.Status.BAD_REQUEST);
+                            return response;
+                        } catch (ResponseParseException ex) {
+                            throw new InternalServerErrorException(ex);
+                        }
                     }
                 }
-
-                response = updateMixinTagAssociation(categoryId, location);
+                if (!xocciLocations.isEmpty()) {
+                    for (String xocciLocation : xocciLocations) {
+                        response = Response.fromResponse(updateMixinTagAssociation(categoryId, xocciLocation)).build();
+                        if (!response.getStatusInfo().equals(Response.Status.OK)) {
+                            return response;
+                        }
+                    }
+                } else {
+                    response = updateMixinTagAssociation(categoryId, location);
+                }
+                
                 return response;
             } else {
                 // Request is undefined.
@@ -356,10 +372,12 @@ public class PostQuery extends AbstractPostQuery {
      */
     @Override
     public Response updateMixinTagAssociation(String mixinTag, String relativeLocationApply) {
-
+        
+        
         Response response;
         List<String> mixins = new ArrayList<>();
         mixins.add(mixinTag);
+        
         String uuid = Utils.getUUIDFromPath(relativeLocationApply, new HashMap<>());
         if (uuid == null) {
             throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore");
@@ -370,7 +388,7 @@ public class PostQuery extends AbstractPostQuery {
         }
 
         try {
-            ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, true);
+            ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, false);
         } catch (ConfigurationException ex) {
             try {
                 response = outputParser.parseResponse(ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
@@ -380,7 +398,7 @@ public class PostQuery extends AbstractPostQuery {
         }
 
         try {
-            response = outputParser.parseResponse("OK");
+            response = outputParser.parseResponse("ok");
         } catch (ResponseParseException ex) {
             throw new InternalServerErrorException(ex);
         }
@@ -479,5 +497,5 @@ public class PostQuery extends AbstractPostQuery {
         return response;
 
     }
-
+    
 }

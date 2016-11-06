@@ -38,8 +38,9 @@ public interface IGetQuery extends IEntryPoint {
      * @return
      */
     public Response getEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request);
+    
+    public Response getEntities(final String path);
 
-    public Response getEntityCollection(final String path);
 
     /**
      * on path /-/

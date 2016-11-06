@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.impl;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +27,10 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import org.occiware.clouddesigner.occi.Configuration;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -37,7 +38,6 @@ import org.occiware.mart.server.servlet.facade.AbstractDeleteQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
-import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
@@ -194,97 +194,15 @@ public class DeleteQuery extends AbstractDeleteQuery {
     public Response deleteEntityCollection(String path) {
         Response response = null;
         // Delete a collection of entities.
-        List<Entity> entities;
-        // Collection on categories. // Like : get on myhost/compute/
-        boolean isCollectionOnCategoryPath = Utils.isCollectionOnCategory(path);
-        // Collections part.
-        // Get pagination if any (current page number and number max of items, for the last if none defined, used to 20 items per page by default).
-        String pageTmp = inputParser.getParameter(Constants.CURRENT_PAGE_KEY);
-        String itemsNumber = inputParser.getParameter(Constants.NUMBER_ITEMS_PER_PAGE_KEY);
-        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
-        int page = Constants.DEFAULT_CURRENT_PAGE;
-        if (pageTmp != null && !pageTmp.isEmpty()) {
-            // Set the value from request only if this is a number.
-            try {
-                items = Integer.valueOf(itemsNumber);
-            } catch (NumberFormatException ex) {
-                // Cant parse the number
-                LOGGER.error("The parameter \"number\" is not set correctly, please check the parameter, this must be a number.");
-                LOGGER.error("Default to " + items);
-            }
-            try {
-                page = Integer.valueOf(pageTmp);
-            } catch (NumberFormatException ex) {
-                LOGGER.error("The parameter \"page\" is not set correctly, please check the parameter, this must be a number.");
-                LOGGER.error("Default to " + page);
-            }
-        }
-        String operatorTmp = inputParser.getParameter(Constants.OPERATOR_KEY);
-        if (operatorTmp == null) {
-            operatorTmp = "0";
-        }
-        int operator = 0;
-        try {
-            operator = Integer.valueOf(operatorTmp);
-        } catch (NumberFormatException ex) {
-        }
-        // Get the filter parameters and build a CollectionFilter object for each filter parameters defined.
-        List<CollectionFilter> filters = new LinkedList<>();
-        // Category filter check.
-        String paramTmp = inputParser.getParameter("category");
-        if (paramTmp != null && !paramTmp.isEmpty()) {
-            CollectionFilter filter = new CollectionFilter();
-            filter.setCategoryFilter(paramTmp);
-            filter.setOperator(operator);
-            filters.add(filter);
-        }
-        // Attribute filter check.
-        paramTmp = inputParser.getParameter("attribute");
-        if (paramTmp != null && !paramTmp.isEmpty()) {
-            CollectionFilter filter = new CollectionFilter();
-            filter.setAttributeFilter(paramTmp);
-            filter.setOperator(operator);
-            filters.add(filter);
-        }
-
-        if (isCollectionOnCategoryPath) {
-            // Check category uri.
-            String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
-            CollectionFilter filter = new CollectionFilter();
-            filter.setOperator(operator);
-            filter.setCategoryFilter(categoryId);
-            filters.add(filter);
-        } else {
-            // Unknown collection type.
-            CollectionFilter filter = new CollectionFilter();
-            filter.setOperator(operator);
-            filter.setFilterOnPath(path);
-            filters.add(filter);
-        }
+        List<Entity> entities = new ArrayList<>();
 
         try {
-            boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
-            if (isMixinTagRequest) {
-                LOGGER.info("Mixin tag delete request... ");
-                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
-                if (mixin == null) {
-                    try {
-                        response = outputParser.parseResponse("The mixin location : " + path + " is not defined", Response.Status.NOT_FOUND);
-                        return response;
-                    } catch (ResponseParseException ex) {
-                        throw new InternalServerErrorException("The mixin location : " + path + " is not defined");
-                    }
-                }
-                //entities = ConfigurationManager.findAllEntitiesForMixin(ConfigurationManager.DEFAULT_OWNER, mixin.getScheme()+mixin.getTerm());
-                // Add mixin filters.
-                filters.clear();
-                CollectionFilter filter = new CollectionFilter();
-                filter.setCategoryFilter(mixin.getScheme() + mixin.getTerm());
-                filter.setOperator(operator);
-                filters.add(filter);
+            try {
+                entities = getEntityCollection(path);
+            } catch (ConfigurationException ex) {
+                LOGGER.error(ex.getMessage());
+                response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
             }
-            entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
-
             if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                 List<String> locations = new LinkedList<>();
                 String location;

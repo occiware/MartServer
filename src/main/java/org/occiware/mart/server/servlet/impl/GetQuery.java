@@ -27,6 +27,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -36,6 +37,7 @@ import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractGetQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
@@ -167,7 +169,7 @@ public class GetQuery extends AbstractGetQuery {
             }
 
             // Collections part.
-            response = getEntityCollection(path);
+            response = getEntities(path);
             if (response == null) {
                 try {
                     response = outputParser.parseResponse("Unknown GET query type.", Response.Status.BAD_REQUEST);
@@ -236,110 +238,21 @@ public class GetQuery extends AbstractGetQuery {
     }
 
     @Override
-    public Response getEntityCollection(final String path) {
+    public Response getEntities(final String path) {
         Response response = null;
         String acceptType = getAcceptType();
         if (acceptType == null) {
             acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
         }
-        // Get pagination if any (current page number and number max of items, for the last if none defined, used to 20 items per page by default).
-        String pageTmp = inputParser.getParameter(Constants.CURRENT_PAGE_KEY);
-        String itemsNumber = inputParser.getParameter(Constants.NUMBER_ITEMS_PER_PAGE_KEY);
-        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
-        int page = Constants.DEFAULT_CURRENT_PAGE;
-        if (pageTmp != null && !pageTmp.isEmpty()) {
-            // Set the value from request only if this is a number.
-            try {
-                items = Integer.valueOf(itemsNumber);
-            } catch (NumberFormatException ex) {
-                // Cant parse the number
-                LOGGER.error("The parameter \"number\" is not set correctly, please check the parameter, this must be a number.");
-                LOGGER.error("Default to " + items);
-            }
-            try {
-                page = Integer.valueOf(pageTmp);
-            } catch (NumberFormatException ex) {
-                LOGGER.error("The parameter \"page\" is not set correctly, please check the parameter, this must be a number.");
-                LOGGER.error("Default to " + page);
-            }
-        }
-        String operatorTmp = inputParser.getParameter(Constants.OPERATOR_KEY);
-        if (operatorTmp == null) {
-            operatorTmp = "0";
-        }
-        int operator = 0;
+        List<Entity> entities = new ArrayList<>();
         try {
-            operator = Integer.valueOf(operatorTmp);
-        } catch (NumberFormatException ex) {
-        }
-
-        // Get collections based on location and Accept = text/uri-list or give entities details for other accept types.
-        // Examples of query for filtering and pagination: 
-        // Filtering (attribute or category) :  http://localhost:9090/myquery?attribute=myattributename or http://localh...?category=mymixintag
-        // Pagination : http://localhost:9090/myquery?attribute=myattributename&page=2&number=5 where page = current page, number : max number of items to display.
-        // Operator (equal or like) : http://localhost:9090/myquery?attribute=myattributename&page=2&number=5&operator=like
-        List<Entity> entities;
-        // Collection on categories. // Like : get on myhost/compute/
-        boolean isCollectionOnCategoryPath = Utils.isCollectionOnCategory(path);
-        // Get the filter parameters and build a CollectionFilter object for each filter parameters defined.
-        List<CollectionFilter> filters = new LinkedList<>();
-        // Category filter check.
-        String paramTmp = inputParser.getParameter("category");
-        if (paramTmp != null && !paramTmp.isEmpty()) {
-            CollectionFilter filter = new CollectionFilter();
-            filter.setCategoryFilter(paramTmp);
-            filter.setOperator(operator);
-            filters.add(filter);
-        }
-        // Attribute filter check.
-        paramTmp = inputParser.getParameter("attribute");
-        if (paramTmp != null && !paramTmp.isEmpty()) {
-            CollectionFilter filter = new CollectionFilter();
-            filter.setAttributeFilter(paramTmp);
-            filter.setOperator(operator);
-            filters.add(filter);
-        }
-
-        if (isCollectionOnCategoryPath) {
-            // Check category uri.
-            String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
-            CollectionFilter filter = new CollectionFilter();
-            filter.setOperator(operator);
-            filter.setCategoryFilter(categoryId);
-            filters.add(filter);
-        } else {
-            // Unknown collection type.
-            CollectionFilter filter = new CollectionFilter();
-            filter.setOperator(operator);
-            filter.setFilterOnPath(path);
-            filters.add(filter);
-        }
-
-        try {
-            // Case of the mixin tag entities request.
-            boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
-            if (isMixinTagRequest) {
-                LOGGER.info("Mixin tag get request... ");
-                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
-                if (mixin == null) {
-                    try {
-                        response = outputParser.parseResponse("The mixin location : " + path + " is not defined", Response.Status.NOT_FOUND);
-                        return response;
-                    } catch (ResponseParseException ex) {
-                        throw new InternalServerErrorException("The mixin location : " + path + " is not defined");
-                    }
-                }
-                //entities = ConfigurationManager.findAllEntitiesForMixin(ConfigurationManager.DEFAULT_OWNER, mixin.getScheme()+mixin.getTerm());
-                // Add mixin filters.
-                filters.clear();
-                CollectionFilter filter = new CollectionFilter();
-                filter.setCategoryFilter(mixin.getScheme() + mixin.getTerm());
-                filter.setOperator(operator);
-                filters.add(filter);
+            try {
+                entities = getEntityCollection(path);
+            } catch (ConfigurationException ex) {
+                LOGGER.error(ex.getMessage());
+                response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
             }
-
-            entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
-
+            
             if (acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                 List<String> locations = new LinkedList<>();
                 String location;

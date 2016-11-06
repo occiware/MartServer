@@ -20,13 +20,18 @@ package org.occiware.mart.server.servlet.impl;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.security.auth.login.Configuration;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -76,11 +81,11 @@ public class PutQuery extends AbstractPutQuery {
         }
         List<InputData> datas = inputParser.getInputDatas();
         // Check if the query is not on interface query, this path is used only on GET method.
-            // One case is authorized here, if mixinTag definition.
-            boolean hasMixinTag = false;
+        // One case is authorized here, if mixinTag definition.
+        boolean hasMixinTag = false;
         if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
             // Check the input datas, if one mixin tag is defined on the first inputdata, we define the mixintag (this must have location field in inputdata).
-            
+
             for (InputData data : datas) {
                 if (data.getMixinTag() != null) {
                     // Has mixin tag we continue so.
@@ -89,7 +94,7 @@ public class PutQuery extends AbstractPutQuery {
                 }
             }
             if (!hasMixinTag) {
-            
+
                 try {
                     response = outputParser.parseResponse("you cannot use interface query on PUT method", Response.Status.BAD_REQUEST);
                     return response;
@@ -113,7 +118,18 @@ public class PutQuery extends AbstractPutQuery {
             String kind = data.getKind();
             List<String> mixins = data.getMixins();
             String mixinTag = data.getMixinTag();
-            if (kind == null && (mixins == null || mixins.isEmpty()) && mixinTag == null) {
+            boolean isMixinTag = false;
+            // If the path is a category and a mixin tag 
+            if (mixinTag != null) {
+                isMixinTag = true;
+            } else {
+                // Check the path.
+                if (Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER)) {
+                    isMixinTag = true;
+                }
+            }
+            
+            if (kind == null && (mixins == null || mixins.isEmpty()) && !isMixinTag) {
                 try {
                     response = outputParser.parseResponse("No category provided !", Response.Status.BAD_REQUEST);
                     return response;
@@ -123,9 +139,9 @@ public class PutQuery extends AbstractPutQuery {
             }
 
             // Check if the query is a create/overwrite mixin tag definition.
-            if (mixinTag != null) {
+            if (isMixinTag) {
                 LOGGER.info("Define or overwrite mixin tag definitions");
-                response = defineMixinTag(data);
+                response = defineMixinTag(data, path);
                 continue;
             }
 
@@ -305,19 +321,60 @@ public class PutQuery extends AbstractPutQuery {
     }
 
     @Override
-    public Response defineMixinTag(final InputData data) {
+    public Response defineMixinTag(final InputData data, final String path) {
 
         Response response;
         String mixinTag = data.getMixinTag();
         LOGGER.info("Define mixin tag : " + mixinTag);
         String mixinLocation = data.getMixinTagLocation();
         String title = data.getMixinTagTitle();
-
+        List<String> xocciLocations = data.getXocciLocation();
         try {
-            if (mixinLocation == null || mixinLocation.isEmpty()) {
+            if ((mixinLocation == null || mixinLocation.isEmpty()) && (xocciLocations == null || xocciLocations.isEmpty())) {
                 throw new ConfigurationException("No location is defined for this mixin.");
             }
-            ConfigurationManager.addUserMixinOnConfiguration(mixinTag, title, mixinLocation, ConfigurationManager.DEFAULT_OWNER);
+            if (mixinLocation != null) {
+                ConfigurationManager.addUserMixinOnConfiguration(mixinTag, title, mixinLocation, ConfigurationManager.DEFAULT_OWNER);
+            }
+            if (xocciLocations != null && !xocciLocations.isEmpty()) {
+
+                // Get the mixin scheme+term from path.
+                String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
+                if (categoryId == null) {
+                    throw new ConfigurationException("Category is not defined");
+                }
+                List<String> entities = new ArrayList<>();
+                String base = this.getUri().getBaseUri().toString();
+                for (String xOcciLocation : xocciLocations) {
+                    // Build a list of entities from xoccilocations defined.
+                    if (Utils.isEntityUUIDProvided(xOcciLocation, new HashMap<>())) {
+                        // One entity.
+                        String uuid = Utils.getUUIDFromPath(xOcciLocation, new HashMap<>());
+                        if (uuid == null) {
+                            throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore");
+                        }
+                        Entity entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
+                        if (entity == null) {
+                            throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore");
+                        }
+                        entities.add(entity.getId());
+                    } else {
+                        // Maybe a collection on inbound or outbound path.
+                        String relativePath = xOcciLocation.replace(base, "");
+                        List<Entity> entitiesTmp = getEntityCollection(relativePath);
+                        if (!entitiesTmp.isEmpty()) {
+                            for (Entity entity : entitiesTmp) {
+                                entities.add(entity.getId());
+                            }
+                        }
+                    }
+                }
+                // Full update mode.
+                if (!entities.isEmpty()) {
+                    ConfigurationManager.saveMixinForEntities(categoryId, entities, true, ConfigurationManager.DEFAULT_OWNER);
+                }
+                // ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, true);
+            }
         } catch (ConfigurationException ex) {
             try {
                 response = outputParser.parseResponse(ex.getMessage(), Response.Status.BAD_REQUEST);
@@ -326,19 +383,18 @@ public class PutQuery extends AbstractPutQuery {
                 throw new InternalServerErrorException(ex.getMessage());
             }
         }
-        try {
-            response = Response.created(new URI(mixinLocation))
-                    .header("Server", Constants.OCCI_SERVER_HEADER)
-                    .type(getContentType())
-                    .header("Accept", getAcceptType())
-                    .build();
-        } catch (URISyntaxException ex) {
             response = Response.created(getUri().getAbsolutePath())
                     .header("Server", Constants.OCCI_SERVER_HEADER)
                     .type(getContentType())
                     .header("Accept", getAcceptType())
                     .build();
-        }
+//        } catch (URISyntaxException ex) {
+//            response = Response.created(getUri().getAbsolutePath())
+//                    .header("Server", Constants.OCCI_SERVER_HEADER)
+//                    .type(getContentType())
+//                    .header("Accept", getAcceptType())
+//                    .build();
+//        }
 
         return response;
     }

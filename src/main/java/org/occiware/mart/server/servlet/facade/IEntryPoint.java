@@ -18,9 +18,12 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 
 /**
  * This describe method for server first entry, one point method to redirect.
@@ -44,5 +47,13 @@ public interface IEntryPoint {
     public String getContentType();
 
     public String getAcceptType();
-
+    
+    /**
+     * Get a list of entities from a category request or inbound path request.
+     * @param path
+     * @return
+     * @throws ConfigurationException 
+     */
+    public List<Entity> getEntityCollection(final String path) throws ConfigurationException;
+    
 }

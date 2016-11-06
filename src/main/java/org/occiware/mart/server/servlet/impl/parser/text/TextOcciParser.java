@@ -170,6 +170,16 @@ public class TextOcciParser extends AbstractRequestParser {
 
                 }
             }
+            if (key.equalsIgnoreCase(Constants.X_OCCI_LOCATION)) {
+                for (String value : values) {
+                    String[] valuesTmp = value.split(",");
+                    for (String valueTmp : valuesTmp) {
+                        data.addXocciLocation(valueTmp);
+                    }
+                    
+                    break;
+                }
+            }
         }
         data.setAttrs(attrs);
         // Update the data in the list of input datas. for this parser, there is only one inputdata.

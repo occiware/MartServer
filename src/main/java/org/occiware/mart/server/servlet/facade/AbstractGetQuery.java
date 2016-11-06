@@ -31,7 +31,7 @@ import org.occiware.mart.server.servlet.utils.Utils;
 public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGetQuery {
 
     @Override
-    public abstract Response getEntityCollection(final String path);
+    public abstract Response getEntities(String path);
 
     @Override
     public Response getEntity(String path, String entityId, HttpHeaders headers, HttpServletRequest request) {
@@ -61,5 +61,6 @@ public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGe
         }
         return null;
     }
+    
 
 }

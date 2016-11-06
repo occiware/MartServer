@@ -45,7 +45,8 @@ public interface IPutQuery extends IEntryPoint {
      * Define a mixin tag on a location
      *
      * @param data
+     * @param path
      * @return
      */
-    public Response defineMixinTag(final InputData data);
+    public Response defineMixinTag(final InputData data, final String path);
 }

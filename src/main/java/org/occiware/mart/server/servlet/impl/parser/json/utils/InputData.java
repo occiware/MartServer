@@ -57,6 +57,8 @@ public class InputData {
     private String mixinTag = null;
     private String mixinTagTitle = null;
 
+    private List<String> xocciLocation = null;
+    
     public Map<String, String> getAttrs() {
         return attrs;
     }
@@ -108,6 +110,8 @@ public class InputData {
     public void setMixinTagLocation(String mixinTagLocation) {
         this.mixinTagLocation = mixinTagLocation;
     }
+    
+    
 
     public String getAction() {
         return action;
@@ -154,4 +158,26 @@ public class InputData {
         this.mixinTagTitle = mixinTagTitle;
     }
 
+    public List<String> getXocciLocation() {
+        if (xocciLocation == null) {
+            xocciLocation = new ArrayList<>();
+        }
+        return xocciLocation;
+    }
+
+    public void setXocciLocation(List<String> xocciLocation) {
+        this.xocciLocation = xocciLocation;
+    }
+    
+    public void addXocciLocation(final String xOcciLocation) {
+        if (xocciLocation == null) {
+            xocciLocation = new ArrayList<>();
+        }
+        if (xOcciLocation == null) {
+            return;
+        }
+        xocciLocation.add(xOcciLocation);
+    }
+    
+    
 }

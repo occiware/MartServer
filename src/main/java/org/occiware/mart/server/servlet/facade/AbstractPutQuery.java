@@ -50,6 +50,6 @@ public abstract class AbstractPutQuery extends AbstractEntryPoint implements IPu
     }
 
     @Override
-    public abstract Response defineMixinTag(final InputData data);
+    public abstract Response defineMixinTag(final InputData data, final String path);
 
 }

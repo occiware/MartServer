@@ -1437,8 +1437,13 @@ public class ConfigurationManager {
                     mixin = findMixinOnEntities(owner, mixinStr);
 
                     if (mixin == null) {
-                        throw new ConfigurationException("Mixin " + mixinStr + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
+                        // Search on the mixin tag.
+                        mixin = findUserMixinOnConfiguration(mixinStr, owner);
+                        if (mixin == null) {
+                            throw new ConfigurationException("Mixin " + mixinStr + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
+                        }
                     }
+                    LOGGER.info("Mixin found on configuration : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
 
                 } else {
                     LOGGER.info("Mixin found on used extensions : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
@@ -1574,9 +1579,12 @@ public class ConfigurationManager {
 
         if (mixin == null) {
             mixin = findMixinOnEntities(owner, mixinId);
-
             if (mixin == null) {
-                throw new ConfigurationException("The mixin : " + mixinId + " doesnt exist on configuration.");
+                // Search on the mixin tag.
+                mixin = findUserMixinOnConfiguration(mixinId, owner);
+                if (mixin == null) {
+                    throw new ConfigurationException("Mixin " + mixinId + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
+                }
             }
         }
         LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
@@ -2061,6 +2069,7 @@ public class ConfigurationManager {
             boolean control = false;
             String constraintValue;
             while (it.hasNext()) {
+                control = false;
                 Entity entity = it.next();
                 // Check if attribute and attribute value is in filter, if not remove this entity from the list to return.
                 List<AttributeState> attrs = entity.getAttributes();
@@ -2132,15 +2141,16 @@ public class ConfigurationManager {
 
                 if (hasFilterOnPath && filterOnPath != null) {
                     String relativeLocation = getEntityRelativePath(entity.getId());
-
+                    
+                    relativeLocation = relativeLocation.replaceAll("\\s+","");
+                    filterOnPath = filterOnPath.replaceAll("\\s+","");
+                    
                     if (relativeLocation == null || relativeLocation.isEmpty()) {
                         control = false;
-
                     } else if (relativeLocation.startsWith(filterOnPath)) {
-                        control = true;
-                    } else {
-                        control = false;
+                            control = true;
                     }
+
                 } // endif has a filter on relative path.
 
                 if (!control) {
@@ -2308,10 +2318,30 @@ public class ConfigurationManager {
     public static List<Mixin> getAllConfigurationMixins(String user) {
         Configuration config = getConfigurationForOwner(user);
         List<Extension> exts = config.getUse();
+        List<Mixin> mixinsConf = config.getMixins();
+
         List<Mixin> allMixins = new LinkedList<>();
         for (Extension ext : exts) {
             allMixins.addAll(ext.getMixins());
         }
+        // For mixin tags...
+        boolean found;
+        for (Mixin mixin : mixinsConf) {
+            found = false;
+            String mixinTerm = mixin.getTerm();
+            String mixinScheme = mixin.getScheme();
+            String mixinId = mixinScheme + mixinTerm;
+            for (Mixin mix : allMixins) {
+                if ((mix.getScheme() + mix.getTerm()).equals(mixinId)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                allMixins.add(mixin);
+            }
+        }
+
         return allMixins;
     }
 
@@ -2432,7 +2462,6 @@ public class ConfigurationManager {
 
     public static boolean isMixinTags(final String owner, final String mixinTag) {
         boolean result = false;
-        Configuration config = getConfigurationForOwner(owner);
 
         Mixin mixin = findUserMixinOnConfiguration(mixinTag, owner);
         String location = userMixinLocationMap.get(mixinTag);
@@ -2446,9 +2475,26 @@ public class ConfigurationManager {
         // Search for the mixin id.
         Mixin mixin = null;
         Set<String> keys = userMixinLocationMap.keySet();
+        String locationCompare = locationMixin;
+        if (locationCompare.startsWith("/")) {
+            locationCompare = locationCompare.substring(1);
+        }
+        if (locationCompare.endsWith("/")) {
+            locationCompare = locationCompare.substring(0, locationCompare.length() - 1);
+        }
+
         for (String key : keys) {
             String location = userMixinLocationMap.get(key);
-            if (location.equals(locationMixin)) {
+
+            // To be sure we compare the same location, remove the trailing slash.
+            if (location.startsWith("/")) {
+                location = location.substring(1);
+            }
+            if (location.endsWith("/")) {
+                location = location.substring(0, location.length() - 1);
+            }
+
+            if (location.equals(locationCompare)) {
                 // Search the mixin from this scheme+term.
                 mixin = findUserMixinOnConfiguration(key, owner);
                 break;
