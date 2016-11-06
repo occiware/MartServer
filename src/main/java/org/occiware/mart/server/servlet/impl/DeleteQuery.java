@@ -302,14 +302,15 @@ public class DeleteQuery extends AbstractDeleteQuery {
                     response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
                     return response;
                 }
-                List<Entity> entitiesInf = new LinkedList<>();
+                // List<Entity> entitiesInf = new LinkedList<>();
 
                 for (Entity entityInf : entities) {
                     entityInf.occiDelete();
-                    entitiesInf.add(entityInf);
+                    // entitiesInf.add(entityInf);
                     ConfigurationManager.removeOrDissociateFromConfiguration(ConfigurationManager.DEFAULT_OWNER, entityInf.getId());
                 }
-                response = outputParser.parseResponse(entitiesInf);
+                // response = outputParser.parseResponse(entitiesInf);
+                response = outputParser.parseResponse("ok");
             }
 
         } catch (ResponseParseException ex) {
