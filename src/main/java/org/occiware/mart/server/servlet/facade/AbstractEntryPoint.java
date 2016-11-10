@@ -161,11 +161,11 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
                             }
                         }
 
-                        if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
-                            error += " \n ";
-                            error += "Some mixins doesnt apply to kind : " + data.getKind();
-                            hasError = true;
-                        }
+//                        if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
+//                            error += " \n ";
+//                            error += "Some mixins doesnt apply to kind : " + data.getKind();
+//                            hasError = true;
+//                        }
 
                         if (!hasError) {
 

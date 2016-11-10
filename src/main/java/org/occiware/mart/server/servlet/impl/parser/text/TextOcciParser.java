@@ -149,7 +149,7 @@ public class TextOcciParser extends AbstractRequestParser {
                     for (String valueTmp : valuesTmp) {
                         // Parse the value:
                         String[] attr = valueTmp.split("=");
-                        if (attr != null && attr.length > 0) {
+                        if (attr != null && attr.length > 1) {
                             attr[0] = attr[0].replace("\"", "");
                             if (attr[0].startsWith(" ")) {
                                 attr[0] = attr[0].substring(1); // remove starting space.
