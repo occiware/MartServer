@@ -140,7 +140,7 @@ public class ServerTest {
     }
 
     // TODO : Activate integration tests on travis build.
-    // @Test
+    @Test
     public void getComputeResource() {
         // First create a compute resource.
 

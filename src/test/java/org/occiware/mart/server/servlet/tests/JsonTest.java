@@ -132,7 +132,7 @@ public class JsonTest {
     }
 
     // TODO : Activate unit tests on travis deployment only build.
-    // @Test
+    @Test
     public void testJsonInputObject() {
         // load the input stream resources test json file.
 
