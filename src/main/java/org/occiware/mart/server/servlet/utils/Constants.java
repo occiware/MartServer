@@ -134,4 +134,5 @@ public class Constants {
     public static final Pattern PATTERN_ATTRIBUTES = Pattern.compile(REGEXP_ATTRIBUTES);
     public static final Pattern PATTERN_LINK = Pattern.compile(REGEXP_LINK);
 
+    public static final String OCCI_CORE_SCHEME = "http://schemas.ogf.org/occi/core#";
 }

@@ -317,13 +317,24 @@ public class TextOcciParser extends AbstractRequestParser {
 
         String msg = sb.toString();
         if (msg != null && !msg.isEmpty()) {
-            response = Response.ok().entity("OK \n")
-                    .header("Server", Constants.OCCI_SERVER_HEADER)
-                    .header("", sb.toString())
-                    .type(Constants.MEDIA_TYPE_TEXT_OCCI)
-                    .header("Accept", getAcceptedTypes())
-                    .build();
+            if (msg.getBytes().length < 8000) {
+                response = Response.ok().entity("OK \n")
+                        .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .header("interface", sb.toString())
+                        .type(Constants.MEDIA_TYPE_TEXT_OCCI)
+                        .header("Accept", getAcceptedTypes())
+                        .build();
+            } else {
+                response = Response.ok().entity("OK \n")
+                        .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .entity(sb.toString())
+                        .type(Constants.MEDIA_TYPE_TEXT_OCCI)
+                        .header("Accept", getAcceptedTypes())
+                        .build();
+            }
+
         } else {
+
             // May not be called.
             response = Response.noContent().build();
         }
@@ -342,19 +353,21 @@ public class TextOcciParser extends AbstractRequestParser {
         StringBuilder sb = new StringBuilder();
 
         for (Kind kind : kinds) {
-            sb.append(kind.getTerm()).append(";").append(Constants.CRLF)
-                    .append("scheme=\"").append(kind.getScheme()).append("\";").append(Constants.CRLF)
-                    .append("class=\"kind\"").append(";");
-            if (detailed) {
-                sb.append(Constants.CRLF);
-                sb.append("title=\"").append(kind.getTitle()).append('\"').append(";").append(Constants.CRLF);
-                Kind parent = kind.getParent();
-                if (parent != null) {
-                    sb.append("rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"').append(";").append(Constants.CRLF);
+            if (!kind.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
+                sb.append(kind.getTerm()).append(";").append(Constants.CRLF)
+                        .append("scheme=\"").append(kind.getScheme()).append("\";").append(Constants.CRLF)
+                        .append("class=\"kind\"").append(";");
+                if (detailed) {
+                    sb.append(Constants.CRLF);
+                    sb.append("title=\"").append(kind.getTitle()).append('\"').append(";").append(Constants.CRLF);
+                    Kind parent = kind.getParent();
+                    if (parent != null) {
+                        sb.append("rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"').append(";").append(Constants.CRLF);
+                    }
+                    sb.append("location=\"").append(ConfigurationManager.getLocation(kind)).append('\"').append(";").append(Constants.CRLF);
+                    appendAttributes(sb, kind.getAttributes());
+                    appendActions(sb, kind.getActions());
                 }
-                sb.append("location=\"").append(ConfigurationManager.getLocation(kind)).append('\"').append(";").append(Constants.CRLF);
-                appendAttributes(sb, kind.getAttributes());
-                appendActions(sb, kind.getActions());
             }
         }
         return sb;

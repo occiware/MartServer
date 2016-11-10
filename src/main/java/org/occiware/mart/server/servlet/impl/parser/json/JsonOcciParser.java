@@ -900,21 +900,23 @@ public class JsonOcciParser extends AbstractRequestParser {
         String scheme;
         List<Attribute> attributes;
         for (Action action : actions) {
-            sb.append("{");
-            // We render first the action attributes interface.
-            attributes = action.getAttributes();
-            if (!attributes.isEmpty()) {
-                sb.append(renderAttributesInterface(action.getAttributes())).append(",");
+            if (!action.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
+                sb.append("{");
+                // We render first the action attributes interface.
+                attributes = action.getAttributes();
+                if (!attributes.isEmpty()) {
+                    sb.append(renderAttributesInterface(action.getAttributes())).append(",");
+                }
+                // We render action scheme, term and title.
+                term = action.getTerm();
+                scheme = action.getScheme();
+                title = action.getTitle();
+                sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
+                sb.append("\"term\":").append("\"").append(term).append("\",");
+                sb.append("\"title\":").append("\"").append(title).append("\"");
+                sb.append("}");
+                sb.append(",");
             }
-            // We render action scheme, term and title.
-            term = action.getTerm();
-            scheme = action.getScheme();
-            title = action.getTitle();
-            sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
-            sb.append("\"term\":").append("\"").append(term).append("\",");
-            sb.append("\"title\":").append("\"").append(title).append("\"");
-            sb.append("}");
-            sb.append(",");
         }
         sb = removeLastComma(sb);
         return sb;
@@ -936,55 +938,56 @@ public class JsonOcciParser extends AbstractRequestParser {
         StringBuilder sbAct = new StringBuilder();
         String actionsStr;
         for (Kind kind : kinds) {
+            if (!kind.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
+                sb.append("{");
 
-            sb.append("{");
+                // Define the actions (array of strings).
+                actions = kind.getActions();
+                if (!actions.isEmpty()) {
+                    sbAct.append("\"actions\": [");
+                }
 
-            // Define the actions (array of strings).
-            actions = kind.getActions();
-            if (!actions.isEmpty()) {
-                sbAct.append("\"actions\": [");
-            }
+                for (Action action : kind.getActions()) {
+                    sbAct.append("\"").append(action.getScheme()).append(action.getTerm()).append("\"").append(",");
+                }
+                actionsStr = sbAct.toString();
+                if (actionsStr.endsWith(",")) {
+                    // remove the last comma.
+                    actionsStr = actionsStr.substring(0, actionsStr.length() - 1);
+                    sbAct = new StringBuilder(actionsStr);
+                }
+                if (!actions.isEmpty()) {
+                    sbAct.append("],");
+                    sb.append(sbAct);
+                }
 
-            for (Action action : kind.getActions()) {
-                sbAct.append("\"").append(action.getScheme()).append(action.getTerm()).append("\"").append(",");
-            }
-            actionsStr = sbAct.toString();
-            if (actionsStr.endsWith(",")) {
-                // remove the last comma.
-                actionsStr = actionsStr.substring(0, actionsStr.length() - 1);
-                sbAct = new StringBuilder(actionsStr);
-            }
-            if (!actions.isEmpty()) {
-                sbAct.append("],");
-                sb.append(sbAct);
-            }
+                // Define kinds attributes.
+                if (!kind.getAttributes().isEmpty()) {
+                    sb.append(renderAttributesInterface(kind.getAttributes()));
+                    sb.append(",");
+                }
+                // Define title, location, scheme etc.
+                title = kind.getTitle();
+                if (title == null) {
+                    title = "";
+                }
+                term = kind.getTerm();
+                parentScheme = "";
+                if (kind.getParent() != null) {
+                    parentScheme = kind.getParent().getScheme() + kind.getParent().getTerm();
+                }
+                scheme = kind.getScheme();
+                location = ConfigurationManager.getLocation(kind);
 
-            // Define kinds attributes.
-            if (!kind.getAttributes().isEmpty()) {
-                sb.append(renderAttributesInterface(kind.getAttributes()));
+                sb.append("\"location\":").append("\"").append(location).append("\",");
+                sb.append("\"parent\":").append("\"").append(parentScheme).append("\",");
+                sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
+                sb.append("\"term\":").append("\"").append(term).append("\",");
+                sb.append("\"title\":").append("\"").append(title).append("\"");
+
+                sb.append("}");
                 sb.append(",");
             }
-            // Define title, location, scheme etc.
-            title = kind.getTitle();
-            if (title == null) {
-                title = "";
-            }
-            term = kind.getTerm();
-            parentScheme = "";
-            if (kind.getParent() != null) {
-                parentScheme = kind.getParent().getScheme() + kind.getParent().getTerm();
-            }
-            scheme = kind.getScheme();
-            location = ConfigurationManager.getLocation(kind);
-
-            sb.append("\"location\":").append("\"").append(location).append("\",");
-            sb.append("\"parent\":").append("\"").append(parentScheme).append("\",");
-            sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
-            sb.append("\"term\":").append("\"").append(term).append("\",");
-            sb.append("\"title\":").append("\"").append(title).append("\"");
-
-            sb.append("}");
-            sb.append(",");
         }
         sb = removeLastComma(sb);
 
@@ -1013,87 +1016,89 @@ public class JsonOcciParser extends AbstractRequestParser {
         StringBuilder sbApp = new StringBuilder();
         String tmp;
         for (Mixin mixin : mixins) {
+            if (!mixin.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
+                sb.append("{");
 
-            sb.append("{");
+                // Define the actions (array of strings).
+                actions = mixin.getActions();
+                if (!actions.isEmpty()) {
+                    sbAct.append("\"actions\": [");
+                }
 
-            // Define the actions (array of strings).
-            actions = mixin.getActions();
-            if (!actions.isEmpty()) {
-                sbAct.append("\"actions\": [");
-            }
+                for (Action action : mixin.getActions()) {
+                    sbAct.append("\"").append(action.getScheme()).append(action.getTerm()).append("\"").append(",");
+                }
+                tmp = sbAct.toString();
+                if (tmp.endsWith(",")) {
+                    // remove the last comma.
+                    tmp = tmp.substring(0, tmp.length() - 1);
+                    sbAct = new StringBuilder(tmp);
+                }
+                if (!actions.isEmpty()) {
+                    sbAct.append("],");
+                    sb.append(sbAct);
+                }
 
-            for (Action action : mixin.getActions()) {
-                sbAct.append("\"").append(action.getScheme()).append(action.getTerm()).append("\"").append(",");
-            }
-            tmp = sbAct.toString();
-            if (tmp.endsWith(",")) {
-                // remove the last comma.
-                tmp = tmp.substring(0, tmp.length() - 1);
-                sbAct = new StringBuilder(tmp);
-            }
-            if (!actions.isEmpty()) {
-                sbAct.append("],");
-                sb.append(sbAct);
-            }
+                // Define kinds attributes.
+                if (!mixin.getAttributes().isEmpty()) {
+                    sb.append(renderAttributesInterface(mixin.getAttributes()));
+                    sb.append(",");
+                }
 
-            // Define kinds attributes.
-            if (!mixin.getAttributes().isEmpty()) {
-                sb.append(renderAttributesInterface(mixin.getAttributes()));
-                sb.append(",");
-            }
+                applies = mixin.getApplies();
 
-            // Define applies.
-            applies = mixin.getApplies();
+                depends = mixin.getDepends();
+                sbApp.append("\"applies\": [");
+                if (!applies.isEmpty()) {
 
-            // Define depends.
-            depends = mixin.getDepends();
 
-            sbApp.append("\"applies\": [");
-            for (Kind apply : applies) {
-                sbApp.append("\"").append(apply.getScheme()).append(apply.getTerm()).append("\"").append(",");
-            }
-            tmp = sbApp.toString();
-            if (tmp.endsWith(",")) {
-                // remove the last comma.
-                tmp = tmp.substring(0, tmp.length() - 1);
-                sbApp = new StringBuilder(tmp);
-            }
-            if (!applies.isEmpty()) {
+                    for (Kind apply : applies) {
+                        sbApp.append("\"").append(apply.getScheme()).append(apply.getTerm()).append("\"").append(",");
+                    }
+                    tmp = sbApp.toString();
+                    if (tmp.endsWith(",")) {
+                        // remove the last comma.
+                        tmp = tmp.substring(0, tmp.length() - 1);
+                        sbApp = new StringBuilder(tmp);
+                    }
+                }
                 sbApp.append("],");
                 sb.append(sbApp);
-            }
 
-            sbDep.append("\"depends\": [");
-            for (Mixin depend : depends) {
-                sbDep.append("\"").append(depend.getScheme()).append(depend.getTerm()).append("\"").append(",");
-            }
-            tmp = sbDep.toString();
-            if (tmp.endsWith(",")) {
-                // remove the last comma.
-                tmp = tmp.substring(0, tmp.length() - 1);
-                sbDep = new StringBuilder(tmp);
-            }
-            if (!depends.isEmpty()) {
+                sbDep.append("\"depends\": [");
+                if (!depends.isEmpty()) {
+
+                    for (Mixin depend : depends) {
+                        sbDep.append("\"").append(depend.getScheme()).append(depend.getTerm()).append("\"").append(",");
+                    }
+                    tmp = sbDep.toString();
+                    if (tmp.endsWith(",")) {
+                        // remove the last comma.
+                        tmp = tmp.substring(0, tmp.length() - 1);
+                        sbDep = new StringBuilder(tmp);
+                    }
+
+                }
                 sbDep.append("],");
                 sb.append(sbDep);
+
+                // Define title, location, scheme etc.
+                title = mixin.getTitle();
+                if (title == null) {
+                    title = "";
+                }
+                term = mixin.getTerm();
+                scheme = mixin.getScheme();
+                location = ConfigurationManager.getLocation(mixin);
+
+                sb.append("\"location\":").append("\"").append(location).append("\",");
+                sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
+                sb.append("\"term\":").append("\"").append(term).append("\",");
+                sb.append("\"title\":").append("\"").append(title).append("\"");
+
+                sb.append("}");
+                sb.append(",");
             }
-
-            // Define title, location, scheme etc.
-            title = mixin.getTitle();
-            if (title == null) {
-                title = "";
-            }
-            term = mixin.getTerm();
-            scheme = mixin.getScheme();
-            location = ConfigurationManager.getLocation(mixin);
-
-            sb.append("\"location\":").append("\"").append(location).append("\",");
-            sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
-            sb.append("\"term\":").append("\"").append(term).append("\",");
-            sb.append("\"title\":").append("\"").append(title).append("\"");
-
-            sb.append("}");
-            sb.append(",");
         }
         sb = removeLastComma(sb);
 
@@ -1132,11 +1137,17 @@ public class JsonOcciParser extends AbstractRequestParser {
             sb.append("\"").append("required").append("\":").append(required).append(",");
 
             // pattern value.
-            type = attribute.getType().getInstanceTypeName();
-            if (type == null) {
-                type = convertTypeToSchemaType(attribute.getType().getName());
+            EDataType dataType = attribute.getType();
+            if (dataType != null) {
+                type = attribute.getType().getInstanceTypeName();
+
+                if (type == null) {
+                    type = convertTypeToSchemaType(attribute.getType().getName());
+                } else {
+                    type = convertTypeToSchemaType(type);
+                }
             } else {
-                type = convertTypeToSchemaType(type);
+                type = convertTypeToSchemaType(null);
             }
 
             sb.append("\"").append("pattern").append("\": {")

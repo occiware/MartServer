@@ -131,7 +131,8 @@ public class JsonTest {
         System.out.println(response.getEntity());
     }
 
-    @Test
+    // TODO : Activate unit tests on travis deployment only build.
+    // @Test
     public void testJsonInputObject() {
         // load the input stream resources test json file.
 
