@@ -1,54 +1,38 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.utils;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
-import org.occiware.clouddesigner.occi.Action;
-import org.occiware.clouddesigner.occi.Attribute;
-import org.occiware.clouddesigner.occi.AttributeState;
-import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Kind;
-import org.occiware.clouddesigner.occi.Link;
-import org.occiware.clouddesigner.occi.Mixin;
-import org.occiware.clouddesigner.occi.Resource;
+import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import java.io.*;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 
 /**
  * Utility class for rest queries.
@@ -57,8 +41,9 @@ import org.slf4j.LoggerFactory;
  */
 public class Utils {
 
+    private static final String REGEX_CONTROL_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
     private static final Logger LOGGER = LoggerFactory.getLogger(Utils.class);
-    public static final String REGEX_CONTROL_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
+    private static int uniqueInt = 1;
 
     /**
      * Client OCCI user agent version control.
@@ -210,7 +195,8 @@ public class Utils {
             try {
                 in.close();
             } catch (IOException e) {
-                /* ignore */ }
+                /* ignore */
+            }
         }
     }
 
@@ -244,7 +230,8 @@ public class Utils {
             try {
                 os.close();
             } catch (IOException e) {
-                /* ignore */ }
+                /* ignore */
+            }
         }
     }
 
@@ -255,7 +242,7 @@ public class Utils {
      * @return
      * @throws IOException
      */
-    public static byte[] serialize(Object obj) throws IOException {
+    private static byte[] serialize(Object obj) throws IOException {
         byte[] byteArray = null;
         ByteArrayOutputStream baos;
         ObjectOutputStream out = null;
@@ -279,7 +266,7 @@ public class Utils {
      * @param bytes (array of bytes).
      * @return
      */
-    public static String getMd5Digest(byte[] bytes) {
+    private static String getMd5Digest(byte[] bytes) {
         MessageDigest md;
         try {
             md = MessageDigest.getInstance("MD5");
@@ -437,25 +424,6 @@ public class Utils {
     }
 
     /**
-     * Return a relative path from an full entityId with uuid provided.
-     *
-     * @param id
-     * @param uuid
-     * @return
-     */
-    public static String getRelativePathFromId(final String id, final String uuid) {
-
-        String relativePathPart = "";
-
-        relativePathPart = id.replace(uuid, "");
-        if (relativePathPart.endsWith("/")) {
-            relativePathPart = relativePathPart.substring(0, relativePathPart.length() - 1);
-        }
-
-        return relativePathPart;
-    }
-
-    /**
      * Helper for converting action attributes parameters in array.
      *
      * @param actionAttributes
@@ -465,11 +433,9 @@ public class Utils {
         String[] actionParameters = null;
         if (actionAttributes != null && !actionAttributes.isEmpty()) {
             actionParameters = new String[actionAttributes.size()];
-            String key;
             String value;
             int index = 0;
             for (Map.Entry<String, String> entry : actionAttributes.entrySet()) {
-                key = entry.getKey();
                 value = entry.getValue();
                 actionParameters[index] = value;
                 index++;
@@ -615,7 +581,7 @@ public class Utils {
                 return id;
             }
         }
-        
+
         return null;
     }
 
@@ -679,7 +645,7 @@ public class Utils {
         }
         for (Mixin mixin : mixins) {
             if (!mixin.getApplies().contains(kind)) {
-                // one or more mixin doesnt apply to this kind. 
+                // one or more mixin doesnt apply to this kind.
                 result = false;
             }
         }
@@ -735,7 +701,7 @@ public class Utils {
 //                break;
 //            }
 //        }
-//        
+//
 //        if (!result) {
 //            // Check the applied mixins.
 //            for (Mixin mixin : mixins) {
@@ -760,14 +726,12 @@ public class Utils {
 //               result = occiAttributes.containsKey(attrName);
 //               if (!result) {
 //                   break;
-//               }  
+//               }
 //           }
 //        }
         // return result;
         return true;
     }
-
-    private static int uniqueInt = 1;
 
     public static synchronized int getUniqueInt() {
         return uniqueInt++;
@@ -791,13 +755,8 @@ public class Utils {
         // this path has no uuid provided, must search on all entities path.
         List<String> entitiesUuid = getEntityUUIDsFromPath(path);
 
-        if (entitiesUuid.size() == 1) {
-            return true;
-
-        } else {
-            // This is a collection request or no entities on paths. Other entities are declared on the same path.
-            return false;
-        }
+        // This is a collection request or no entities on paths. Other entities are declared on the same path.
+        return entitiesUuid.size() == 1;
 
     }
 

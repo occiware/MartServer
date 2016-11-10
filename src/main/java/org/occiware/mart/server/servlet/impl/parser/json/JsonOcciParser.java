@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
@@ -21,38 +21,14 @@ package org.occiware.mart.server.servlet.impl.parser.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
-import org.occiware.clouddesigner.occi.Action;
-import org.occiware.clouddesigner.occi.Attribute;
-import org.occiware.clouddesigner.occi.AttributeState;
-import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Kind;
-import org.occiware.clouddesigner.occi.Link;
-import org.occiware.clouddesigner.occi.Mixin;
-import org.occiware.clouddesigner.occi.Resource;
+import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractRequestParser;
-import org.occiware.mart.server.servlet.impl.parser.json.render.ActionJson;
-import org.occiware.mart.server.servlet.impl.parser.json.render.KindJson;
-import org.occiware.mart.server.servlet.impl.parser.json.render.LinkJson;
-import org.occiware.mart.server.servlet.impl.parser.json.render.MixinJson;
-import org.occiware.mart.server.servlet.impl.parser.json.render.OcciMainJson;
-import org.occiware.mart.server.servlet.impl.parser.json.render.ResourceJson;
-import org.occiware.mart.server.servlet.impl.parser.json.render.SourceJson;
-import org.occiware.mart.server.servlet.impl.parser.json.render.TargetJson;
+import org.occiware.mart.server.servlet.impl.parser.json.render.*;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.ValidatorUtils;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
@@ -60,6 +36,13 @@ import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 /**
  *
@@ -110,8 +93,8 @@ public class JsonOcciParser extends AbstractRequestParser {
         } finally {
             Utils.closeQuietly(jsonInput);
         }
-        boolean isCollectionRes = false;
-        boolean isResourceSingle = false;
+        boolean isCollectionRes;
+        boolean isResourceSingle;
         boolean isLinkSingle = false;
         boolean isMixinTagSingle = false;
         boolean isActionInvocation = false;
@@ -413,16 +396,14 @@ public class JsonOcciParser extends AbstractRequestParser {
      * Parse action invocation.
      *
      * @param action
-     * @return
      */
-    private InputData parseActionJsonInvocationInput(ActionJson action) {
+    private void parseActionJsonInvocationInput(ActionJson action) {
         List<InputData> datas = this.getInputDatas();
         InputData data = new InputData();
         data.setAction(action.getAction());
         data.setAttrObjects(action.getAttributes());
         datas.add(data);
         this.setInputDatas(datas);
-        return data;
     }
 
     @Override
@@ -458,7 +439,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                             .status(status)
                             .build();
                 } else {
-                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString((Response) ((Response) object).getEntity());
+                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(((Response) object).getEntity());
 
                     response = Response.fromResponse((Response) object)
                             .header("Server", Constants.OCCI_SERVER_HEADER)
@@ -476,16 +457,16 @@ public class JsonOcciParser extends AbstractRequestParser {
                     msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString("OK");
                     response = Response.status(status)
                             .header("Server", Constants.OCCI_SERVER_HEADER)
-                            .header("content", (String) object)
+                            .header("content", object)
                             .header("Accept", getAcceptedTypes())
                             .entity(msg)
                             .type(Constants.MEDIA_TYPE_JSON)
                             .build();
                 } else {
-                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString((String) object);
+                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
                     response = Response.status(status)
                             .header("Server", Constants.OCCI_SERVER_HEADER)
-                            .header("content", (String) object)
+                            .header("content", object)
                             .header("Accept", getAcceptedTypes())
                             .entity(msg)
                             .type(Constants.MEDIA_TYPE_JSON)
@@ -498,12 +479,13 @@ public class JsonOcciParser extends AbstractRequestParser {
                 Entity entity = (Entity) object;
                 List<Entity> entities = new LinkedList<>();
                 entities.add(entity);
-                response = renderEntityResponse(entities, status);
+                response = renderEntitiesResponse(entities, status);
             }
 
-            if (object instanceof List) {
+            if (object instanceof List<?>) {
                 LOGGER.info("Collection to render.");
-                List<Object> objects = (List<Object>) object;
+                List<?> objects = (List<?>) object;
+
                 List<String> locations = new LinkedList<>();
                 List<Entity> entities = new LinkedList<>();
                 String tmp;
@@ -540,7 +522,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                     response = responseBuilder.build();
                 }
                 if (!entities.isEmpty()) {
-                    response = renderEntityResponse(entities, status);
+                    response = renderEntitiesResponse(entities, status);
                 }
 
             }
@@ -556,30 +538,23 @@ public class JsonOcciParser extends AbstractRequestParser {
         }
     }
 
-    private Response renderEntityResponse(List<Entity> entities, Response.Status status) throws JsonProcessingException {
+    private Response renderEntitiesResponse(List<Entity> entities, Response.Status status) throws JsonProcessingException {
 
         Response response;
         OcciMainJson mainJson = new OcciMainJson();
         List<ResourceJson> resources = new LinkedList<>();
         List<LinkJson> links = new LinkedList<>();
         for (Entity entity : entities) {
-            // Rendering json of this entity.
-            String relativeLocation = ConfigurationManager.getLocation(entity);
-            String absoluteEntityLocation = getServerURI().toString() + relativeLocation;
-
-            // An entity may be a link or a resource.
             if (entity instanceof Link) {
-                // This is a link.
                 LinkJson linkJson = buildLinkJsonFromEntity(entity);
                 links.add(linkJson);
 
             } else {
-                // This is a resource.
                 ResourceJson resJson = buildResourceJsonFromEntity(entity);
                 resources.add(resJson);
             }
 
-        } // End for each entities.
+        }
 
         if (!resources.isEmpty()) {
             mainJson.setResources(resources);
@@ -588,7 +563,6 @@ public class JsonOcciParser extends AbstractRequestParser {
             mainJson.setLinks(links);
         }
         String msg = mainJson.toStringJson();
-        // Build response object...
         response = Response.status(status)
                 .header("Server", Constants.OCCI_SERVER_HEADER)
                 .header("Accept", getAcceptedTypes())
@@ -782,7 +756,7 @@ public class JsonOcciParser extends AbstractRequestParser {
             sb = new StringBuilder();
         }
         String msg = sb.toString();
-        if (msg != null && !msg.isEmpty()) {
+        if (!msg.isEmpty()) {
             response = Response.ok().entity(msg)
                     .header("Server", Constants.OCCI_SERVER_HEADER)
                     .type(Constants.MEDIA_TYPE_JSON_OCCI)

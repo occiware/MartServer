@@ -1,50 +1,28 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.model;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.occiware.clouddesigner.occi.Action;
-import org.occiware.clouddesigner.occi.Attribute;
-import org.occiware.clouddesigner.occi.AttributeState;
-import org.occiware.clouddesigner.occi.Category;
-import org.occiware.clouddesigner.occi.Configuration;
-import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Extension;
-import org.occiware.clouddesigner.occi.Kind;
-import org.occiware.clouddesigner.occi.Link;
-import org.occiware.clouddesigner.occi.Mixin;
-import org.occiware.clouddesigner.occi.OCCIFactory;
-import org.occiware.clouddesigner.occi.OCCIRegistry;
-import org.occiware.clouddesigner.occi.Resource;
+import org.occiware.clouddesigner.occi.*;
 import org.occiware.clouddesigner.occi.util.Occi2Ecore;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.MART;
@@ -55,13 +33,45 @@ import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Manage configurations (OCCI Model).
  *
  * @author Christophe Gourdin
- *
  */
 public class ConfigurationManager {
+
+    /**
+     * Used for now when no owner defined
+     */
+    public static final String DEFAULT_OWNER = "anonymous";
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationManager.class);
+
+    /**
+     * This map reference all occi configurations by users. The first ref string
+     * is the user uuid. To be updated for multiusers and multiconfigs.
+     */
+    private static Map<String, Configuration> configurations = new ConcurrentHashMap<>();
+    /**
+     * References location for a user mixin. this is used by find method to find
+     * the collection of user mixin. Key : Mixin sheme + term, must be unique
+     * Value : Location with form of : http://localhost:8080/mymixincollection/
+     */
+    private static Map<String, String> userMixinLocationMap = new ConcurrentHashMap<>();
+    /**
+     * key: uuid, value: entity relative path.
+     */
+    private static Map<String, String> entitiesRelativePath = new ConcurrentHashMap<>();
+
+
+    private static OCCIFactory occiFactory = OCCIFactory.eINSTANCE;
+    /**
+     * Used only to create an eTag when object are updated. Key : owner+objectId
+     * Value : version number. First version is 1.
+     */
+    private static Map<String, Integer> versionObjectMap = new ConcurrentHashMap<>();
 
     static {
 
@@ -69,44 +79,6 @@ public class ConfigurationManager {
         MART.initMART();
 
     }
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationManager.class);
-
-    private static String occiSchema = "";
-
-    /**
-     * Used for now when no owner defined
-     */
-    public static final String DEFAULT_OWNER = "anonymous";
-
-    /**
-     * This map reference all occi configurations by users. The first ref string
-     * is the user uuid. To be updated for multiusers and multiconfigs.
-     */
-    protected static Map<String, Configuration> configurations = new HashMap<>();
-
-    /**
-     * References location for a user mixin. this is used by find method to find
-     * the collection of user mixin. Key : Mixin sheme + term, must be unique
-     * Value : Location with form of : http://localhost:8080/mymixincollection/
-     */
-    protected static Map<String, String> userMixinLocationMap = new HashMap<>();
-
-    /**
-     * key: uuid, value: entity relative path.
-     */
-    protected static Map<String, String> entitiesRelativePath = new HashMap<>();
-
-    /**
-     * Obtain the factory to create OCCI objects.
-     */
-    protected static OCCIFactory occiFactory = OCCIFactory.eINSTANCE;
-
-    /**
-     * Used only to create an eTag when object are updated. Key : owner+objectId
-     * Value : version number. First version is 1.
-     */
-    private static Map<String, Integer> versionObjectMap = new HashMap<>();
 
     /**
      * Get a configuration from the configuration's map.
@@ -118,28 +90,19 @@ public class ConfigurationManager {
         if (configurations.get(owner) == null) {
             createConfiguration(owner);
         }
-
         return configurations.get(owner);
     }
 
     /**
      * Create a new configuration (empty ==> without any resources and link and
-     * extension) for the user.
+     * extension) for a user.
      *
      * @param owner
-     * @return a new configuration for the user.
      */
-    public static Configuration createConfiguration(final String owner) {
-
-        // Create an empty OCCI configuration.
+    private static void createConfiguration(final String owner) {
         Configuration configuration = occiFactory.createConfiguration();
-
-        // Update reference configuration map.
         configurations.put(owner, configuration);
-
-        LOGGER.info("Configuration for user " + owner + " created");
-
-        return configuration;
+        LOGGER.debug("Configuration for user " + owner + " created");
     }
 
     /**
@@ -147,7 +110,7 @@ public class ConfigurationManager {
      *
      * @param owner
      */
-    public static void removeConfiguration(final String owner) {
+    private static void removeConfiguration(final String owner) {
         configurations.remove(owner);
     }
 
@@ -155,19 +118,19 @@ public class ConfigurationManager {
      * Add a new resource entity to a configuration and update the
      * configuration's map accordingly.
      *
-     * @param id (entity id : "term/title")
-     * @param kind (scheme#term)
-     * @param mixins (ex:
-     * mixins=[http://schemas.ogf.org/occi/infrastructure/network# ipnetwork])
-     * @param attributes (ex: attributes={occi.network.vlan=12,
-     * occi.network.label=private, occi.network.address=10.1.0.0/16,
-     * occi.network.gateway=10.1.255.254})
+     * @param id           (entity id : "term/title")
+     * @param kind         (scheme#term)
+     * @param mixins       (ex:
+     *                     mixins=[http://schemas.ogf.org/occi/infrastructure/network# ipnetwork])
+     * @param attributes   (ex: attributes={occi.network.vlan=12,
+     *                     occi.network.label=private, occi.network.address=10.1.0.0/16,
+     *                     occi.network.gateway=10.1.255.254})
      * @param owner
      * @param relativePath (ex: compute/myuuid
-     * @throws org.occiware.mart.server.servlet.exception.EntityAddException
+     * @throws ConfigurationException
      */
     public static void addResourceToConfiguration(String id, String kind, List<String> mixins,
-            Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
+                                                  Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
             // Assume if owner is not used to a default user uuid "anonymous".
@@ -250,11 +213,10 @@ public class ConfigurationManager {
      * @param attributes
      * @param owner
      * @param relativePath
-     * @throws
-     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws ConfigurationException
      */
     public static void addLinkToConfiguration(String id, String kind, java.util.List<String> mixins, String src,
-            String target, Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
+                                              String target, Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
             // Assume if owner is not used to a default user uuid "anonymous".
@@ -336,7 +298,7 @@ public class ConfigurationManager {
      * @param entity the given Entity instance.
      * @return all the attributes of the given instance.
      */
-    public static Collection<Attribute> getAllAttributes(final Entity entity) {
+    private static Collection<Attribute> getAllAttributes(final Entity entity) {
         List<Attribute> attributes = new ArrayList<>();
         Kind entityKind = entity.getKind();
         if (entityKind != null) {
@@ -352,9 +314,9 @@ public class ConfigurationManager {
      * Add all the attributes of a given Kind instance and all its parent kinds.
      *
      * @param attributes the collection where attributes will be added.
-     * @param kind the given Kind instance.
+     * @param kind       the given Kind instance.
      */
-    public static void addAllAttributes(final Collection<Attribute> attributes, final Kind kind) {
+    private static void addAllAttributes(final Collection<Attribute> attributes, final Kind kind) {
         Kind kindParent = kind.getParent();
         if (kindParent != null) {
             addAllAttributes(attributes, kindParent);
@@ -367,9 +329,9 @@ public class ConfigurationManager {
      * mixins.
      *
      * @param attributes the collection where attributes will be added.
-     * @param mixin the given Mixin instance.
+     * @param mixin      the given Mixin instance.
      */
-    public static void addAllAttributes(final Collection<Attribute> attributes, final Mixin mixin) {
+    private static void addAllAttributes(final Collection<Attribute> attributes, final Mixin mixin) {
         boolean found;
         for (Mixin md : mixin.getDepends()) {
             addAllAttributes(attributes, md);
@@ -417,7 +379,6 @@ public class ConfigurationManager {
         // Ensure that all attributes are in the entity AttributeState list object.
         addAllAttributes(entity);
 
-        // Collection<Attribute> occiAttrs = getAllAttributes(entity);
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
             attrName = entry.getKey();
             attrValue = entry.getValue();
@@ -444,8 +405,8 @@ public class ConfigurationManager {
         }
 
         // Check attributes.
-        LOGGER.info("Entity :--> ");
-        Utils.printEntity(entity);
+        // LOGGER.info("Entity :--> ");
+        // Utils.printEntity(entity);
 
         return entity;
     }
@@ -455,7 +416,7 @@ public class ConfigurationManager {
      *
      * @param entity
      */
-    public static void addAllAttributes(Entity entity) {
+    private static void addAllAttributes(Entity entity) {
         // Compute already present attribute names.
         List<AttributeState> attributeStates = entity.getAttributes();
         HashSet<String> attributeNames = new HashSet<>();
@@ -483,30 +444,14 @@ public class ConfigurationManager {
     }
 
     /**
-     * Remove an entity (resource or link) from the configuration on overall
-     * owners.
-     *
-     * @param id if full url: category id (bounded collection) if path relative
-     * url part: unbounded collection or entity
-     */
-    public static void removeOrDissociate(final String id) {
-        // get the owners
-        Set<String> owners = configurations.keySet();
-        for (String owner : owners) {
-            removeOrDissociateFromConfiguration(owner, id);
-        }
-    }
-
-    /**
      * Remove an entity (resource or link) from the owner's configuration or
      * delete all entities from given kind id or disassociate entities from
      * given mixin id.
      *
      * @param owner
-     * @param id (kind id or mixin id or entity Id!)
+     * @param id    (kind id or mixin id or entity Id!)
      */
     public static void removeOrDissociateFromConfiguration(final String owner, final String id) {
-        // Find if this is an entity id or a mixin id or a kind id.
         boolean found = false;
         boolean resourceToDelete = false;
         boolean kindEntitiesToDelete = false;
@@ -558,7 +503,6 @@ public class ConfigurationManager {
         if (mixinToDissociate) {
             dissociateMixinFromEntities(owner, mixin);
         }
-
     }
 
     /**
@@ -567,13 +511,12 @@ public class ConfigurationManager {
      * @param owner
      * @param resource
      */
-    public static void removeResource(final String owner, final Resource resource) {
+    private static void removeResource(final String owner, final Resource resource) {
         Configuration config = getConfigurationForOwner(owner);
 
         Iterator<Link> it = resource.getLinks().iterator();
         while (it.hasNext()) {
             Link link = it.next();
-            // removeLink(owner, link);
             Resource src = link.getSource();
             if (!src.equals(resource)) {
                 src.getLinks().remove(link);
@@ -586,8 +529,7 @@ public class ConfigurationManager {
             }
         }
 
-        resource.getLinks().clear(); // Remove all links on that resource.
-        // Remove resource from configuration object.
+        resource.getLinks().clear();
         config.getResources().remove(resource);
         entitiesRelativePath.remove(resource.getId());
     }
@@ -598,7 +540,7 @@ public class ConfigurationManager {
      * @param owner
      * @param link
      */
-    public static void removeLink(final String owner, final Link link) {
+    private static void removeLink(final String owner, final Link link) {
         Resource resourceSrc = link.getSource();
         Resource resourceTarget = link.getTarget();
         resourceSrc.getLinks().remove(link);
@@ -613,8 +555,7 @@ public class ConfigurationManager {
      * @param owner
      * @param kind
      */
-    public static void removeEntitiesForKind(final String owner, final Kind kind) {
-        // Configuration config = configurations.get(owner);
+    private static void removeEntitiesForKind(final String owner, final Kind kind) {
         if (kind == null) {
             return;
         }
@@ -636,7 +577,7 @@ public class ConfigurationManager {
      * @param owner
      * @param mixin
      */
-    public static void dissociateMixinFromEntities(final String owner, final Mixin mixin) {
+    private static void dissociateMixinFromEntities(final String owner, final Mixin mixin) {
         if (mixin == null) {
             return;
         }
@@ -660,13 +601,12 @@ public class ConfigurationManager {
     public static boolean dissociateMixinFromEntity(final String owner, final String mixinId, Entity entity) {
         boolean result = false;
         if (mixinId == null) {
-            return result;
+            return false;
         }
         // Load the mixin object.
         List<Mixin> mixins = entity.getMixins();
         if (mixins.isEmpty()) {
-            result = true;
-            return result;
+            return true;
         }
         Mixin myMixin = null;
         for (Mixin mixin : mixins) {
@@ -688,10 +628,10 @@ public class ConfigurationManager {
      * Find a resource for owner and entity Id.
      *
      * @param owner
-     * @param id (may be an uuid, a path/uuid or a path.)
+     * @param id    (may be an uuid, a path/uuid or a path.)
      * @return an OCCI resource.
      */
-    public static Resource findResource(final String owner, final String id) {
+    private static Resource findResource(final String owner, final String id) {
         Resource resFound = null;
         Configuration configuration = getConfigurationForOwner(owner);
 
@@ -703,32 +643,22 @@ public class ConfigurationManager {
             for (Resource resource : configuration.getResources()) {
                 if (resource.getId().equals(entityUUID)) {
                     resFound = resource;
-                    // Resource found.
                     break;
                 }
             }
         }
-        // Case: resource not found but a path is given (without uuid).
+
         if (resFound == null && !isEntityUUID) {
-            // The id hasn't an uuid. Search on map if a single entity is on the path.
             List<String> uuids = Utils.getEntityUUIDsFromPath(id);
             if (uuids.size() == 1) {
-                for (String uuidTmp : uuids) {
-                    // Load the resource..
-                    for (Resource resource : configuration.getResources()) {
-                        if (resource.getId().equals(uuidTmp)) {
-                            resFound = resource;
-                            // Resource found.
-                            break;
-                        }
-
+                String uuidTmp = uuids.get(0);
+                for (Resource resource : configuration.getResources()) {
+                    if (resource.getId().equals(uuidTmp)) {
+                        resFound = resource;
+                        break;
                     }
-                    break;
-
                 }
             }
-            // if multiple entities, return null.
-
         }
 
         return resFound;
@@ -741,7 +671,7 @@ public class ConfigurationManager {
      * @param id
      * @return
      */
-    public static Link findLink(final String owner, final String id) {
+    private static Link findLink(final String owner, final String id) {
         Configuration configuration = getConfigurationForOwner(owner);
         String entityUUID;
         boolean isEntityUUID = Utils.isEntityUUIDProvided(id, new HashMap<>());
@@ -766,32 +696,28 @@ public class ConfigurationManager {
 
         }
 
-        // Path only case. but compare with real uuid, if uuids number > 1 return null.
         if (link == null && !isEntityUUID) {
             // The id hasn't an uuid. Search on map if a single entity is on the path.
             List<String> uuids = Utils.getEntityUUIDsFromPath(id);
             if (uuids.size() == 1) {
-                for (String uuidTmp : uuids) {
-                    for (Resource resource : configuration.getResources()) {
-                        links = resource.getLinks();
-                        if (!links.isEmpty()) {
-                            for (Link lnk : links) {
-                                if (lnk.getId().equals(uuidTmp)) {
-                                    link = lnk;
-                                    break;
+                String uuidTmp = uuids.get(0);
 
-                                }
-                            }
-                            if (link != null) {
+                for (Resource resource : configuration.getResources()) {
+                    links = resource.getLinks();
+                    if (!links.isEmpty()) {
+                        for (Link lnk : links) {
+                            if (lnk.getId().equals(uuidTmp)) {
+                                link = lnk;
                                 break;
+
                             }
                         }
+                        if (link != null) {
+                            break;
+                        }
                     }
-                    break;
                 }
             }
-            // if multiple entities, return null.
-
         }
 
         return link;
@@ -801,19 +727,15 @@ public class ConfigurationManager {
      * Search an entity (link or resource) on the current configuration.
      *
      * @param owner
-     * @param id (entityId is unique for all owners)
+     * @param id    (entityId is unique for all owners)
      * @return an OCCI Entity, could be null, if entity has is not found.
      */
     public static Entity findEntity(String owner, final String id) {
         Entity entity = null;
-
         if (owner == null) {
-            entity = findEntityAndGetOwner(owner, id);
-            return entity;
+            owner = DEFAULT_OWNER;
         }
-
         Resource resource = findResource(owner, id);
-
         Link link;
         if (resource == null) {
             link = findLink(owner, id);
@@ -827,7 +749,6 @@ public class ConfigurationManager {
     }
 
     /**
-     *
      * @param owner
      * @param id
      * @return true if entity exist or false if it doesnt exist.
@@ -836,13 +757,11 @@ public class ConfigurationManager {
         if (Utils.isEntityUUIDProvided(id, new HashMap<>())) {
             return findEntity(owner, id) != null;
         } else {
-            // UUID not provided, search on relative path and check if one entity is found.
             String path;
             boolean found = false;
             for (Map.Entry<String, String> entry : entitiesRelativePath.entrySet()) {
                 path = entry.getValue();
                 if (path.equals(id)) {
-                    // There is an entity on this relative path.
                     found = true;
                     break;
                 }
@@ -850,58 +769,8 @@ public class ConfigurationManager {
             }
             return found;
         }
-
     }
 
-    /**
-     * Find entity on all owner,
-     *
-     * @param owner (value on upper)
-     * @param entityId (unique on all the map)
-     * @return
-     */
-    public static Entity findEntityAndGetOwner(String owner, final String entityId) {
-        Entity entity;
-        Map<String, Entity> ents = findEntitiesOnAllOwner(entityId);
-        Set<String> owners = ents.keySet();
-        if (owners.size() != 1) {
-            return null;
-        }
-
-        for (String own : owners) {
-            owner = own;
-        }
-        entity = ents.get(owner);
-
-        return entity;
-    }
-
-    /**
-     * Search the first entity found on all owner's configurations.
-     *
-     * @param ownerFound
-     * @param id
-     * @return
-     */
-    public static Entity findEntityOnAllOwner(String ownerFound, final String id) {
-        if (configurations.isEmpty()) {
-            return null;
-        }
-
-        Set<String> owners = configurations.keySet();
-        Entity entity = null;
-        for (String owner : owners) {
-            entity = findEntity(owner, id);
-            ownerFound = owner;
-            if (entity != null) {
-                break;
-            }
-        }
-        if (ownerFound == null) {
-            ownerFound = DEFAULT_OWNER;
-        }
-        return entity;
-    }
 
     /**
      * Search for a kind.
@@ -910,7 +779,7 @@ public class ConfigurationManager {
      * @param id
      * @return
      */
-    public static Kind findKindFromEntities(final String owner, final String id) {
+    private static Kind findKindFromEntities(final String owner, final String id) {
         Configuration configuration = getConfigurationForOwner(owner);
         Kind kind = null;
         EList<Link> links;
@@ -970,14 +839,11 @@ public class ConfigurationManager {
 
         if (kindToReturn == null) {
 
-            // Search kind in unreferenced extensions, if found reference the
-            // new extension to this configuration.
             Collection<String> extReg = OCCIRegistry.getInstance().getRegisteredExtensions();
 
             extReg.removeAll(extUsed);
             Extension ext;
             for (String extScheme : extReg) {
-                // ext = OcciHelper.loadExtension(OCCIRegistry.getInstance().getExtensionURI(extScheme));
                 ext = OcciHelper.loadExtension(extScheme);
                 kinds = ext.getKinds();
                 for (Kind kind : kinds) {
@@ -1018,7 +884,7 @@ public class ConfigurationManager {
 
             entities.addAll(findAllEntitiesForKind(owner, categoryId));
             entities.addAll(findAllEntitiesForMixin(owner, categoryId));
-            entities.addAll(findAllEntitiesForAction(owner, categoryId));
+            entities.addAll(findAllEntitiesForCategory(owner, categoryId));
 
             if (!entities.isEmpty()) {
                 entitiesMap.put(owner, entities);
@@ -1037,8 +903,8 @@ public class ConfigurationManager {
      *
      * @param owner
      * @param startIndex
-     * @param number (number max of entities to return).
-     * @param filters (List of entity attribute to filter).
+     * @param number     (number max of entities to return).
+     * @param filters    (List of entity attribute to filter).
      * @return a list of entities (key: owner, value : List of entities).
      */
     public static List<Entity> findAllEntities(final String owner, final int startIndex, final int number, final List<CollectionFilter> filters) {
@@ -1047,140 +913,13 @@ public class ConfigurationManager {
         if (configurations.isEmpty() || owner == null || owner.isEmpty()) {
             return entities;
         }
-
-        String categoryId = null;
-        for (CollectionFilter filter : filters) {
-            if (filter.getCategoryFilter() != null) {
-                categoryId = filter.getCategoryFilter();
-            }
-
-        }
-
-        // Load all entities and after filter them.
         entities.addAll(findAllEntitiesOwner(owner));
-
 //        entities.addAll(findAllEntitiesForKind(owner, categoryId));
 //        entities.addAll(findAllEntitiesForMixin(owner, categoryId));
-//        entities.addAll(findAllEntitiesForAction(owner, categoryId));
+//        entities.addAll(findAllEntitiesForCategory(owner, categoryId));
         // TODO : Order list by entityId, if entities not empty.
         entities = filterEntities(startIndex, number, filters, entities, owner);
-
         return entities;
-    }
-
-    /**
-     * Get all used collection types (like : collections/compute)
-     *
-     * @return
-     */
-    public static List<String> getUsedCollectionTypes() {
-        List<String> collectionTypes = new ArrayList<>();
-        Map<String, List<Entity>> entitiesMap = getAllEntities();
-        String collection = "collections/";
-        List<Entity> entities;
-        String result;
-        for (Map.Entry<String, List<Entity>> entry : entitiesMap.entrySet()) {
-            entities = entry.getValue();
-            for (Entity entity : entities) {
-                String kindTerm = entity.getKind().getTerm();
-                result = collection + kindTerm;
-                if (!collectionTypes.contains(result)) {
-                    collectionTypes.add(collection + kindTerm);
-                }
-            }
-        }
-
-        return collectionTypes;
-    }
-
-    /**
-     * Get all used kinds (scheme + term) like
-     * http://schemas.ogf.org/occi/infrastructure#network.
-     *
-     * @return
-     */
-    public static List<String> getAllUsedKind() {
-        List<String> usedKinds = new ArrayList<>();
-        Map<String, List<Entity>> entitiesMap = getAllEntities();
-        List<Entity> entities;
-        String result;
-
-        for (Map.Entry<String, List<Entity>> entry : entitiesMap.entrySet()) {
-            entities = entry.getValue();
-            for (Entity entity : entities) {
-                String kindTerm = entity.getKind().getTerm();
-                String scheme = entity.getKind().getScheme();
-
-                result = scheme + kindTerm;
-                if (!usedKinds.contains(result)) {
-                    usedKinds.add(result);
-                }
-            }
-
-        }
-        String mixinId;
-        // Get all location of a user mixins.
-        for (Map.Entry<String, String> entry : userMixinLocationMap.entrySet()) {
-            mixinId = entry.getKey(); // Scheme + term.
-            usedKinds.add(mixinId);
-        }
-
-        return usedKinds;
-    }
-
-    /**
-     * Find all user mixins kind that have this location.
-     *
-     * @param owner
-     * @param location (http://localhost:8080/mymixincollection/
-     * @return a list of user mixins, empty if none found.
-     */
-    public static List<String> findAllUserMixinKindByLocation(final String owner, final String location) {
-
-        List<String> mixinKinds;
-        // Recherche sur tous les users mixin kinds.
-        Configuration config;
-        EList<Mixin> mixins;
-        String mixinId;
-        String locationTmp;
-        mixinKinds = new ArrayList<>();
-        config = getConfigurationForOwner(owner);
-        mixins = config.getMixins();
-        for (Mixin mixin : mixins) {
-            mixinId = mixin.getScheme() + mixin.getTerm();
-            locationTmp = userMixinLocationMap.get(mixinId);
-            if (locationTmp != null && locationTmp.contains(location)) {
-                // Location found for this mixin.
-                mixinKinds.add(mixinId);
-            }
-        }
-        return mixinKinds;
-    }
-
-    /**
-     * Get all the entities for all owner.
-     *
-     * @return an hmap (key: owner, value : List of entities.
-     */
-    public static Map<String, List<Entity>> getAllEntities() {
-        Map<String, List<Entity>> entitiesMap = new HashMap<>();
-        Set<String> owners = configurations.keySet();
-        if (configurations.isEmpty()) {
-            return entitiesMap;
-        }
-        List<Entity> entities = new ArrayList<>();
-        for (String owner : owners) {
-            entities.clear();
-            entities.addAll(findAllEntitiesOwner(owner));
-
-            if (!entities.isEmpty()) {
-                entitiesMap.put(owner, entities);
-            } else {
-                entities = new ArrayList<>();
-                entitiesMap.put(owner, entities);
-            }
-        }
-        return entitiesMap;
     }
 
     /**
@@ -1213,8 +952,8 @@ public class ConfigurationManager {
      * Search for an action with entityId and a full category scheme.
      *
      * @param relativePath (like "compute/vm1")
-     * @param actionId (like
-     * "http://schemas.ogf.org/occi/infrastructure/compute/action#start")
+     * @param actionId     (like
+     *                     "http://schemas.ogf.org/occi/infrastructure/compute/action#start")
      * @return an entity map (key=owner, value=Entity) with this relative path
      * and has this actionId, may return empty map if action not found on entity
      * object, or if entity not found.
@@ -1253,7 +992,7 @@ public class ConfigurationManager {
      * @param entityId
      * @return entities
      */
-    public static Map<String, Entity> findEntitiesOnAllOwner(final String entityId) {
+    private static Map<String, Entity> findEntitiesOnAllOwner(final String entityId) {
         Entity entity;
         Map<String, Entity> entitiesMap = new HashMap<>();
         for (String owner : configurations.keySet()) {
@@ -1272,7 +1011,7 @@ public class ConfigurationManager {
      * @param categoryId
      * @return
      */
-    public static List<Entity> findAllEntitiesForKind(final String owner, final String categoryId) {
+    private static List<Entity> findAllEntitiesForKind(final String owner, final String categoryId) {
         List<Entity> entities = new ArrayList<>();
         for (Resource res : getConfigurationForOwner(owner).getResources()) {
             if ((res.getKind().getScheme() + res.getKind().getTerm()).equals(categoryId)) {
@@ -1297,7 +1036,7 @@ public class ConfigurationManager {
      * @param categoryId
      * @return
      */
-    public static List<Entity> findAllEntitiesForMixin(final String owner, final String categoryId) {
+    private static List<Entity> findAllEntitiesForMixin(final String owner, final String categoryId) {
         List<Entity> entities = new ArrayList<>();
         for (Resource res : getConfigurationForOwner(owner).getResources()) {
             for (Mixin mix : res.getMixins()) {
@@ -1319,14 +1058,12 @@ public class ConfigurationManager {
     }
 
     /**
-     * Find all entities for an action (replace getEntities() method from Mixin
-     * object).
-     *
+     * Find all entities for a category.
      * @param owner
      * @param categoryId (id of kind, mixin or action, composed by scheme+term.
-     * @return
+     * @return a collection list of entity.
      */
-    public static List<Entity> findAllEntitiesForAction(final String owner, final String categoryId) {
+    public static List<Entity> findAllEntitiesForCategory(final String owner, final String categoryId) {
         List<Entity> entities = new ArrayList<>();
         for (Resource res : getConfigurationForOwner(owner).getResources()) {
 
@@ -1336,7 +1073,6 @@ public class ConfigurationManager {
                 }
 
             }
-            // Search in mixins.
             for (Mixin mixin : res.getMixins()) {
                 for (Action act : mixin.getActions()) {
 
@@ -1366,62 +1102,19 @@ public class ConfigurationManager {
         return entities;
     }
 
-    /**
-     * Return all entity based on a partial Id (like request).
-     *
-     * @param owner
-     * @param partialId
-     * @return
-     */
-    public static List<Entity> findAllEntitiesLikePartialId(final String owner, final String partialId) {
-        List<Entity> entities = new ArrayList<>();
-
-        Configuration configuration = getConfigurationForOwner(owner);
-
-        if (partialId == null) {
-            return entities;
-        }
-
-        List<Resource> resources = configuration.getResources();
-        for (Resource resource : resources) {
-            if (resource.getId().contains(partialId)) {
-                entities.add(resource);
-            }
-            if (!resource.getLinks().isEmpty()) {
-                for (Link link : resource.getLinks()) {
-                    if (link.getId().contains(partialId)) {
-                        entities.add(link);
-                    }
-                }
-            }
-        }
-
-        return entities;
-    }
-
-    /**
-     * Destroy all configurations for all owners.
-     */
-    public static void resetAll() {
-        configurations.clear();
-        versionObjectMap.clear();
-    }
 
     /**
      * Add mixins to an existing entity (resources or links). Ex of mixin string
      * format : http://schemas.ogf.org/occi/infrastructure/network#ipnetwork
      *
-     * @param entity (OCCI Entity).
-     * @param mixins (List of mixins).
+     * @param entity     (OCCI Entity).
+     * @param mixins     (List of mixins).
      * @param owner
      * @param updateMode (if updateMode is true, reset existing and replace with
-     * new ones)
-     * @return
-     * @throws
-     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     *                   new ones)
+     * @throws ConfigurationException
      */
-    public static boolean addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) throws ConfigurationException {
-        boolean result = false;
+    public static void addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) throws ConfigurationException {
         if (updateMode) {
             entity.getMixins().clear();
         }
@@ -1463,10 +1156,8 @@ public class ConfigurationManager {
                 }
 
                 entity.getMixins().add(mixin);
-                result = true;
             }
         }
-        return result;
     }
 
     /**
@@ -1493,7 +1184,7 @@ public class ConfigurationManager {
      * @param mixinId
      * @return a mixin found or null if not found
      */
-    public static Mixin findMixinOnEntities(final String owner, final String mixinId) {
+    private static Mixin findMixinOnEntities(final String owner, final String mixinId) {
         Configuration configuration = getConfigurationForOwner(owner);
         Mixin mixinToReturn = null;
         boolean mixinOk;
@@ -1568,11 +1259,10 @@ public class ConfigurationManager {
      * @param mixinId
      * @param entityIds
      * @param updateMode
-     * @throws
-     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void saveMixinForEntities(final String mixinId, final List<String> entityIds,
-            final boolean updateMode, final String owner) throws ConfigurationException {
+                                            final boolean updateMode, final String owner) throws ConfigurationException {
 
         // searching for the mixin to register.
         Mixin mixin = findMixinOnExtension(owner, mixinId);
@@ -1635,8 +1325,7 @@ public class ConfigurationManager {
      * @param title
      * @param location
      * @param owner
-     * @throws
-     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void addUserMixinOnConfiguration(final String id, final String title, final String location, final String owner) throws ConfigurationException {
         if (owner == null || id == null || location == null) {
@@ -1672,7 +1361,7 @@ public class ConfigurationManager {
      * @param mixinId (scheme + term)
      * @return null if not found on configurations.
      */
-    public static Mixin findUserMixinOnConfigurations(final String mixinId) {
+    private static Mixin findUserMixinOnConfigurations(final String mixinId) {
         Mixin mixinToReturn = null;
         Set<String> owners = configurations.keySet();
         Configuration config;
@@ -1722,8 +1411,7 @@ public class ConfigurationManager {
      *
      * @param mixinId
      * @param owner
-     * @throws
-     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
     public static void removeUserMixinFromConfiguration(final String mixinId, final String owner) throws ConfigurationException {
         if (mixinId == null) {
@@ -1753,7 +1441,7 @@ public class ConfigurationManager {
      * @param mixinId
      * @return
      */
-    public static Mixin createMixin(final String mixinId) {
+    private static Mixin createMixin(final String mixinId) {
         Mixin mixin = occiFactory.createMixin();
         if (mixinId != null) {
             // Create mixin.
@@ -1775,7 +1463,7 @@ public class ConfigurationManager {
     /**
      * Find a used extension for an action Kind.
      *
-     * @param owner (owner of the configuration).
+     * @param owner     (owner of the configuration).
      * @param action_id (kind : scheme+term)
      * @return extension found, may return null if no extension found with this
      * configuration.
@@ -1811,7 +1499,6 @@ public class ConfigurationManager {
     }
 
     /**
-     *
      * @param ext
      * @param actionId (action scheme+term)
      * @return Action, may return null if not found on extension.
@@ -1840,7 +1527,7 @@ public class ConfigurationManager {
      * Get used extension with this kind.
      *
      * @param owner owner of the configuration
-     * @param kind (represent a Kind Scheme+term)
+     * @param kind  (represent a Kind Scheme+term)
      * @return
      */
     public static Extension getExtensionForKind(String owner, String kind) {
@@ -1963,47 +1650,17 @@ public class ConfigurationManager {
     }
 
     /**
-     * Update attributes for all entities that have this path.
-     *
-     * @param entityId , relative path of the entity
-     * @param attributes , attributes to update
-     * @throws
-     * org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
-     */
-    public static void updateAttributesForEntity(final String entityId, Map<String, String> attributes) throws ConfigurationException {
-        String ownerFound = null;
-        Entity entity = findEntityOnAllOwner(ownerFound, entityId);
-
-        if (entity != null) {
-            // update the attributes.
-            updateAttributesToEntity(entity, attributes);
-            LOGGER.info("owner : " + ownerFound + " --< entity id : " + entityId);
-            updateVersion(ownerFound, entityId);
-            // printEntity(entity);
-
-        } else {
-            LOGGER.error("The entity " + entityId + " doesnt exist, can''t update ! ");
-            throw new ConfigurationException("The entity " + entityId + " doesnt exist, can''t update ! ");
-        }
-
-    }
-
-    /**
      * Determine if entity is a Resource or a Link from the provided attributes.
      *
      * @param attr = attributes of an entity
      * @return false if this entity is a link, true otherwise.
      */
     public static boolean checkIfEntityIsResourceOrLinkFromAttributes(Map<String, String> attr) {
-        boolean result = true;
+        boolean result;
         if (attr == null || attr.isEmpty()) {
-            return result;
+            return true;
         }
-        if (attr.containsKey(Constants.OCCI_CORE_SOURCE) || attr.containsKey(Constants.OCCI_CORE_TARGET)) {
-            result = false;
-        } else {
-            result = true;
-        }
+        result = !(attr.containsKey(Constants.OCCI_CORE_SOURCE) || attr.containsKey(Constants.OCCI_CORE_TARGET));
 
         return result;
     }
@@ -2032,9 +1689,8 @@ public class ConfigurationManager {
      * @return a filtered list of entities.
      */
     private static List<Entity> filterEntities(final int startIndex, final int number, final List<CollectionFilter> filters, List<Entity> sources, final String user) {
-        List<Entity> entities = sources;
         // Filter the lists if filter are set.
-        if (!filters.isEmpty() && !entities.isEmpty()) {
+        if (!filters.isEmpty() && !sources.isEmpty()) {
             String categoryFilter = null;
             // Check category filter.
             for (CollectionFilter filter : filters) {
@@ -2065,8 +1721,8 @@ public class ConfigurationManager {
                 }
             }
 
-            Iterator<Entity> it = entities.iterator();
-            boolean control = false;
+            Iterator<Entity> it = sources.iterator();
+            boolean control;
             String constraintValue;
             while (it.hasNext()) {
                 control = false;
@@ -2131,24 +1787,20 @@ public class ConfigurationManager {
                             }
                         }
                     }
-                    if (!categoryFound) {
-                        control = false;
-                    } else {
-                        control = true;
-                    }
+                    control = categoryFound;
 
                 }
 
                 if (hasFilterOnPath && filterOnPath != null) {
                     String relativeLocation = getEntityRelativePath(entity.getId());
-                    
-                    relativeLocation = relativeLocation.replaceAll("\\s+","");
-                    filterOnPath = filterOnPath.replaceAll("\\s+","");
-                    
+
+                    relativeLocation = relativeLocation.replaceAll("\\s+", "");
+                    filterOnPath = filterOnPath.replaceAll("\\s+", "");
+
                     if (relativeLocation == null || relativeLocation.isEmpty()) {
                         control = false;
                     } else if (relativeLocation.startsWith(filterOnPath)) {
-                            control = true;
+                        control = true;
                     }
 
                 } // endif has a filter on relative path.
@@ -2162,11 +1814,11 @@ public class ConfigurationManager {
 
         // Position the start index if > 0.
         // JP: start index starts with 1
-        if (startIndex > 1 && !entities.isEmpty()) {
+        if (startIndex > 1 && !sources.isEmpty()) {
             int currentIndex = 0;
-            Iterator<Entity> it = entities.iterator();
+            Iterator<Entity> it = sources.iterator();
             while (it.hasNext()) {
-                Entity entity = it.next();
+                it.next();
                 LOGGER.info("currentIndex=" + currentIndex + ", startIndex=" + startIndex);
                 if (currentIndex < (startIndex - 1)) {
                     it.remove();
@@ -2178,19 +1830,17 @@ public class ConfigurationManager {
         // Max count, -1 infinite.
         if (number >= 0) {
             int count = 0;
-            Iterator<Entity> it = entities.iterator();
+            Iterator<Entity> it = sources.iterator();
             while (it.hasNext()) {
-                Entity entity = it.next();
+                it.next();
                 count++;
-                if (count <= number) {
-
-                } else {
+                if (count > number) {
                     it.remove();
                 }
             }
         }
 
-        return entities;
+        return sources;
     }
 
     /**
@@ -2219,6 +1869,7 @@ public class ConfigurationManager {
 //        // Generate eTag.
 //        return Utils.createEtagNumber(id, owner, version);
 //    }
+
     /**
      * Get an attribute state object for key parameter.
      *
@@ -2229,7 +1880,7 @@ public class ConfigurationManager {
     private static AttributeState getAttributeStateObject(Entity entity, final String key) {
         AttributeState attr = null;
         if (key == null) {
-            return attr;
+            return null;
         }
         // Load the corresponding attribute state.
         for (AttributeState attrState : entity.getAttributes()) {
@@ -2384,7 +2035,7 @@ public class ConfigurationManager {
      * @param user
      * @return a String, scheme + term or null if not found on configuration.
      */
-    public static String findCategorySchemeTermFromTerm(String categoryTerm, String user) {
+    private static String findCategorySchemeTermFromTerm(String categoryTerm, String user) {
         List<Kind> kinds = getAllConfigurationKind(user);
         List<Mixin> mixins = getAllConfigurationMixins(user);
         String term;
@@ -2440,7 +2091,7 @@ public class ConfigurationManager {
     public static Entity getEntityFromPath(final String path) {
         Entity entity = null;
         String uuid = null;
-        String pathTmp = null;
+        String pathTmp;
         if (path == null) {
             return null;
         }

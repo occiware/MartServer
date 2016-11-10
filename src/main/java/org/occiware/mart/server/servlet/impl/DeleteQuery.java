@@ -1,36 +1,23 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.impl;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -42,6 +29,18 @@ import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Delete entity (or entities), delete mixin tag, remove mixin association.
@@ -68,7 +67,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
         // Check if the query is not on interface query, this path is used only on GET method.
         if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
             List<InputData> datas = inputParser.getInputDatas();
-            
+
             boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
             if (!isMixinTagRequest) {
                 // Check if there is inputdata referencing mixintag.
@@ -103,10 +102,10 @@ public class DeleteQuery extends AbstractDeleteQuery {
                     throw new InternalServerErrorException(ex);
                 }
             }
-            
+
             // Check if this is mixins remove association and remove from configuration if not referenced on extension (mixinusertag).
             if (!data.getMixins().isEmpty() || data.getMixinTag() != null) {
-                
+
                 if (data.getMixinTag() != null) {
                     return deleteMixin(data.getMixinTag(), ConfigurationManager.DEFAULT_OWNER, true);
                 }
@@ -117,13 +116,11 @@ public class DeleteQuery extends AbstractDeleteQuery {
                     }
                     return response;
                 }
-                
-                
-            }
-            
-            
 
-            // Delete an entity.
+
+            }
+
+
             Map<String, String> attrs = data.getAttrs();
             boolean isEntityRequest = Utils.isEntityRequest(path, attrs);
             if (isEntityRequest) {
@@ -148,10 +145,10 @@ public class DeleteQuery extends AbstractDeleteQuery {
     @Override
     public Response deleteMixin(String mixinId, String owner, boolean isMixinTag) {
         Response response = null;
-        
+
         ConfigurationManager.removeOrDissociateFromConfiguration(owner, mixinId);
         boolean hasError = false;
-        
+
         // Check if mixinId is found in mixin tag area.
         Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(mixinId, owner);
         if (mixin != null) {
@@ -165,7 +162,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
                 throw new InternalServerErrorException(ex);
             }
         }
-        
+
         // if mixin tag, remove the definition from Configuration object.
         if (isMixinTag) {
             try {
@@ -186,15 +183,15 @@ public class DeleteQuery extends AbstractDeleteQuery {
             } catch (ResponseParseException ex) {
                 throw new InternalServerErrorException();
             }
-        } 
+        }
         return response;
     }
 
     @Override
     public Response deleteEntityCollection(String path) {
-        Response response = null;
+        Response response;
         // Delete a collection of entities.
-        List<Entity> entities = new ArrayList<>();
+        List<Entity> entities;
 
         try {
             try {
@@ -202,6 +199,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
             } catch (ConfigurationException ex) {
                 LOGGER.error(ex.getMessage());
                 response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+                return response;
             }
             if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                 List<String> locations = new LinkedList<>();

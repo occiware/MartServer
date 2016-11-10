@@ -1,40 +1,23 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.impl;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.security.auth.login.Configuration;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.exception.EntityConflictException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -47,9 +30,20 @@ import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
- *
- * @author cgourdin
+ * @author Christophe Gourdin
  */
 @Path("/")
 public class PutQuery extends AbstractPutQuery {
@@ -128,7 +122,7 @@ public class PutQuery extends AbstractPutQuery {
                     isMixinTag = true;
                 }
             }
-            
+
             if (kind == null && (mixins == null || mixins.isEmpty()) && !isMixinTag) {
                 try {
                     response = outputParser.parseResponse("No category provided !", Response.Status.BAD_REQUEST);
@@ -204,10 +198,6 @@ public class PutQuery extends AbstractPutQuery {
             hasCreatedUUID = true;
         }
 
-        // String relativePath = getUri().getPath();
-        // Determine if this is a link or a resource.
-        // Check the attribute map if attr contains occi.core.source or
-        // occi.core.target, this is a link !
         isResource = ConfigurationManager.checkIfEntityIsResourceOrLinkFromAttributes(attributes);
         location = getUri().getPath();
         if (hasCreatedUUID) {
@@ -383,11 +373,11 @@ public class PutQuery extends AbstractPutQuery {
                 throw new InternalServerErrorException(ex.getMessage());
             }
         }
-            response = Response.created(getUri().getAbsolutePath())
-                    .header("Server", Constants.OCCI_SERVER_HEADER)
-                    .type(getContentType())
-                    .header("Accept", getAcceptType())
-                    .build();
+        response = Response.created(getUri().getAbsolutePath())
+                .header("Server", Constants.OCCI_SERVER_HEADER)
+                .type(getContentType())
+                .header("Accept", getAcceptType())
+                .build();
 //        } catch (URISyntaxException ex) {
 //            response = Response.created(getUri().getAbsolutePath())
 //                    .header("Server", Constants.OCCI_SERVER_HEADER)

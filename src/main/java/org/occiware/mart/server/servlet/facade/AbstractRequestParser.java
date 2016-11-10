@@ -1,33 +1,23 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.facade;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Kind;
 import org.occiware.clouddesigner.occi.Mixin;
@@ -38,6 +28,13 @@ import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Constants;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.util.*;
+
 /**
  *
  * @author Christophe Gourdin
@@ -47,20 +44,20 @@ public abstract class AbstractRequestParser implements IRequestParser {
     private List<InputData> inputDatas = new LinkedList<>();
 
     // For interface, used in configurations.
-    protected List<Kind> kindsConf = null;
-    protected List<Mixin> mixinsConf = null;
+    private List<Kind> kindsConf = null;
+    private List<Mixin> mixinsConf = null;
 
     /**
      * Uri of the server.
      */
-    protected URI serverURI;
+    private URI serverURI;
 
     /**
      * If parameters are in inputquery, it must declared here. Key: name of the
      * parameter Value: Value of the parameter (if url ==> decode before set the
      * value).
      */
-    protected Map<String, String> parameters = new HashMap<>();
+    private Map<String, String> parameters = new HashMap<>();
 
     @Override
     public void parseInputQuery(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException, AttributeParseException {
@@ -240,8 +237,8 @@ public abstract class AbstractRequestParser implements IRequestParser {
             if (data != null) {
                 entityUUIDCompare = data.getEntityUUID();
 
-                if (entityUUIDCompare != null && entityUUID.equals(entityUUID)) {
-                    data = dataToReturn;
+                if (entityUUIDCompare != null && entityUUIDCompare.equals(entityUUID)) {
+                    dataToReturn = data;
                 }
             }
         }
@@ -250,16 +247,16 @@ public abstract class AbstractRequestParser implements IRequestParser {
     }
 
     @Override
-    public void setInputDatas(List<InputData> inputData) {
-        this.inputDatas = inputData;
-    }
-
-    @Override
     public List<InputData> getInputDatas() {
         if (inputDatas == null) {
             inputDatas = new LinkedList<>();
         }
         return inputDatas;
+    }
+
+    @Override
+    public void setInputDatas(List<InputData> inputData) {
+        this.inputDatas = inputData;
     }
 
 }

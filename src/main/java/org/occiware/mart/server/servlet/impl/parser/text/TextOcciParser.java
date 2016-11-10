@@ -1,42 +1,26 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.impl.parser.text;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
-import org.occiware.clouddesigner.occi.Action;
-import org.occiware.clouddesigner.occi.Attribute;
-import org.occiware.clouddesigner.occi.AttributeState;
-import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Kind;
-import org.occiware.clouddesigner.occi.Link;
-import org.occiware.clouddesigner.occi.Mixin;
+import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
@@ -48,6 +32,13 @@ import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import java.util.*;
+import java.util.regex.Matcher;
+
 /**
  * text/occi rendering are in headers not in body, this is not a text/plain (or
  * text/occi+plain).
@@ -58,7 +49,7 @@ public class TextOcciParser extends AbstractRequestParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TextOcciParser.class);
 
-    private InputData data = new InputData();
+    private final InputData data = new InputData();
 
     @Override
     public void parseOcciCategories(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException {
@@ -176,7 +167,7 @@ public class TextOcciParser extends AbstractRequestParser {
                     for (String valueTmp : valuesTmp) {
                         data.addXocciLocation(valueTmp);
                     }
-                    
+
                     break;
                 }
             }
@@ -229,7 +220,7 @@ public class TextOcciParser extends AbstractRequestParser {
             if (status != null && status.equals(Response.Status.OK)) {
                 response = Response.status(status)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .header("content", (String) object)
+                        .header("content", object)
                         .header("Accept", getAcceptedTypes())
                         .entity("OK \n")
                         .type(Constants.MEDIA_TYPE_TEXT_OCCI)
@@ -237,9 +228,9 @@ public class TextOcciParser extends AbstractRequestParser {
             } else {
                 response = Response.status(status)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .header("content", (String) object)
+                        .header("content", object)
                         .header("Accept", getAcceptedTypes())
-                        .entity((String) object)
+                        .entity(object)
                         .type(Constants.MEDIA_TYPE_TEXT_OCCI)
                         .build();
             }
@@ -251,9 +242,9 @@ public class TextOcciParser extends AbstractRequestParser {
             response = renderEntityResponse(entity, status);
         }
 
-        if (object instanceof List) {
+        if (object instanceof List<?>) {
             LOGGER.info("Collection to render.");
-            List<Object> objects = (List<Object>) object;
+            List<?> objects = (List<?>) object;
             List<String> locations = new LinkedList<>();
             List<Entity> entities = new LinkedList<>();
             String tmp;
@@ -287,14 +278,11 @@ public class TextOcciParser extends AbstractRequestParser {
                 }
                 response = responseBuilder.build();
             }
-            if (!entities.isEmpty()) {
 
-                for (Entity entity : entities) {
-                    response = renderEntityResponse(entity, status);
-                    // We render only the first entity found, cause to limit size of header.
-                    break;
-                }
-
+            for (Entity entity : entities) {
+                response = renderEntityResponse(entity, status);
+                // We render only the first entity found, cause to limit size of header.
+                break;
             }
 
         }
@@ -646,8 +634,7 @@ public class TextOcciParser extends AbstractRequestParser {
      */
     private String renderXOCCILocationAttr(final Entity entity) {
         String location = ConfigurationManager.getLocation(entity);
-        String absoluteLocation = getServerURI().toString() + location;
-        return absoluteLocation;
+        return getServerURI().toString() + location;
     }
 
     /**

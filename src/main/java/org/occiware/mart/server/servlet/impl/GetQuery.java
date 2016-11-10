@@ -1,48 +1,46 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.impl;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractGetQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
-import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.GET;
+import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -134,6 +132,7 @@ public class GetQuery extends AbstractGetQuery {
                 if (entity == null) {
                     try {
                         response = outputParser.parseResponse("you must not use the accept type " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " in this way.", Response.Status.BAD_REQUEST);
+                        return response;
                     } catch (ResponseParseException ex) {
                         // Must never happen if input query is ok.
                         throw new InternalServerErrorException(ex);
@@ -232,14 +231,14 @@ public class GetQuery extends AbstractGetQuery {
             // Check if we need to filter for a category like /compute/-/, we get the term.
             categoryFilter = Utils.getCategoryFilter(path, ConfigurationManager.DEFAULT_OWNER);
         }
-        
+
         response = outputParser.getInterface(categoryFilter, ConfigurationManager.DEFAULT_OWNER);
         return response;
     }
 
     @Override
     public Response getEntities(final String path) {
-        Response response = null;
+        Response response;
         String acceptType = getAcceptType();
         if (acceptType == null) {
             acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
@@ -251,8 +250,9 @@ public class GetQuery extends AbstractGetQuery {
             } catch (ConfigurationException ex) {
                 LOGGER.error(ex.getMessage());
                 response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+                return response;
             }
-            
+
             if (acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                 List<String> locations = new LinkedList<>();
                 String location;

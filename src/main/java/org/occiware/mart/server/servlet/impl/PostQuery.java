@@ -1,56 +1,42 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.impl;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import org.occiware.clouddesigner.occi.Action;
-import org.occiware.clouddesigner.occi.Category;
-import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Extension;
-import org.occiware.clouddesigner.occi.Mixin;
+import org.occiware.clouddesigner.occi.*;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractPostQuery;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
-import org.occiware.mart.server.servlet.utils.CollectionFilter;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
  * execute actions, update attributes on entities, update mixin tag associations
@@ -137,9 +123,9 @@ public class PostQuery extends AbstractPostQuery {
                 if (categoryId != null && !isEntityUUIDProvided) {
                     // This is a collection action.
                     LOGGER.info("Executing action: " + data.getAction() + " on Category: " + categoryId + " collection.");
-                    // Load all entities 
-                    entities = ConfigurationManager.findAllEntitiesForCategoryId(categoryId).get(ConfigurationManager.DEFAULT_OWNER);
-                    
+                    // Load all entities for this category.
+                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
+
                     response = executeActionsOnEntities(actionId, entities);
 
                 } else if (categoryId != null && isEntityUUIDProvided) {
@@ -154,7 +140,7 @@ public class PostQuery extends AbstractPostQuery {
                     }
                     if (cat == null) {
                         try {
-                            response = outputParser.parseResponse("The category : " + categoryId + " doest exit on extensions", Response.Status.BAD_REQUEST);
+                            response = outputParser.parseResponse("The category : " + categoryId + " doesn't exist on extensions", Response.Status.BAD_REQUEST);
                             return response;
                         } catch (ResponseParseException ex) {
                             throw new InternalServerErrorException(ex);
@@ -164,7 +150,7 @@ public class PostQuery extends AbstractPostQuery {
 
                     if (entity == null) {
                         try {
-                            response = outputParser.parseResponse("The entity : " + entityUUID + " doest exit on path : " + path, Response.Status.NOT_FOUND);
+                            response = outputParser.parseResponse("The entity : " + entityUUID + " doesn't exist on path : " + path, Response.Status.NOT_FOUND);
                             return response;
                         } catch (ResponseParseException ex) {
                             throw new InternalServerErrorException(ex);
@@ -175,7 +161,7 @@ public class PostQuery extends AbstractPostQuery {
                 } else {
                     // This is an action on an entity collection.
                     LOGGER.info("Executing action: " + data.getAction() + " on path: " + path);
-                    entities = ConfigurationManager.findAllEntitiesForAction(ConfigurationManager.DEFAULT_OWNER, actionId);
+                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, actionId);
                     // Remove entities that have not their location equals to path.
                     Iterator<Entity> it = entities.iterator();
                     while (it.hasNext()) {
@@ -194,7 +180,7 @@ public class PostQuery extends AbstractPostQuery {
                 return response;
             } // End if action part.
 
-            boolean mixinTagAsso = false;
+            boolean mixinTagAsso;
             //  - update an entity, 
             //  - update a collection of entities 
             if (isEntityUUIDProvided) {
@@ -232,7 +218,7 @@ public class PostQuery extends AbstractPostQuery {
                     mixinTagAsso = true;
                 } else {
                     // This must be a collection on category.
-                    entities = ConfigurationManager.findAllEntitiesForCategoryId(categoryId).get(ConfigurationManager.DEFAULT_OWNER);
+                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
                     response = updateEntityCollection(path, entities);
                     return response;
                 }
@@ -278,7 +264,7 @@ public class PostQuery extends AbstractPostQuery {
                 } else {
                     response = updateMixinTagAssociation(categoryId, location);
                 }
-                
+
                 return response;
             } else {
                 // Request is undefined.
@@ -313,7 +299,7 @@ public class PostQuery extends AbstractPostQuery {
      */
     @Override
     public Response updateEntity(String path, Entity entity) {
-        Response response = null;
+        Response response;
 
         if (entity == null) {
             try {
@@ -372,12 +358,12 @@ public class PostQuery extends AbstractPostQuery {
      */
     @Override
     public Response updateMixinTagAssociation(String mixinTag, String relativeLocationApply) {
-        
-        
+
+
         Response response;
         List<String> mixins = new ArrayList<>();
         mixins.add(mixinTag);
-        
+
         String uuid = Utils.getUUIDFromPath(relativeLocationApply, new HashMap<>());
         if (uuid == null) {
             throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore");
@@ -392,6 +378,7 @@ public class PostQuery extends AbstractPostQuery {
         } catch (ConfigurationException ex) {
             try {
                 response = outputParser.parseResponse(ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+                return response;
             } catch (ResponseParseException e) {
                 throw new InternalServerErrorException(e);
             }
@@ -425,7 +412,7 @@ public class PostQuery extends AbstractPostQuery {
                 throw new InternalServerErrorException(ex);
             }
         }
-        
+
         InputData data = inputParser.getInputDataForEntityUUID(entity.getId());
         if (data == null) {
             // This is an action on collections or on a path.
@@ -436,18 +423,23 @@ public class PostQuery extends AbstractPostQuery {
             }
         }
         String[] actionParameters = null;
-        
+
         if (data != null && data.getAttrs() != null) {
             actionParameters = Utils.getActionParametersArray(data.getAttrs());
         }
-        
+
         String entityKind = entity.getKind().getScheme() + entity.getKind().getTerm();
         Extension ext = ConfigurationManager.getExtensionForKind(ConfigurationManager.DEFAULT_OWNER, entityKind);
 
         Action actionKind = ConfigurationManager.getActionKindFromExtension(ext, actionId);
         if (actionKind == null) {
             LOGGER.error("Action : " + actionId + " doesnt exist on extension : " + ext.getName());
-            throw new BadRequestException("Action : " + actionId + " doesnt exist on extension : " + ext.getName());
+            try {
+                response = outputParser.parseResponse("Action : " + actionId + " doesnt exist on extension : " + ext.getName(), Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException e) {
+                throw new InternalServerErrorException(e);
+            }
         }
 
         try {
@@ -460,7 +452,8 @@ public class PostQuery extends AbstractPostQuery {
             ex.printStackTrace();
             LOGGER.error("Action failed to execute : " + ex.getMessage());
             try {
-                response = outputParser.parseResponse("Action failed : " + ex.getMessage());
+                response = outputParser.parseResponse("Action failed : " + ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+                return response;
             } catch (ResponseParseException e) {
                 throw new InternalServerErrorException(e);
             }
@@ -488,7 +481,7 @@ public class PostQuery extends AbstractPostQuery {
 
         if (entities.isEmpty()) {
             try {
-                response = outputParser.parseResponse("No entity collection found for execute action: " + actionKind, Response.Status.BAD_REQUEST);
+                response = outputParser.parseResponse("No entity collection found to execute action: " + actionKind, Response.Status.BAD_REQUEST);
             } catch (ResponseParseException ex) {
                 throw new InternalServerErrorException(ex);
             }
@@ -497,5 +490,5 @@ public class PostQuery extends AbstractPostQuery {
         return response;
 
     }
-    
+
 }

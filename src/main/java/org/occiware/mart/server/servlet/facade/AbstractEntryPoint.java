@@ -1,32 +1,23 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
 package org.occiware.mart.server.servlet.facade;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import org.occiware.clouddesigner.occi.Action;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Kind;
@@ -44,6 +35,16 @@ import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  *
  * @author cgourdin
@@ -55,12 +56,9 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
     @Context
     protected UriInfo uri;
     protected IRequestParser inputParser;
-
-    private String contentType = "text/occi";
-
-    private String acceptType = "text/occi";
-
     protected IRequestParser outputParser;
+    private String contentType = "text/occi";
+    private String acceptType = "text/occi";
 
     @Override
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
@@ -183,12 +181,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
                 }
                 if (hasError) {
                     LOGGER.error(error);
-                    try {
-                        response = outputParser.parseResponse(error, Response.Status.BAD_REQUEST);
-                    } catch (ResponseParseException e) {
-                        throw new BadRequestException();
-                    }
-                    throw new BadRequestException("Error while parsing input query, some attributes doesnt exist on used extensions.");
+                    throw new BadRequestException("Error while parsing input query, some attributes doesnt exist on used extensions. --< " + error);
                 }
             }
 
@@ -217,7 +210,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
     public String getContentType() {
         return contentType;
     }
-    
+
     @Override
     public List<Entity> getEntityCollection(final String path) throws ConfigurationException {
         // Get pagination if any (current page number and number max of items, for the last if none defined, used to 20 items per page by default).
@@ -293,25 +286,25 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
             filters.add(filter);
         }
 
-            // Case of the mixin tag entities request.
-            boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
-            if (isMixinTagRequest) {
-                LOGGER.info("Mixin tag get request... ");
-                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
-                if (mixin == null) {
-                    throw new ConfigurationException("The mixin location : " + path + " is not defined");
-                }
-                //entities = ConfigurationManager.findAllEntitiesForMixin(ConfigurationManager.DEFAULT_OWNER, mixin.getScheme()+mixin.getTerm());
-                // Add mixin filters.
-                filters.clear();
-                CollectionFilter filter = new CollectionFilter();
-                filter.setCategoryFilter(mixin.getScheme() + mixin.getTerm());
-                filter.setOperator(operator);
-                filters.add(filter);
+        // Case of the mixin tag entities request.
+        boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
+        if (isMixinTagRequest) {
+            LOGGER.info("Mixin tag get request... ");
+            Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
+            if (mixin == null) {
+                throw new ConfigurationException("The mixin location : " + path + " is not defined");
             }
+            //entities = ConfigurationManager.findAllEntitiesForMixin(ConfigurationManager.DEFAULT_OWNER, mixin.getScheme()+mixin.getTerm());
+            // Add mixin filters.
+            filters.clear();
+            CollectionFilter filter = new CollectionFilter();
+            filter.setCategoryFilter(mixin.getScheme() + mixin.getTerm());
+            filter.setOperator(operator);
+            filters.add(filter);
+        }
 
-            entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
-            return entities;
+        entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
+        return entities;
 
 
     }

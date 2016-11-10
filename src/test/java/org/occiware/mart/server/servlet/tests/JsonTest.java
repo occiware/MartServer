@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2015-2017 Inria
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
+ * <p>
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
@@ -21,20 +21,6 @@ package org.occiware.mart.server.servlet.tests;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import static org.junit.Assert.*;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ws.rs.core.Response;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
@@ -46,27 +32,23 @@ import org.occiware.mart.server.servlet.impl.parser.json.utils.ValidatorUtils;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Utils;
 
+import javax.ws.rs.core.Response;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.junit.Assert.*;
+
 /**
  *
  * @author Christophe Gourdin
  */
 public class JsonTest {
 
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
-    }
-
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-    }
-
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
-    }
 
     // @Test
     public void testJsonValidator() {
@@ -95,7 +77,7 @@ public class JsonTest {
 
     }
 
-    public File getJsonSchemaControl() {
+    private File getJsonSchemaControl() {
         InputStream in = null;
         // File inputSchemaJsonFile = new File(this.getClass().getResource("/jsonschemas/OCCI-schema.json").getFile());
         File inputSchemaJsonFile = new File(this.getClass().getResource("/jsonschemas/OCCI-schema.json").getFile());
@@ -115,7 +97,7 @@ public class JsonTest {
         return inputSchemaJsonFile;
     }
 
-    public File getJsonResourceOneInput() {
+    private File getJsonResourceOneInput() {
         InputStream in = null;
         File inputJsonFile = new File(this.getClass().getResource("/testjson/integration/creation/resource1.json").getFile());
         System.out.println(inputJsonFile.getAbsolutePath());

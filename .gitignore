@@ -1,1 +1,4 @@
 /target/
+.idea/
+MartServer.iml
+nb-configuration.xml
