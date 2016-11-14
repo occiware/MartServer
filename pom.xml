@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.occiware.mart.server.dev</groupId>
     <artifactId>MartServer</artifactId>
@@ -28,8 +29,6 @@
             <artifactId>jetty-server</artifactId>
             <version>9.3.9.v20160517</version>
         </dependency>
-
-
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>
@@ -45,14 +44,11 @@
             <artifactId>jetty-http</artifactId>
             <version>9.3.9.v20160517</version>
         </dependency>
-
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-server</artifactId>
             <version>2.23.1</version>
         </dependency>
-
-
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
@@ -65,12 +61,6 @@
             <artifactId>org.occiware.clouddesigner.occi</artifactId>
             <version>0.1.0-SNAPSHOT</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>Clouddesigner-deps</groupId>-->
-            <!--<artifactId>clouddesigner-deps</artifactId>-->
-            <!--<version>0.1.0</version>-->
-            <!--<type>pom</type>-->
-        <!--</dependency>-->
         <dependency>
             <!-- OCCI Core infrastructure implementation. -->
             <groupId>Clouddesigner</groupId>
@@ -78,29 +68,29 @@
             <version>0.1.0-SNAPSHOT</version>
         </dependency>
         <!--<dependency>-->
-            <!--<groupId>Clouddesigner</groupId>-->
-            <!--<artifactId>org.occiware.clouddesigner.occi.crtp</artifactId>-->
-            <!--<version>0.1.0-SNAPSHOT</version>-->
+        <!--<groupId>Clouddesigner</groupId>-->
+        <!--<artifactId>org.occiware.clouddesigner.occi.crtp</artifactId>-->
+        <!--<version>0.1.0-SNAPSHOT</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>Clouddesigner</groupId>-->
-            <!--<artifactId>org.occiware.clouddesigner.occi.infrastructure.crtp.backend</artifactId>-->
-            <!--<version>0.1.0-SNAPSHOT</version>-->
+        <!--<groupId>Clouddesigner</groupId>-->
+        <!--<artifactId>org.occiware.clouddesigner.occi.infrastructure.crtp.backend</artifactId>-->
+        <!--<version>0.1.0-SNAPSHOT</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>Clouddesigner</groupId>-->
-            <!--<artifactId>org.occiware.clouddesigner.occi.infrastructure.connector.vmware</artifactId>-->
-            <!--<version>0.1.0-SNAPSHOT</version>-->
+        <!--<groupId>Clouddesigner</groupId>-->
+        <!--<artifactId>org.occiware.clouddesigner.occi.infrastructure.connector.vmware</artifactId>-->
+        <!--<version>0.1.0-SNAPSHOT</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>dom4j</groupId>-->
-            <!--<artifactId>dom4j</artifactId>-->
-            <!--<version>1.6.1</version>-->
+        <!--<groupId>dom4j</groupId>-->
+        <!--<artifactId>dom4j</artifactId>-->
+        <!--<version>1.6.1</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>com.toastcoders</groupId>-->
-            <!--<artifactId>yavijava</artifactId>-->
-            <!--<version>6.0.04</version>-->
+        <!--<groupId>com.toastcoders</groupId>-->
+        <!--<artifactId>yavijava</artifactId>-->
+        <!--<version>6.0.04</version>-->
         <!--</dependency>-->
 
         <!--        <dependency>
@@ -239,10 +229,99 @@
             <version>9.3.9.v20160517</version>
             <scope>test</scope>
         </dependency>
-        
+
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>Clouddesigner-occi</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>Clouddesigner</groupId>
+                            <artifactId>org.occiware.clouddesigner.occi</artifactId>
+                            <version>0.1.0-SNAPSHOT</version>
+                            <packaging>jar</packaging>
+                            <file>${basedir}/lib/org.occiware.clouddesigner.occi-0.1.0-SNAPSHOT.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>Clouddesigner-occi-infrastructure</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>Clouddesigner</groupId>
+                            <artifactId>org.occiware.clouddesigner.occi.infrastructure</artifactId>
+                            <version>0.1.0-SNAPSHOT</version>
+                            <packaging>jar</packaging>
+                            <file>${basedir}/lib/org.occiware.clouddesigner.occi.infrastructure-0.1.0-SNAPSHOT.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>eclipse-ocl</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>org.eclipse.ocl</groupId>
+                            <artifactId>org.eclipse.ocl.pivot</artifactId>
+                            <version>1.0.1.v20150908-1239</version>
+                            <packaging>jar</packaging>
+                            <file>${basedir}/lib/org.eclipse.ocl.pivot-1.0.1.v20150908-1239.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>eclipse-ocl-common</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>org.eclipse.ocl</groupId>
+                            <artifactId>org.eclipse.ocl.common</artifactId>
+                            <version>1.3.0.v20150519-0914</version>
+                            <packaging>jar</packaging>
+                            <file>${basedir}/lib/org.eclipse.ocl.common-1.3.0.v20150519-0914.jar</file>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--<plugin>-->
+                <!--<groupId>org.apache.maven.plugins</groupId>-->
+                <!--<artifactId>maven-assembly-plugin</artifactId>-->
+                <!--<version>2.6</version>-->
+                <!--<configuration>-->
+                    <!--<descriptorRefs>-->
+                        <!--<descriptorRef>jar-with-dependencies</descriptorRef>-->
+                    <!--</descriptorRefs>-->
+                    <!--<archive>-->
+                        <!--<manifest>-->
+                            <!--<addClasspath>true</addClasspath>-->
+                            <!--<mainClass>org.occiware.mart.server.MartServer</mainClass>-->
+                            <!--<classpathPrefix>lib/</classpathPrefix>-->
+                        <!--</manifest>-->
+                    <!--</archive>-->
+                <!--</configuration>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>assemble-all</id>-->
+                        <!--<phase>package</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>single</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -282,8 +361,8 @@
                 </configuration>
             </plugin>
         </plugins>
-        
+
     </build>
-    
-    
+
+
 </project>
