@@ -1,9 +1,10 @@
 # Development status
-Travis CI (TODO)
+## Travis CI
+[![Build Status](https://travis-ci.org/cgourdin/MartServer.svg?branch=master)](https://travis-ci.org/cgourdin/MartServer)
 
 Development Status values :
 * TODO (Nothing has been done but will be done in near future)
-* In progress (in devlopment progress)
+* In progress (in development progress)
 * Done (works and tested)
 * Problem (done but not tested or have bugs)
 
@@ -12,26 +13,85 @@ Development Status values :
     <th>task name</th>
     <th>comment (and related issues)</th>
     <th>progress status</th>
-    
+    <tr>
+        <td align="center">Associate a mixin (extension) on collection</td>
+        <td align="center">Mixin support, <a href="https://github.com/cgourdin/MartServer/issues/11">feature #11</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Update mixin (extension) association</td>
+        <td align="center">Update mixin association, <a href="https://github.com/cgourdin/MartServer/issues/36">feature #36</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Remove a mixin (extension) from configuration</td>
+        <td align="center">Mixin support, <a href="https://github.com/cgourdin/MartServer/issues/26">feature #26</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Delete a collection</td>
+        <td align="center">Delete a collection (ex: delete all the compute of the configuration), <a href="https://github.com/cgourdin/MartServer/issues/19">feature #19</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Add junit tests suite</td>
+        <td align="center">Test suite for each functional methods, <a href="https://github.com/cgourdin/MartServer/issues/21">feature #21</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Add integration tests suite for json parser</td>
+        <td align="center">Integration test launch the server and test input and output validation, <a href="https://github.com/cgourdin/MartServer/issues/22">feature #22</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Add integration tests suite for text/occi parser</td>
+        <td align="center">Integration test launch the server and test input and output validation, <a href="https://github.com/cgourdin/MartServer/issues/22">feature #22</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">text/plain media type parser (Content-Type and accept)</td>
+        <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/23">feature #23</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Add integration tests suite for text/plain media type</td>
+        <td align="center">Integration test launch the server and test input and output validation,  <a href="https://github.com/cgourdin/MartServer/issues/22">feature #22</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">application/xml media type parser (Content-Type and accept)</td>
+        <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/24">feature #24</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Add integration tests suite for application/xml media type parser (Content-Type and accept)</td>
+        <td align="center">Integration test launch the server and test input and output validation, <a href="https://github.com/cgourdin/MartServer/issues/22">feature #22</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Add external properties file to configure the server</td>
+        <td align="center">Property file to manager the server configuration<a href="https://github.com/cgourdin/MartServer/issues/27">feature #27</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Add https support with certificate</td>
+        <td align="center">Https SSL support with X509 certificate<a href="https://github.com/cgourdin/MartServer/issues/35">feature #35</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Add authentication token mechanism (OAUTH 2) support</td>
+        <td align="center">Server authentication with tokens (refresh token and usage token)<a href="https://github.com/cgourdin/MartServer/issues/34">feature #34</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+    </tr>
     <tr>
         <td align="center">Start jetty server</td>
         <td align="center">Called on main method when running the application, <a href="https://github.com/cgourdin/MartServer/issues/1">feature #1</a></td>
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
-        <td align="center">Jetty Configuration external property file</td>
-        <td align="center">Property configuration server file, <a href="https://github.com/cgourdin/MartServer/issues/29">feature #29</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
-    </tr>
-    <tr>
         <td align="center">Add travis CI support (travis.yml)</td>
         <td align="center">For tests and deployment, <a href="https://github.com/cgourdin/MartServer/issues/20">feature #20</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Stop Server</td>
-        <td align="center">Called via the main class useful to implement with http request (for development), <a href="https://github.com/cgourdin/MartServer/issues/2">feature #2</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/problem.png" alt="bug" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Add configuration model@runtime</td>
@@ -96,23 +156,22 @@ Development Status values :
     <tr>
         <td align="center">Associate a mixin tag on entity</td>
         <td align="center">Mixin tag support, <a href="https://github.com/cgourdin/MartServer/issues/12">feature #12</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Associate a mixin tag on collection</td>
         <td align="center">Mixin tag support, <a href="https://github.com/cgourdin/MartServer/issues/14">feature #14</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
-    
     <tr>
         <td align="center">Update mixin tag association</td>
         <td align="center">Update mixin tag, <a href="https://github.com/cgourdin/MartServer/issues/13">feature #13</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Delete a mixin tag</td>
         <td align="center">Mixin tag support, <a href="https://github.com/cgourdin/MartServer/issues/25">feature #25</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Associate a mixin (extension) on entity</td>
@@ -120,29 +179,9 @@ Development Status values :
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
-        <td align="center">Associate a mixin (extension) on collection</td>
-        <td align="center">Mixin support, <a href="https://github.com/cgourdin/MartServer/issues/11">feature #11</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Update mixin (extension) association</td>
-        <td align="center">Update mixin association, <a href="https://github.com/cgourdin/MartServer/issues/36">feature #36</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Remove a mixin (extension) from configuration</td>
-        <td align="center">Mixin support, <a href="https://github.com/cgourdin/MartServer/issues/26">feature #26</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
-    </tr>
-    <tr>
         <td align="center">Delete an entity</td>
         <td align="center">Delete an entity (resource or link), <a href="https://github.com/cgourdin/MartServer/issues/18">feature #18</a></td>
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Delete a collection</td>
-        <td align="center">Delete a collection (ex: delete all the compute of the configuration), <a href="https://github.com/cgourdin/MartServer/issues/19">feature #19</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">text/occi media type parser (Content-Type and accept)</td>
@@ -154,22 +193,6 @@ Development Status values :
         <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/30">feature #30</a></td>
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
-    <tr>
-        <td align="center">application/xml media type parser (Content-Type and accept)</td>
-        <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/24">feature #24</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">text/plain media type parser (Content-Type and accept)</td>
-        <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/23">feature #23</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Add junit tests suite</td>
-        <td align="center">Test suite for high methods, <a href="https://github.com/cgourdin/MartServer/issues/21">feature #21</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
-    </tr>
-    
 </table>
 
 

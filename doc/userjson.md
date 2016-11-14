@@ -189,17 +189,13 @@ curl -v -X PUT --data-binary "@/yourabsolutepath/resourcefile.json" http://local
 </code>
 </pre>
 
-```
-curl -v -X PUT --data-binary "@/yourabsolutepath/resourcefile.json" http://localhost:9090/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"
-```
+```curl -v -X PUT --data-binary "@/yourabsolutepath/resourcefile.json" http://localhost:9090/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"```
 
 ## Update resources attributes
 
 You can define attributes with the same query as you created the resources but with a POST method.
 
-```
-curl -v -X POST --data-binary "@/yourabsolutepath/resourcefile.json" http://localhost:9090/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"
-```
+```curl -v -X POST --data-binary "@/yourabsolutepath/resourcefile.json" http://localhost:9090/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"```
 
 ## Retrieve your resources
 
@@ -217,7 +213,7 @@ This must retrieve one resource for this uuid : a1cf3896-500e-48d8-a3f5-a8b3601b
 
 ```curl -v -X GET http://localhost:9090/myresources/ -H "accept: application/occi+json"```
 
-- You can't remember where you have defined your resources but you known the category :
+- You can't remember where you have defined your resources but you know the category :
 
 ```curl -v -X GET http://localhost:9090/mycategory/ -H "accept: application/occi+json"```
 
