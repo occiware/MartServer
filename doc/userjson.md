@@ -620,7 +620,77 @@ curl -v -X GET http://localhost:8080/?category=my_mixin_first -H 'accept: applic
 
 
 ## Associate a mixin extension to an entity
+In fact a mixin tag is a mixin, so to associate a mixin extension with a resource it's the same query.
+But we don't have to define the mixin before, this is already done on extension level.
+For example, we associate the mixin ssh_key to the "compute4" resource : 
+<pre>
+<code>
+curl -v -X POST http://localhost:8080/ -d '
+{
+    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+    "mixins": [
+                "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key"
+    ]
+}' -H 'Content-Type: application/json' -H 'accept: application/json'
+</code>
+</pre>
 
+You can also set a ssh key like :
+<pre>
+<code>
+curl -v -X POST -d '
+{ 
+  "id": "d99486b7-0632-482d-a184-a9195733ddd3",
+  "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+  "attributes": {
+    "occi.credentials.ssh.publickey":"My ssh key to define"
+  }      
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/
+</code>
+</pre>
+
+
+In result:
+<pre>
+<code>
+> POST / HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.43.0
+> Content-Type: application/json
+> accept: application/json
+> Content-Length: 205
+> 
+* upload completely sent off: 205 out of 205 bytes
+< HTTP/1.1 200 OK
+< Date: Mon, 14 Nov 2016 16:48:21 GMT
+< Server: OCCIWare MART Server v1.0 OCCI/1.2
+< Accept: text/occi;application/json;application/occi+json;text/plain
+< Content-Type: application/json
+< Content-Length: 1132
+< 
+{
+  "resources" : [ {
+    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
+    "title" : "compute4",
+    "summary" : "My only compute for test with single resource",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+    "mixins" : [ "http://occiware.org/occi/tags#my_mixin_first", "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key" ],
+    "attributes" : {
+      "occi.core.id" : "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
+      "occi.compute.architecture" : "x86",
+      "occi.compute.cores" : 4,
+      "occi.compute.speed" : 3.0,
+      "occi.compute.memory" : 4.0,
+      "occi.compute.state" : "active",
+      "occi.credentials.ssh.publickey" : "My ssh key to define"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
+    "location" : "/d99486b7-0632-482d-a184-a9195733ddd3"
+  } ]
+}
+</code>
+</pre>
 
 ## Dissociate a mixin tag from an entity
 
