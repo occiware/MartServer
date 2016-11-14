@@ -419,7 +419,7 @@ The result must give a collection of computes like this:
 #### Retrieve all computes with attributes occi.compute.state equals to active
 <pre>
 <code>
-curl -v -X GET 'http://localhost:8080/?category=compute&attribute=occi.compute.state&value=inactive' -H 'accept: application/json'
+curl -v -X GET 'http://localhost:8080/?category=compute&attribute=occi.compute.state&value=active' -H 'accept: application/json'
 </code>
 </pre>
 
@@ -444,14 +444,14 @@ You can define it directly in a collection like this:
 {
     "mixins": [
         {
-            "location": "/mixins/my_mixin_first/",
+            "location": "/mymixins/my_mixin_first/",
             "scheme": "http://occiware.org/occi/tags#",
             "term": "my_mixin_first",
             "attributes": {},
             "title": "my mixin tag first"
         },
         {
-            "location": "/mixins/my_mixin_two/",
+            "location": "/mymixins/my_mixin_two/",
             "scheme": "http://occiware.org/occi/tags#",
             "term": "my_mixin_two",
             "attributes": {},
@@ -462,21 +462,21 @@ You can define it directly in a collection like this:
 </code>
 </pre>
 
-To create them and add them to your configuration : 
+To define them and add them to your configuration : 
 
 <pre>
 <code>
 curl -v -X PUT -d '{
     "mixins": [
         {
-            "location": "/mixins/my_mixin_first/",
+            "location": "/mymixins/my_mixin_first/",
             "scheme": "http://occiware.org/occi/tags#",
             "term": "my_mixin_first",
             "attributes": {},
             "title": "my mixin tag first"
         },
         {
-            "location": "/mixins/my_mixin_two/",
+            "location": "/mymixins/my_mixin_two/",
             "scheme": "http://occiware.org/occi/tags#",
             "term": "my_mixin_two",
             "attributes": {},
@@ -499,7 +499,7 @@ You can also define one by one like this:
 <pre>
 <code>
 {
-    "location": "/mixins/my_mixin3/",
+    "location": "/mymixins/my_mixin3/",
     "scheme": "http://occiware.org/occi/tags#",
     "term": "my_mixin3",
     "attributes": {},
@@ -508,7 +508,7 @@ You can also define one by one like this:
 </code>
 </pre>
 
-To retrieve your mixin definition : 
+To retrieve your mixin definition (other method) : 
 <pre>
 <code>
 curl -v -X GET http://localhost:8080/mymixins/my_mixin3/-/ -H 'accept: application/json'
@@ -519,12 +519,109 @@ curl -v -X GET http://localhost:8080/mymixins/my_mixin3/-/ -H 'accept: applicati
 ## Associate a mixin tag to an entity
 The mixin tag must be defined before associating it with an entity.
 
+You have created before a compute resource, named "compute4".
+
+You may tag it with my_mixin_first :
+
+<pre>
+<code>
+curl -v -X POST http://localhost:8080/ -d '
+{
+    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+    "mixins": [
+                "http://occiware.org/occi/tags#my_mixin_first"
+    ]
+}' -H 'Content-Type: application/json' -H 'accept: application/json'
+</code>
+</pre>
+
+* Result:
+
+<pre>
+<code>
+{
+  "resources" : [ {
+    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
+    "title" : "compute4",
+    "summary" : "My only compute for test with single resource",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+    <b>"mixins" : [ "http://occiware.org/occi/tags#my_mixin_first" ]</b>,
+    "attributes" : {
+      "occi.core.id" : "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
+      "occi.compute.architecture" : "x86",
+      "occi.compute.cores" : 4,
+      "occi.compute.speed" : 3.0,
+      "occi.compute.memory" : 4.0,
+      "occi.compute.state" : "active"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
+    "location" : "/d99486b7-0632-482d-a184-a9195733ddd3"
+  } ]
+}
+</code>
+</pre>
+
+## Get a resource via a mixin category
+
+You can find your entity via your mixin tag, this is usefull if you have a lot of resources.
+
+<pre>
+<code>
+curl -v -X GET http://localhost:8080/my_mixin_first/ -H 'accept: application/json'
+</code>
+</pre>
 
 
+This give this result : 
 
+<pre>
+<code>
+> GET /my_mixin_first/ HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.43.0
+> accept: application/json
+> 
+< HTTP/1.1 200 OK
+< Date: Mon, 14 Nov 2016 16:22:38 GMT
+< Server: OCCIWare MART Server v1.0 OCCI/1.2
+< Accept: text/occi;application/json;application/occi+json;text/plain
+< Content-Type: application/json
+< Content-Length: 1001
+< 
+{
+  "resources" : [ {
+    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
+    "title" : "compute4",
+    "summary" : "My only compute for test with single resource",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+    "mixins" : [ "http://occiware.org/occi/tags#my_mixin_first" ],
+    "attributes" : {
+      "occi.core.id" : "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
+      "occi.compute.architecture" : "x86",
+      "occi.compute.cores" : 4,
+      "occi.compute.speed" : 3.0,
+      "occi.compute.memory" : 4.0,
+      "occi.compute.state" : "active"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
+    "location" : "/d99486b7-0632-482d-a184-a9195733ddd3"
+  } ]
+}
+</code>
+</pre>
+
+You can have the same result with a category filter :
+
+<pre>
+<code>
+curl -v -X GET http://localhost:8080/?category=my_mixin_first -H 'accept: application/json'
+</code>
+</pre>
 
 
 ## Associate a mixin extension to an entity
+
 
 ## Dissociate a mixin tag from an entity
 

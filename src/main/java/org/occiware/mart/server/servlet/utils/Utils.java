@@ -666,7 +666,10 @@ public class Utils {
         for (String mixinId : mixins) {
             mixinTmp = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, mixinId);
             if (mixinTmp == null) {
-                throw new ConfigurationException("Mixin : " + mixinId + " not found on used extensions models");
+                mixinTmp = ConfigurationManager.findUserMixinOnConfiguration(mixinId, ConfigurationManager.DEFAULT_OWNER);
+                if (mixinTmp == null) {
+                    throw new ConfigurationException("Mixin : " + mixinId + " not found on used extensions models");
+                }
             } else {
                 mixinModel.add(mixinTmp);
             }

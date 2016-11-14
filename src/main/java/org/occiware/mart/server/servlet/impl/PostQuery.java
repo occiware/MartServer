@@ -312,6 +312,21 @@ public class PostQuery extends AbstractPostQuery {
         }
 
         InputData data = inputParser.getInputDataForEntityUUID(entity.getId());
+
+        List<String> mixins = data.getMixins();
+        if (mixins != null && !mixins.isEmpty()) {
+            try {
+                ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, false);
+            } catch (ConfigurationException ex) {
+                // Already logged in sub method.
+                try {
+                    return outputParser.parseResponse(ex.getMessage(), Response.Status.BAD_REQUEST);
+                } catch (ResponseParseException e) {
+                    throw new InternalServerErrorException(e);
+                }
+            }
+        }
+
         Map<String, String> attrs = data.getAttrs();
         entity.occiRetrieve();
         // update attributes .
