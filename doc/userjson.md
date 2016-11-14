@@ -536,7 +536,7 @@ curl -v -X POST http://localhost:8080/ -d '
 </code>
 </pre>
 
-* Result:
+Result:
 
 <pre>
 <code>
@@ -571,7 +571,6 @@ You can find your entity via your mixin tag, this is usefull if you have a lot o
 curl -v -X GET http://localhost:8080/my_mixin_first/ -H 'accept: application/json'
 </code>
 </pre>
-
 
 This give this result : 
 
