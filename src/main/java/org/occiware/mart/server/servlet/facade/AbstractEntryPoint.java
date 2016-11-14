@@ -211,6 +211,18 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         return contentType;
     }
 
+
+    /**
+     * Get collections based on location and Accept = text/uri-list or give entities details for other accept types.
+     * Examples of query for filtering and pagination:
+     * Filtering (attribute or category) :  http://localhost:9090/myquery?attribute=myattributename or http://localh...?category=mymixintag
+     * Pagination : http://localhost:9090/myquery?attribute=myattributename&page=2&number=5 where page = current page, number : max number of items to display.
+     * Operator (equal or like) : http://localhost:9090/myquery?attribute=myattributename&page=2&number=5&operator=like&value=MyAttributeValue
+     *
+     * @param path
+     * @return
+     * @throws ConfigurationException
+     */
     @Override
     public List<Entity> getEntityCollection(final String path) throws ConfigurationException {
         // Get pagination if any (current page number and number max of items, for the last if none defined, used to 20 items per page by default).
@@ -244,46 +256,26 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         } catch (NumberFormatException ex) {
         }
 
-        // Get collections based on location and Accept = text/uri-list or give entities details for other accept types.
-        // Examples of query for filtering and pagination: 
-        // Filtering (attribute or category) :  http://localhost:9090/myquery?attribute=myattributename or http://localh...?category=mymixintag
-        // Pagination : http://localhost:9090/myquery?attribute=myattributename&page=2&number=5 where page = current page, number : max number of items to display.
-        // Operator (equal or like) : http://localhost:9090/myquery?attribute=myattributename&page=2&number=5&operator=like
         List<Entity> entities;
         // Collection on categories. // Like : get on myhost/compute/
         boolean isCollectionOnCategoryPath = Utils.isCollectionOnCategory(path);
-        // Get the filter parameters and build a CollectionFilter object for each filter parameters defined.
-        List<CollectionFilter> filters = new LinkedList<>();
-        // Category filter check.
-        String paramTmp = inputParser.getParameter("category");
-        if (paramTmp != null && !paramTmp.isEmpty()) {
-            CollectionFilter filter = new CollectionFilter();
-            filter.setCategoryFilter(paramTmp);
-            filter.setOperator(operator);
-            filters.add(filter);
-        }
-        // Attribute filter check.
-        paramTmp = inputParser.getParameter("attribute");
-        if (paramTmp != null && !paramTmp.isEmpty()) {
-            CollectionFilter filter = new CollectionFilter();
-            filter.setAttributeFilter(paramTmp);
-            filter.setOperator(operator);
-            filters.add(filter);
-        }
 
-        if (isCollectionOnCategoryPath) {
-            // Check category uri.
-            String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
-            CollectionFilter filter = new CollectionFilter();
-            filter.setOperator(operator);
-            filter.setCategoryFilter(categoryId);
-            filters.add(filter);
+        String categoryFilter = inputParser.getParameter("category");
+        String attributeFilter = inputParser.getParameter("attribute");
+        String attributeValue = inputParser.getParameter("value");
+
+
+        CollectionFilter filter = new CollectionFilter();
+        filter.setOperator(operator);
+        filter.setNumberOfItemsPerPage(items);
+        filter.setCurrentPage(page);
+        filter.setCategoryFilter(categoryFilter);
+        filter.setAttributeFilter(attributeFilter);
+        filter.setValue(attributeValue);
+        if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
+            filter.setCategoryFilter(Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER));
         } else {
-            // Unknown collection type.
-            CollectionFilter filter = new CollectionFilter();
-            filter.setOperator(operator);
             filter.setFilterOnPath(path);
-            filters.add(filter);
         }
 
         // Case of the mixin tag entities request.
@@ -294,16 +286,12 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
             if (mixin == null) {
                 throw new ConfigurationException("The mixin location : " + path + " is not defined");
             }
-            //entities = ConfigurationManager.findAllEntitiesForMixin(ConfigurationManager.DEFAULT_OWNER, mixin.getScheme()+mixin.getTerm());
-            // Add mixin filters.
-            filters.clear();
-            CollectionFilter filter = new CollectionFilter();
-            filter.setCategoryFilter(mixin.getScheme() + mixin.getTerm());
-            filter.setOperator(operator);
-            filters.add(filter);
+            if (categoryFilter != null) {
+                filter.setCategoryFilter(mixin.getScheme() + mixin.getTerm());
+            }
         }
 
-        entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, page, items, filters);
+        entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, filter);
         return entities;
 
 

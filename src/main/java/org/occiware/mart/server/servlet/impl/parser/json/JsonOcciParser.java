@@ -789,7 +789,7 @@ public class JsonOcciParser extends AbstractRequestParser {
 
         // Render kinds.
         sb.append(renderKindsInterface(kinds));
-        if (!mixins.isEmpty()) {
+        if (!sb.toString().endsWith(",") && !mixins.isEmpty()) {
             sb.append(",");
         }
 //         Render mixins.

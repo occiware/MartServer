@@ -902,23 +902,17 @@ public class ConfigurationManager {
      * entity list and it's not used here.
      *
      * @param owner
-     * @param startIndex
-     * @param number     (number max of entities to return).
-     * @param filters    (List of entity attribute to filter).
+     * @param filter
      * @return a list of entities (key: owner, value : List of entities).
      */
-    public static List<Entity> findAllEntities(final String owner, final int startIndex, final int number, final List<CollectionFilter> filters) {
+    public static List<Entity> findAllEntities(final String owner, final CollectionFilter filter) {
         List<Entity> entities = new LinkedList<>();
-
         if (configurations.isEmpty() || owner == null || owner.isEmpty()) {
             return entities;
         }
         entities.addAll(findAllEntitiesOwner(owner));
-//        entities.addAll(findAllEntitiesForKind(owner, categoryId));
-//        entities.addAll(findAllEntitiesForMixin(owner, categoryId));
-//        entities.addAll(findAllEntitiesForCategory(owner, categoryId));
         // TODO : Order list by entityId, if entities not empty.
-        entities = filterEntities(startIndex, number, filters, entities, owner);
+        entities = filterEntities(filter, entities, owner);
         return entities;
     }
 
@@ -1059,6 +1053,7 @@ public class ConfigurationManager {
 
     /**
      * Find all entities for a category.
+     *
      * @param owner
      * @param categoryId (id of kind, mixin or action, composed by scheme+term.
      * @return a collection list of entity.
@@ -1682,141 +1677,42 @@ public class ConfigurationManager {
     /**
      * Apply filter where possible. startIndex starts at 1
      *
-     * @param startIndex
-     * @param number
-     * @param filters
+     * @param filter
      * @param sources
      * @return a filtered list of entities.
      */
-    private static List<Entity> filterEntities(final int startIndex, final int number, final List<CollectionFilter> filters, List<Entity> sources, final String user) {
-        // Filter the lists if filter are set.
-        if (!filters.isEmpty() && !sources.isEmpty()) {
-            String categoryFilter = null;
-            // Check category filter.
-            for (CollectionFilter filter : filters) {
-                if (filter.getCategoryFilter() != null && !filter.getCategoryFilter().isEmpty()) {
-                    // We dont know here if category filter has only the term or has scheme+term, so we must check if there is only the term.
-                    categoryFilter = filter.getCategoryFilter();
-                    break;
-                }
+    private static List<Entity> filterEntities(final CollectionFilter filter, List<Entity> sources, final String user) {
+
+        String categoryFilter = filter.getCategoryFilter();
+        if (categoryFilter != null && !categoryFilter.isEmpty() && !Utils.checkIfCategorySchemeTerm(categoryFilter, user)) {
+            categoryFilter = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, ConfigurationManager.DEFAULT_OWNER);
+        }
+
+        String filterOnPath = filter.getFilterOnPath();
+        if (filterOnPath != null && !filterOnPath.isEmpty()) {
+            if (filterOnPath.endsWith("/")) {
+                filterOnPath = filterOnPath.substring(0, filterOnPath.length() - 1);
             }
-            if (categoryFilter != null && !categoryFilter.isEmpty()) {
-                // Check if this is a term or a scheme + term
-                if (!Utils.checkIfCategorySchemeTerm(categoryFilter, user)) {
-                    // this category is a term.
-                    categoryFilter = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, ConfigurationManager.DEFAULT_OWNER);
-                }
+        }
+
+        Iterator<Entity> it = sources.iterator();
+        while (it.hasNext()) {
+            Entity entity = it.next();
+
+            if (checkEntityAttributeFilter(filter, entity) && checkEntityCategoryFilter(categoryFilter, entity) && checkEntityFilterOnPath(filterOnPath, entity)) {
+                continue;
             }
-
-            String filterOnPath = null;
-            boolean hasFilterOnPath = false;
-            for (CollectionFilter filter : filters) {
-                filterOnPath = filter.getFilterOnPath();
-                if (filterOnPath != null && !filterOnPath.isEmpty()) {
-                    hasFilterOnPath = true;
-                    if (filterOnPath.endsWith("/")) {
-                        filterOnPath = filterOnPath.substring(0, filterOnPath.length() - 1);
-                    }
-                    break;
-                }
-            }
-
-            Iterator<Entity> it = sources.iterator();
-            boolean control;
-            String constraintValue;
-            while (it.hasNext()) {
-                control = false;
-                Entity entity = it.next();
-                // Check if attribute and attribute value is in filter, if not remove this entity from the list to return.
-                List<AttributeState> attrs = entity.getAttributes();
-                for (AttributeState attr : attrs) {
-                    for (CollectionFilter filter : filters) {
-                        if (filter.getAttributeFilter().equalsIgnoreCase(attr.getName())) {
-                            // Check the constraint value.
-                            if (filter.getValue() == null) {
-                                // Null: all value is ok for this attribute.
-                                control = true;
-                                break;
-                            } else {
-                                constraintValue = filter.getValue();
-                            }
-                            // Check the constraint attribute Value filter.
-                            if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && constraintValue.equals(attr.getValue())) {
-                                control = true;
-                                break;
-                            }
-                            if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && attr.getValue().contains(constraintValue)) {
-                                control = true;
-                                break;
-                            }
-                        } // end if attribute found from filter on entity.
-
-                    } // for each filters.
-                    if (control) {
-                        // attribute found and filter respected.
-                        break;
-                    }
-                } // end for each entity attributes.
-
-                if (categoryFilter != null && !categoryFilter.isEmpty()) {
-                    // Must filter on this category.
-                    String kindId = entity.getKind().getScheme() + entity.getKind().getTerm();
-                    String actionId;
-                    boolean categoryFound = false;
-                    if (kindId.equals(categoryFilter)) {
-                        categoryFound = true;
-                    }
-                    if (!categoryFound) {
-                        // Search after if this is an action category.
-                        for (Action action : entity.getKind().getActions()) {
-                            actionId = action.getScheme() + action.getTerm();
-                            if (actionId.equals(categoryFilter)) {
-                                categoryFound = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!categoryFound) {
-                        // Search on mixins.
-                        String mixinId;
-                        for (Mixin mixin : entity.getMixins()) {
-                            mixinId = mixin.getScheme() + mixin.getTerm();
-                            if (mixinId.equals(categoryFilter)) {
-                                categoryFound = true;
-                                break;
-                            }
-                        }
-                    }
-                    control = categoryFound;
-
-                }
-
-                if (hasFilterOnPath && filterOnPath != null) {
-                    String relativeLocation = getEntityRelativePath(entity.getId());
-
-                    relativeLocation = relativeLocation.replaceAll("\\s+", "");
-                    filterOnPath = filterOnPath.replaceAll("\\s+", "");
-
-                    if (relativeLocation == null || relativeLocation.isEmpty()) {
-                        control = false;
-                    } else if (relativeLocation.startsWith(filterOnPath)) {
-                        control = true;
-                    }
-
-                } // endif has a filter on relative path.
-
-                if (!control) {
-                    it.remove(); // remove this entity from collection, the entity doesnt respect constraints attrib and value.
-                }
-            }
-
-        } // has filters and has entities.
+            it.remove();
+        }
 
         // Position the start index if > 0.
         // JP: start index starts with 1
+
+        int startIndex = filter.getCurrentPage();
+        int number= filter.getNumberOfItemsPerPage();
         if (startIndex > 1 && !sources.isEmpty()) {
             int currentIndex = 0;
-            Iterator<Entity> it = sources.iterator();
+            it = sources.iterator();
             while (it.hasNext()) {
                 it.next();
                 LOGGER.info("currentIndex=" + currentIndex + ", startIndex=" + startIndex);
@@ -1830,7 +1726,7 @@ public class ConfigurationManager {
         // Max count, -1 infinite.
         if (number >= 0) {
             int count = 0;
-            Iterator<Entity> it = sources.iterator();
+            it = sources.iterator();
             while (it.hasNext()) {
                 it.next();
                 count++;
@@ -1841,6 +1737,117 @@ public class ConfigurationManager {
         }
 
         return sources;
+    }
+
+    /**
+     * Check if entity respect filter location path (relative).
+     *
+     * @param filterOnPath
+     * @param entity
+     * @return true if constraint path is respected (or if filter on path is null or empty) and false elsewhere.
+     */
+    private static boolean checkEntityFilterOnPath(final String filterOnPath, final Entity entity) {
+        boolean result = false;
+
+        String filterPath = filterOnPath;
+        if (filterPath == null || filterPath.isEmpty()) {
+            return true;
+        }
+
+        String relativeLocation = getEntityRelativePath(entity.getId());
+        relativeLocation = relativeLocation.replaceAll("\\s+", "");
+        filterPath = filterOnPath.replaceAll("\\s+", "");
+
+        if (relativeLocation == null || relativeLocation.isEmpty()) {
+            result = false;
+        } else if (relativeLocation.startsWith(filterPath)) {
+            result = true;
+        }
+
+        return result;
+    }
+
+    /**
+     * Check an entity against a category filter.
+     *
+     * @param categoryFilter
+     * @param entity
+     * @return true if constraints is respected false elsewhere. if categoryfilter is null return true (all categories are ok).
+     */
+    private static boolean checkEntityCategoryFilter(final String categoryFilter, final Entity entity) {
+
+        if (categoryFilter == null || categoryFilter.isEmpty()) {
+            return true; // all categories ok.
+        }
+        // Must filter on this category.
+        String kindId = entity.getKind().getScheme() + entity.getKind().getTerm();
+        String actionId;
+        boolean categoryFound = false;
+        if (kindId.equals(categoryFilter)) {
+            categoryFound = true;
+        }
+        if (!categoryFound) {
+            // Search after if this is an action category.
+            for (Action action : entity.getKind().getActions()) {
+                actionId = action.getScheme() + action.getTerm();
+                if (actionId.equals(categoryFilter)) {
+                    categoryFound = true;
+                    break;
+                }
+            }
+        }
+        if (!categoryFound) {
+            // Search on mixins.
+            String mixinId;
+            for (Mixin mixin : entity.getMixins()) {
+                mixinId = mixin.getScheme() + mixin.getTerm();
+                if (mixinId.equals(categoryFilter)) {
+                    categoryFound = true;
+                    break;
+                }
+            }
+        }
+        return categoryFound;
+    }
+
+
+    /**
+     * Check if an entity respect or not the attribute filter. If attribute filter is null, the entity respect the filter.
+     *
+     * @param filter
+     * @param entity
+     * @return true if the constraint is validated, false elsewhere.
+     */
+    private static boolean checkEntityAttributeFilter(final CollectionFilter filter, final Entity entity) {
+        boolean control = false;
+        String attributeFilter = filter.getAttributeFilter();
+        String attributeValue = filter.getValue();
+        List<AttributeState> attrs = entity.getAttributes();
+
+        if (attributeFilter == null || attributeFilter.isEmpty()) {
+            return true;
+        }
+
+        for (AttributeState attr : attrs) {
+            if (attributeFilter.equalsIgnoreCase(attr.getName())) {
+                // Check the constraint value.
+                if (attributeValue == null) {
+                    // Null: all value is ok for this attribute.
+                    control = true;
+                    break;
+                }
+                // Check the constraint attribute Value filter.
+                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && attributeValue.equals(attr.getValue())) {
+                    control = true;
+                    break;
+                }
+                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && attr.getValue().contains(attributeValue)) {
+                    control = true;
+                    break;
+                }
+            }
+        }
+        return control;
     }
 
     /**

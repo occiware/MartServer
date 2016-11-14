@@ -52,6 +52,8 @@ public class CollectionFilter {
      * Constraint value from attribute values.
      */
     private String value = null;
+    private int numberOfItemsPerPage = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
+    private int currentPage = Constants.DEFAULT_CURRENT_PAGE;
 
     /**
      * Build a collectionFilter object with default values, operation : Equal
@@ -126,4 +128,19 @@ public class CollectionFilter {
         this.filterOnPath = filterOnPath;
     }
 
+    public void setNumberOfItemsPerPage(int numberOfItemsPerPage) {
+        this.numberOfItemsPerPage = numberOfItemsPerPage;
+    }
+
+    public int getNumberOfItemsPerPage() {
+        return this.numberOfItemsPerPage;
+    }
+
+    public void setCurrentPage(int currentPage) {
+        this.currentPage = currentPage;
+    }
+
+    public int getCurrentPage() {
+        return currentPage;
+    }
 }
