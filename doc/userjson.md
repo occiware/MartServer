@@ -629,7 +629,7 @@ Result:
 
 ## Get a resource via a mixin category
 
-You can find your entity via your mixin tag, this is usefull if you have a lot of resources.
+You can find your entity via your mixin tag, this is useful if you have a lot of resources.
 
 <pre>
 <code>
@@ -849,12 +849,7 @@ curl -v -X POST -d '{
 ## Delete entity
 <pre>
 <code>
-curl -v -X DELETE -d '{
-  "action": "http://schemas.ogf.org/occi/infrastructure/compute/action#stop",
-  "attributes": {
-    "method": "graceful"
-  }
-}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/vms/foo/bar/?action=stop
+curl -v -X DELETE -H 'accept: application/json' http://localhost:8080/compute/d99486b7-0632-482d-a184-a9195733ddd3/
 </code>
 </pre>
 

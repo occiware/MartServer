@@ -138,7 +138,7 @@ public class PostQuery extends AbstractPostQuery {
 
                 } else if (categoryId != null && isEntityUUIDProvided) {
                     // This is an action on an entity category.
-                    LOGGER.info("Executing action: " + data.getAction() + " on Entity path: " + path);
+                    LOGGER.info("Executing action: " + data.getAction() + " on Entity path: " + path + " for id: " + entityUUID);
                     entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityUUID);
 
                     // Check if category exist on extensions, this must be a kind or a mixin.
@@ -200,12 +200,11 @@ public class PostQuery extends AbstractPostQuery {
             } // End if action part.
 
             boolean mixinTagAsso;
-            //  - update an entity, 
-            //  - update a collection of entities 
+
             if (isEntityUUIDProvided) {
-                if (attrs != null && !attrs.isEmpty()) {
+                if ((attrs != null && !attrs.isEmpty()) || !data.getMixins().isEmpty()) {
                     // Load the entity.
-                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, Utils.getUUIDFromPath(path, attrs));
+                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityUUID);
                     if (entity == null) {
                         try {
                             response = outputParser.parseResponse("The entity : " + entityUUID + " doest exit on path : " + path, Response.Status.NOT_FOUND);
@@ -331,6 +330,11 @@ public class PostQuery extends AbstractPostQuery {
         }
 
         InputData data = inputParser.getInputDataForEntityUUID(entity.getId());
+
+        if (data == null) {
+            // The data is referenced in one shot and have no ids.
+            data = inputParser.getInputDatas().get(0);
+        }
 
         List<String> mixins = data.getMixins();
         if (mixins != null && !mixins.isEmpty()) {
