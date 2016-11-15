@@ -322,10 +322,72 @@ You can search directly with the resource location path (including uuid) :
 
 This must retrieve one resource for this uuid : a1cf3896-500e-48d8-a3f5-a8b3601bcdd8.
 
+If you don't know the path of your resource, you can use its kind for example, for a compute, you can do this :
+```curl -v -X GET http://localhost:8080/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8 -H "accept: application/json" ```
 
-### Retrieve your resources with filter path
+This will return :
+<pre>
+<code>
+> GET /compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8 HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.43.0
+> accept: application/json
+> 
+< HTTP/1.1 200 OK
+< Date: Tue, 15 Nov 2016 09:01:01 GMT
+< Server: OCCIWare MART Server v1.0 OCCI/1.2
+< Accept: text/occi;application/json;application/occi+json;text/plain
+< Content-Type: application/json
+< Content-Length: 1980
+< 
+{
+  "resources" : [ {
+    <b>"id" : "a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",</b>
+    "title" : "compute3",
+    "summary" : "My other compute 3",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+    "mixins" : [ ],
+    "attributes" : {
+      "occi.core.id" : "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
+      "occi.compute.architecture" : "x86",
+      "occi.compute.cores" : 1,
+      "occi.compute.speed" : 1.0,
+      "occi.compute.memory" : 2.0,
+      "occi.compute.state" : "inactive"
+    },
+    "links" : [ {
+      "id" : "b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
+      "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+      "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
+      "attributes" : {
+        "occi.core.id" : "urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
+        "occi.networkinterface.interface" : "eth0",
+        "occi.networkinterface.mac" : "00:80:41:ae:fd:7e",
+        "occi.networkinterface.address" : "192.168.0.100",
+        "occi.networkinterface.gateway" : "192.168.0.1",
+        "occi.networkinterface.allocation" : "dynamic"
+      },
+      "actions" : [ ],
+      "location" : "/b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
+      "source" : {
+        "location" : "/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
+        "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
+      },
+      "target" : {
+        "location" : "/c7d55bf4-7057-5113-85c8-141871bf7636",
+        "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
+      }
+    } ],
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
+    "location" : "/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8"
+  } ]
+}
+</code>
+</pre>
 
-- You have defined your resources on a custom path : http://localhost:8080/myresources/ so to retrieve your resources :
+### Retrieve your collection of resources with filter path
+
+- If you have defined your resources on a custom path : http://localhost:8080/myresources/ so to retrieve your resources :
 
 ```curl -v -X GET http://localhost:8080/myresources/ -H "accept: application/occi+json"```
 
@@ -338,6 +400,9 @@ This will give you all the resources for the mycategory.
 To have location only :
 
 ```curl -v -X GET http://localhost:8080/mycategory/ -H "accept: text/uri-list" ```
+
+For all Compute kind :
+```curl -v -X GET http://localhost:8080/compute/ -H "accept: text/uri-list" ```
 
 So with an infrastructure Compute kind :
 
@@ -498,13 +563,13 @@ curl -v -X GET http://localhost:8080/-/?category=my_mixin_two -H 'accept: applic
 You can also define one by one like this:
 <pre>
 <code>
-{
+curl -v -X PUT -d '{
     "location": "/mymixins/my_mixin3/",
     "scheme": "http://occiware.org/occi/tags#",
     "term": "my_mixin3",
     "attributes": {},
     "title": "my mixin tag 3"
-}
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/mymixins/
 </code>
 </pre>
 
@@ -695,28 +760,123 @@ In result:
 </pre>
 
 ## Dissociate a mixin tag from an entity
+It's the same query as association but it's with DELETE method.
+
+<pre>
+<code>
+curl -v -X DELETE http://localhost:8080/ -d '
+{
+    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+    "mixins": [
+                "http://occiware.org/occi/tags#my_mixin_first"
+    ]
+}' -H 'Content-Type: application/json' -H 'accept: application/json'
+</code>
+</pre>
+
 
 ## Dissociate a mixin extension from entity
+<pre>
+<code>
+curl -v -X DELETE http://localhost:8080/ -d '
+{
+    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+    "mixins": [
+         "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key"
+    ]
+}' -H 'Content-Type: application/json' -H 'accept: application/json'
+</code>
+</pre>
 
 
 ## Remove a mixin tag definition
+<pre>
+<code>
+curl -v -X DELETE -d '{
+  "location": "/mymixins/my_mixin_two/",
+  "scheme": "http://occiware.org/occi/tags#",
+  "term": "my_mixin_two"
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/-/
+</code>
+</pre>
 
 
+## execute an action on a resource
+This example illustrate a stop instance.
+
+<pre>
+<code>
+curl -v -X POST -d '{
+  "action": "http://schemas.ogf.org/occi/infrastructure/compute/action#stop",
+  "attributes": {
+    "method": "graceful"
+  }
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/compute/d99486b7-0632-482d-a184-a9195733ddd3?action=stop
+</code>
+</pre>
 
 
-## execute an action
+## execute actions on a collection
 
+For example stop all the computes : 
+<pre>
+<code>
+curl -v -X POST -d '{
+  "action": "http://schemas.ogf.org/occi/infrastructure/compute/action#stop",
+  "attributes": {
+    "method": "graceful"
+  }
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/compute/?action=stop
+</code>
+</pre>
 
-## execute a sequence of actions
+On custom instance collection path :
+
+<pre>
+<code>
+curl -v -X POST -d '{
+  "action": "http://schemas.ogf.org/occi/infrastructure/compute/action#stop",
+  "attributes": {
+    "method": "graceful"
+  }
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/vms/foo/bar/?action=stop
+</code>
+</pre>
 
 
 ## Delete entity
+<pre>
+<code>
+curl -v -X DELETE -d '{
+  "action": "http://schemas.ogf.org/occi/infrastructure/compute/action#stop",
+  "attributes": {
+    "method": "graceful"
+  }
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/vms/foo/bar/?action=stop
+</code>
+</pre>
 
 
 
-## Remove entity collection
+## Delete all entities of a collection
+
+### Category
+
+This example illustrate a delete query on all computes.
+<pre>
+<code>
+curl -v -X DELETE -H 'accept: application/json' http://localhost:8080/compute/
+</code>
+</pre>
 
 
-
+### On custom path
+<pre>
+<code>
+curl -v -X DELETE -H 'accept: application/json' http://localhost:8080/vms/foo/bar/
+</code>
+</pre>
 
 
