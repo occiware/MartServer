@@ -70,6 +70,10 @@ public class GetQuery extends AbstractGetQuery {
             // Delegate to query interface method.
             return getQueryInterface(path, headers);
         }
+        // Normalize the path without prefix slash and suffix slash.
+        path = getPathWithoutPrefixSlash(path);
+        LOGGER.info("GET Query on path: " + path);
+
         List<InputData> datas = inputParser.getInputDatas();
         for (InputData data : datas) {
             String actionId = data.getAction();

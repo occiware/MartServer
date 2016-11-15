@@ -275,6 +275,7 @@ public class ConfigurationManager {
             updateAttributesToEntity(link, attributes);
         }
 
+
         link.setSource(resourceSrc);
         link.setTarget(resourceDest);
 
@@ -1060,7 +1061,14 @@ public class ConfigurationManager {
      */
     public static List<Entity> findAllEntitiesForCategory(final String owner, final String categoryId) {
         List<Entity> entities = new ArrayList<>();
+        String kind;
         for (Resource res : getConfigurationForOwner(owner).getResources()) {
+            kind = res.getKind().getScheme() + res.getKind().getTerm();
+
+            if (kind.equals(categoryId)) {
+                entities.add(res);
+                continue;
+            }
 
             for (Action act : res.getKind().getActions()) {
                 if ((act.getScheme() + act.getTerm()).equals(categoryId)) {

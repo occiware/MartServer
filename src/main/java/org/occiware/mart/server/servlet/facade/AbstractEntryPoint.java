@@ -296,4 +296,21 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
 
 
     }
+
+    /**
+     *
+     * @param path
+     * @return
+     */
+    public String getPathWithoutPrefixSlash(final String path) {
+        String pathTmp = path;
+        if (path.startsWith("/")) {
+            pathTmp = pathTmp.substring(1);
+        }
+        if (path.endsWith("/")) {
+            pathTmp = pathTmp.substring(0, path.length() - 1);
+        }
+        return pathTmp;
+    }
+
 }

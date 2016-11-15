@@ -97,6 +97,9 @@ public class PutQuery extends AbstractPutQuery {
                 }
             }
         }
+        // Normalize the path without prefix slash and suffix slash.
+        path = getPathWithoutPrefixSlash(path);
+        LOGGER.info("PUT Query on path: " + path);
 
         // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
         for (InputData data : datas) {
@@ -270,7 +273,7 @@ public class PutQuery extends AbstractPutQuery {
             }
         } catch (ConfigurationException ex) {
             try {
-                response = outputParser.parseResponse("The entity has not been added, it may be produce if you use non referenced attributes. \r\n Message : " + ex.getMessage(), Response.Status.BAD_REQUEST);
+                response = outputParser.parseResponse("The entity has not been added, it may be produce if you use non referenced attributes. Message : " + ex.getMessage(), Response.Status.BAD_REQUEST);
                 return response;
             } catch (ResponseParseException e) {
                 throw new InternalServerErrorException(e);

@@ -70,6 +70,10 @@ public class PostQuery extends AbstractPostQuery {
             }
         }
 
+        // Normalize the path without prefix slash and suffix slash.
+        path = getPathWithoutPrefixSlash(path);
+        LOGGER.info("POST Query on path: " + path);
+
         if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
             try {
                 response = outputParser.parseResponse("You cannot use " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " on POST method", Response.Status.BAD_REQUEST);
@@ -91,20 +95,24 @@ public class PostQuery extends AbstractPostQuery {
                 }
             }
 
-            //  - execute an action on entity
-            //  - execute an action on entity collection
-            String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
-
             Map<String, String> attrs = data.getAttrs();
-
             boolean isEntityUUIDProvided = Utils.isEntityUUIDProvided(path, attrs);
+            String entityUUID = Utils.getUUIDFromPath(path, attrs);
+
+
+            // Check if uuid is set on path... and replace path without entityuuid.
+            if (Utils.isEntityUUIDProvided(path, new HashMap<>())) {
+                // UUID is set on path.
+                path = path.replace(entityUUID, "");
+            }
+            String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
 
             // actionId ==> scheme + term.
             String actionId = data.getAction();
             List<Entity> entities;
             Entity entity;
 
-            String entityUUID = Utils.getUUIDFromPath(path, attrs);
+
             // Action part.
             if (isActionPost) {
 
@@ -166,12 +174,23 @@ public class PostQuery extends AbstractPostQuery {
                     Iterator<Entity> it = entities.iterator();
                     while (it.hasNext()) {
                         Entity entityTmp = it.next();
+
                         String location = ConfigurationManager.getEntityRelativePath(entityTmp.getId());
+
                         if (!location.equals(path)) {
                             it.remove();
                         }
                     }
+                    if (entities.isEmpty()) {
+                        LOGGER.info("No entities found to execute the action.");
+                        try {
+                            response = outputParser.parseResponse("No entities found to execute the action.", Response.Status.NOT_FOUND);
+                            return response;
+                        } catch (ResponseParseException ex) {
+                            throw new InternalServerErrorException(ex);
+                        }
 
+                    }
                     // launch the action on collection.
                     response = executeActionsOnEntities(actionId, entities);
 
@@ -328,7 +347,7 @@ public class PostQuery extends AbstractPostQuery {
         }
 
         Map<String, String> attrs = data.getAttrs();
-        entity.occiRetrieve();
+        // entity.occiRetrieve();
         // update attributes .
         entity = ConfigurationManager.updateAttributesToEntity(entity, attrs);
         ConfigurationManager.updateVersion(ConfigurationManager.DEFAULT_OWNER, path + entity.getId());
@@ -355,7 +374,7 @@ public class PostQuery extends AbstractPostQuery {
         }
         if (entities.isEmpty()) {
             try {
-                response = outputParser.parseResponse("No entity collection found for update", Response.Status.BAD_REQUEST);
+                response = outputParser.parseResponse("No entity collection found for update", Response.Status.NOT_FOUND);
             } catch (ResponseParseException ex) {
                 throw new InternalServerErrorException(ex);
             }

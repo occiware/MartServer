@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
+import org.eclipse.osgi.service.datalocation.Location;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
@@ -64,6 +65,8 @@ public class JsonOcciParser extends AbstractRequestParser {
         // A mixin tag.
         // A collection of resources ==> to create or to update (with or without links).
         parseInputQueryToDatas(request);
+        // Parse request parameters (for filtering, for pagination or for action.
+        parseRequestParameters(request);
     }
 
     /**
@@ -118,7 +121,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 parseResourceJsonInput(resJson);
                 isResourceSingle = true;
             } catch (IOException ex) {
-                messages += "\r\n " + ex.getMessage();
+                messages += " " + ex.getMessage();
                 isResourceSingle = false;
             }
 
@@ -128,7 +131,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                     parseLinkJsonInput(linkJson);
                     isLinkSingle = true;
                 } catch (IOException ex) {
-                    messages += "\r\n " + ex.getMessage();
+                    messages += " " + ex.getMessage();
                     isLinkSingle = false;
                 }
             }
@@ -140,7 +143,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                     parseMixinJsonTagInput(mixinJson);
                     isMixinTagSingle = true;
                 } catch (IOException ex) {
-                    messages += "\r\n " + ex.getMessage();
+                    messages += " " + ex.getMessage();
                     isMixinTagSingle = false;
                 }
             }
@@ -151,15 +154,15 @@ public class JsonOcciParser extends AbstractRequestParser {
                     parseActionJsonInvocationInput(actionJson);
                     isActionInvocation = true;
                 } catch (IOException ex) {
-                    messages += "\r\n " + ex.getMessage();
+                    messages += " " + ex.getMessage();
                     isActionInvocation = false;
                 }
             }
 
             // If all tries are failed throw an exception with otherall exception messages.
             if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle && !isActionInvocation) {
-                LOGGER.error("Unknown json input file, please check your file input. \r\n" + messages);
-                throw new CategoryParseException("Unknown json input file, please check your file. \r\n" + messages);
+                LOGGER.error("Unknown json input file, please check your file input. " + messages);
+                throw new CategoryParseException("Unknown json input file, please check your file. " + messages);
             }
         }
     }
@@ -425,53 +428,45 @@ public class JsonOcciParser extends AbstractRequestParser {
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String msg;
+        if (status == null) {
+            status = Response.Status.OK;
+        }
         try {
             // Case 1 : Object is a Response object.
             if (object instanceof Response) {
+                MessageJson msgJson = new MessageJson();
+                msgJson.setStatus(status.getStatusCode());
+                if (status.equals(Response.Status.OK)) {
+                    msgJson.setMessage("ok");
 
-                if (status != null && status.equals(Response.Status.OK)) {
-                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString("OK");
-                    response = Response.fromResponse((Response) object)
-                            .header("Server", Constants.OCCI_SERVER_HEADER)
-                            .header("Accept", getAcceptedTypes())
-                            .type(Constants.MEDIA_TYPE_JSON)
-                            .entity(msg)
-                            .status(status)
-                            .build();
                 } else {
-                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(((Response) object).getEntity());
-
-                    response = Response.fromResponse((Response) object)
-                            .header("Server", Constants.OCCI_SERVER_HEADER)
-                            .header("Accept", getAcceptedTypes())
-                            .type(Constants.MEDIA_TYPE_JSON)
-                            .entity(msg)
-                            .status(status)
-                            .build();
+                    msgJson.setMessage((String)((Response) object).getEntity());
+                    // msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(((Response) object).getEntity());
                 }
+                response = Response.fromResponse((Response) object)
+                        .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .header("Accept", getAcceptedTypes())
+                        .type(Constants.MEDIA_TYPE_JSON)
+                        .entity(msgJson.toStringJson())
+                        .status(status)
+                        .build();
             }
             // Case 2 : Object is a String.
             if (object instanceof String) {
-
-                if (status != null && status.equals(Response.Status.OK)) {
-                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString("OK");
-                    response = Response.status(status)
-                            .header("Server", Constants.OCCI_SERVER_HEADER)
-                            .header("content", object)
-                            .header("Accept", getAcceptedTypes())
-                            .entity(msg)
-                            .type(Constants.MEDIA_TYPE_JSON)
-                            .build();
+                MessageJson msgJson = new MessageJson();
+                msgJson.setStatus(status.getStatusCode());
+                if (status.equals(Response.Status.OK)) {
+                    msgJson.setMessage("ok");
                 } else {
-                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
-                    response = Response.status(status)
-                            .header("Server", Constants.OCCI_SERVER_HEADER)
-                            .header("content", object)
-                            .header("Accept", getAcceptedTypes())
-                            .entity(msg)
-                            .type(Constants.MEDIA_TYPE_JSON)
-                            .build();
+                    msgJson.setMessage((String)object);
                 }
+                response = Response.status(status)
+                        .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .header("content", object)
+                        .header("Accept", getAcceptedTypes())
+                        .entity(msgJson.toStringJson())
+                        .type(Constants.MEDIA_TYPE_JSON)
+                        .build();
             }
 
             if (object instanceof Entity) {
@@ -508,8 +503,10 @@ public class JsonOcciParser extends AbstractRequestParser {
                 }
 
                 if (!locations.isEmpty()) {
-
-                    msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(locations);
+                    // Build a json object output.
+                    LocationsJson locationsJson = new LocationsJson();
+                    locationsJson.setLocations(locations);
+                    msg = locationsJson.toStringJson();
                     Response.ResponseBuilder responseBuilder = Response.status(status)
                             .header("Server", Constants.OCCI_SERVER_HEADER)
                             .header("Accept", getAcceptedTypes())
@@ -528,13 +525,41 @@ public class JsonOcciParser extends AbstractRequestParser {
             }
 
             if (response == null) {
-                throw new ResponseParseException("Cannot parse the object to application/json representation.");
+                msg = "Cannot parse the object to application/json representation.";
+                MessageJson msgJson = new MessageJson();
+                msgJson.setMessage(msg);
+                msgJson.setStatus(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+                response =  Response.status(status)
+                        .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .header("Accept", getAcceptedTypes())
+                        .entity(msgJson.toStringJson())
+                        .type(Constants.MEDIA_TYPE_JSON)
+                        .status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .build();
+
+                // throw new ResponseParseException("Cannot parse the object to application/json representation.");
             }
 
             return response;
 
         } catch (JsonProcessingException ex) {
-            throw new ResponseParseException(ex.getMessage());
+            msg = "Error while parsing the response to application/json representation";
+            MessageJson msgJson = new MessageJson();
+            msgJson.setMessage(msg + " --> " + ex.getMessage());
+            msgJson.setStatus(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+            try {
+                response = Response.status(status)
+                        .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .header("Accept", getAcceptedTypes())
+                        .entity(msgJson.toStringJson())
+                        .type(Constants.MEDIA_TYPE_JSON)
+                        .status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .build();
+                return response;
+            } catch (JsonProcessingException e) {
+                throw new ResponseParseException(e.getMessage());
+            }
         }
     }
 

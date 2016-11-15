@@ -90,6 +90,10 @@ public class DeleteQuery extends AbstractDeleteQuery {
             }
         }
 
+        // Normalize the path without prefix slash and suffix slash.
+        path = getPathWithoutPrefixSlash(path);
+        LOGGER.info("DELETE Query on path: " + path);
+
         // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
         List<InputData> datas = inputParser.getInputDatas();
         for (InputData data : datas) {
