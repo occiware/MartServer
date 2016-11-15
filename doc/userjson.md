@@ -610,6 +610,8 @@ This give this result :
 </code>
 </pre>
 
+## GET query with mixin tag
+
 You can have the same result with a category filter :
 
 <pre>
@@ -696,7 +698,6 @@ In result:
 
 ## Dissociate a mixin extension from entity
 
-## GET Query with mixin tag
 
 ## Remove a mixin tag definition
 
