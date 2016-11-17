@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
-import org.eclipse.osgi.service.datalocation.Location;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
@@ -46,7 +45,6 @@ import java.io.InputStream;
 import java.util.*;
 
 /**
- *
  * @author cgourdin
  */
 public class JsonOcciParser extends AbstractRequestParser {
@@ -440,7 +438,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                     msgJson.setMessage("ok");
 
                 } else {
-                    msgJson.setMessage((String)((Response) object).getEntity());
+                    msgJson.setMessage((String) ((Response) object).getEntity());
                     // msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(((Response) object).getEntity());
                 }
                 response = Response.fromResponse((Response) object)
@@ -458,7 +456,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 if (status.equals(Response.Status.OK)) {
                     msgJson.setMessage("ok");
                 } else {
-                    msgJson.setMessage((String)object);
+                    msgJson.setMessage((String) object);
                 }
                 response = Response.status(status)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
@@ -530,7 +528,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 msgJson.setMessage(msg);
                 msgJson.setStatus(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
-                response =  Response.status(status)
+                response = Response.status(status)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
                         .header("Accept", getAcceptedTypes())
                         .entity(msgJson.toStringJson())
@@ -624,37 +622,48 @@ public class JsonOcciParser extends AbstractRequestParser {
         for (AttributeState attr : attrsState) {
             String key = attr.getName();
             String val = attr.getValue();
-            if (val != null) {
-                if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE)
-                        && !key.equals(Constants.OCCI_CORE_ID)) {
 
-                    EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, key);
+            if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE)
+                    && !key.equals(Constants.OCCI_CORE_ID)) {
 
-                    if (eAttrType != null
-                            && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
-                        // value with quote only for String and EEnum type.
+                String valStr = ConfigurationManager.getAttrValueStr(entity, key);
+                Number valNumber = ConfigurationManager.getAttrValueNumber(entity, key);
+
+                if (valStr != null) {
+                    attributes.put(key, valStr);
+                } else if (valNumber != null) {
+                    attributes.put(key, valNumber);
+                } else {
+                    if (val != null) {
                         attributes.put(key, val);
-                    } else if (eAttrType == null) {
-                        // Cant determine the type.
-                        attributes.put(key, val);
-                    } else {
-                        // Not a string nor an enum val.
-                        try {
-                            Number num = Utils.parseNumber(val, eAttrType.getInstanceClassName());
-                            attributes.put(key, num);
-                        } catch (NumberFormatException ex) {
-                            attributes.put(key, val);
-                        }
                     }
+                }
+//
+//                    if (eAttrType != null
+//                            && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
+//                        // value with quote only for String and EEnum type.
+//                        attributes.put(key, val);
+//                    } else if (eAttrType == null) {
+//                        // Cant determine the type.
+//                        attributes.put(key, val);
+//                    } else {
+//                        // Not a string nor an enum val.
+//                        try {
+//                            Number num = Utils.parseNumber(val, eAttrType.getInstanceClassName());
+//                            attributes.put(key, num);
+//                        } catch (NumberFormatException ex) {
+//                            attributes.put(key, val);
+//                        }
+//                    }
 
-                }
-                if (key.equals(Constants.OCCI_CORE_ID)) {
-                    if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
-                        val = Constants.URN_UUID_PREFIX + val;
-                    }
-                    attributes.put(key, val);
-                }
             }
+            if (key.equals(Constants.OCCI_CORE_ID)) {
+                if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
+                    val = Constants.URN_UUID_PREFIX + val;
+                }
+                attributes.put(key, val);
+            }
+
         }
         resJson.setAttributes(attributes);
 

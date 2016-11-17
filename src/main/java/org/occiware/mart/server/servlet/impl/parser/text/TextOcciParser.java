@@ -675,29 +675,31 @@ public class TextOcciParser extends AbstractRequestParser {
             if (name.equals(Constants.OCCI_CORE_ID) || name.equals(Constants.OCCI_CORE_SOURCE) || name.equals(Constants.OCCI_CORE_TARGET)) {
                 continue;
             }
+            String value = null;
+
+            String valStr = ConfigurationManager.getAttrValueStr(entity, name);
+            Number valNumber = ConfigurationManager.getAttrValueNumber(entity, name);
+
+            if (valStr != null) {
+                value = "\"" + valStr + "\"";
+            } else if (valNumber != null) {
+                value = "" + valNumber;
+            } else {
+                if (attribute.getValue() != null) {
+                    value = "\"" + attribute.getValue() + "\"";
+                }
+            }
             // if value is null, it wont display in header.
-            String value = attribute.getValue();
             if (value == null) {
                 continue;
             }
-
-            // Used only to define the datatype.
-            EDataType eAttributeType = ConfigurationManager.getEAttributeType(entity, name);
-
-            if (eAttributeType != null && (eAttributeType instanceof EEnum || eAttributeType.getInstanceClass() == String.class)) {
-                // value with quote only for String and EEnum type.
-                value = "\"" + value + "\"";
-            } else if (eAttributeType == null) {
-                // Cant determine the type.
-                value = "\"" + value + "\"";
-            } // other values are not quoted.
 
             attribs += attribute.getName() + '=' + value + "," + Constants.CRLF;
         }
 
         if (!attribs.isEmpty()) {
             // To remove the last comma.
-            attribs = attribs.substring(0, attribs.length() - 2);
+            attribs = attribs.substring(0, attribs.length() - 3);
             sb.append(attribs);
         }
         return sb.toString();

@@ -21,6 +21,7 @@ package org.occiware.mart.server.servlet.model;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
+import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.clouddesigner.occi.util.Occi2Ecore;
@@ -33,6 +34,7 @@ import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -2031,17 +2033,67 @@ public class ConfigurationManager {
         return eDataType;
     }
 
-    public static Object getEMFValueObject(Entity entity, String attrName) {
+    private static Object getEMFValueObject(Entity entity, String attrName) {
         EAttribute eAttr = null;
+        Object result = null;
         String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
         final EStructuralFeature eStructuralFeature = entity.eClass().getEStructuralFeature(eAttributeName);
         if (eStructuralFeature != null) {
             if ((eStructuralFeature instanceof EAttribute)) {
                 eAttr = (EAttribute) eStructuralFeature;
+                result = entity.eGet(eAttr);
             }
         }
-        return eAttr;
+        return result;
     }
+
+    public static String getAttrValueStr(Entity entity, String attrName) {
+        String result = null;
+        EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, attrName);
+
+        if (eAttrType != null && eAttrType.getInstanceClass() == String.class || eAttrType instanceof EEnum) {
+            Object eValue = getEMFValueObject(entity, attrName);
+            if (eValue != null) {
+                result = eValue.toString();
+            }
+        }
+        return result;
+    }
+
+    public static Number getAttrValueNumber(Entity entity, String attrName) {
+        Number result = null;
+        EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, attrName);
+        if (eAttrType != null &&
+                (eAttrType.getInstanceClass() == Float.class
+                        || eAttrType.getInstanceClass() == Integer.class
+                        || eAttrType.getInstanceClass() == BigDecimal.class
+                        || eAttrType.getInstanceClass() == Number.class
+                        || eAttrType.getInstanceClass() == Double.class
+                        || eAttrType.getInstanceClass() == Short.class)) {
+
+            Object eValue = getEMFValueObject(entity, attrName);
+            if (eValue != null) {
+                result = (Number) eValue;
+            }
+        }
+        if (result == null && eAttrType != null) {
+            if (eAttrType.getInstanceClassName() != null) {
+                String instanceClassName = eAttrType.getInstanceClassName();
+                if (instanceClassName.equals("float")
+                        || instanceClassName.equals("int")
+                        || instanceClassName.equals("double")
+                        || instanceClassName.equals("short")) {
+                    Object eValue = getEMFValueObject(entity, attrName);
+                    if (eValue != null) {
+                        result = (Number) eValue;
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
 
     /**
      * Find category id from category term value for a user configuration.
