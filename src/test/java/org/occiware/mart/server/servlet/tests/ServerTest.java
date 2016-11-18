@@ -137,21 +137,72 @@ public class ServerTest {
         statusResponse = response.getStatus();
         assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
 
+        File resource5 = getResourceInputFile("/testjson/integration/creation/resource_location.json");
+        response = httpClient.newRequest("localhost", 9090)
+                .accept("application/json")
+                .method(HttpMethod.PUT)
+                .file(resource5.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
+
     }
 
-    // TODO : Activate integration tests on travis build.
     @Test
     public void getComputeResource() {
-        // First create a compute resource.
-
         try {
-            testCreateResourceInputJson();
-            System.out.println("GET Request on Compute kind... http://localhost:9090/compute/");
-            ContentResponse response = httpClient.newRequest("http://localhost:9090/compute/")
+            testCreateResourceInputJson(); // Launch create tests resources....
+
+            System.out.println("GET Request on resource location : /testlocation/" );
+            // See file: resource_location.json.
+            ContentResponse response = httpClient.newRequest("http://localhost:9090/testlocation/")  // uuid: f89486b7-0632-482d-a184-a9195733ddd9
                     .method(HttpMethod.GET)
                     .accept("application/json")
                     .send();
             int statusResponse = response.getStatus();
+            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+
+            // Search on an invalid location path.
+            System.out.println("GET Request on resource location : /otherlocation/other2/" );
+            // See file: resource_location.json.
+            response = httpClient.newRequest("http://localhost:9090/otherlocation/other2/")
+                    .method(HttpMethod.GET)
+                    .accept("application/json")
+                    .send();
+            statusResponse = response.getStatus();
+            assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+
+            // Search on a relative path location with included key.
+            System.out.println("GET Request on resource location : /testlocation/f89486b7-0632-482d-a184-a9195733ddd9");
+            // See file: resource_location.json.
+            response = httpClient.newRequest("http://localhost:9090//testlocation/f89486b7-0632-482d-a184-a9195733ddd9")
+                    .method(HttpMethod.GET)
+                    .accept("application/json")
+                    .send();
+            statusResponse = response.getStatus();
+            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+
+            // Search on a false relative path but with good keys. This must be not found to avoid path confusion.
+            System.out.println("GET Request on resource location : /otherresources/f89486b7-0632-482d-a184-a9195733ddd9");
+            // See file: resource_location.json.
+            response = httpClient.newRequest("http://localhost:9090//otherresources/f89486b7-0632-482d-a184-a9195733ddd9")
+                    .method(HttpMethod.GET)
+                    .accept("application/json")
+                    .send();
+            statusResponse = response.getStatus();
+            String content = response.getContentAsString();
+            System.out.println(content);
+            assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+
+
+            // Search on compute kind.
+            System.out.println("GET Request on Compute kind... http://localhost:9090/compute/");
+            response = httpClient.newRequest("http://localhost:9090/compute/")
+                    .method(HttpMethod.GET)
+                    .accept("application/json")
+                    .send();
+            statusResponse = response.getStatus();
             assertTrue(statusResponse == Response.Status.OK.getStatusCode());
 
             String result = response.getContentAsString();

@@ -59,6 +59,10 @@ public class InputData {
     private String mixinTagTitle = null;
 
     private List<String> xocciLocation = null;
+    /**
+     * Location of a resource/link or a mixin tag.
+     */
+    private String location = null;
 
     public Map<String, String> getAttrs() {
         return attrs;
@@ -179,5 +183,12 @@ public class InputData {
         xocciLocation.add(xOcciLocation);
     }
 
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(final String location) {
+        this.location = location;
+    }
 
 }

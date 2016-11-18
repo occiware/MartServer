@@ -105,6 +105,34 @@ public class GetQuery extends AbstractGetQuery {
                 if (Utils.isEntityUUIDProvided(path, attrs)) {
                     entityId = Utils.getUUIDFromPath(path, attrs);
                     entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+                    String pathTmp = path;
+
+
+
+                    String entityLocation = ConfigurationManager.getLocation(entity);
+                    if (pathTmp.contains(entityId)) {
+                        pathTmp = pathTmp.replace(entityId, "");
+                    }
+
+                    if (entityLocation == null) {
+                        entity = null;
+                    } else {
+                        if (entityLocation.contains(entityId)) {
+                            entityLocation = entityLocation.replace(entityId, "");
+                        }
+                        // Check if the path correspond to the entityLocation path.
+                        if (!entityLocation.equals(pathTmp)) {
+                            try {
+                                response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + entityLocation, Response.Status.NOT_FOUND);
+                                return response;
+                            } catch (ResponseParseException ex) {
+                                throw new InternalServerErrorException(ex);
+                            }
+                        }
+                    }
+
+
+
                 } else {
                     entity = ConfigurationManager.getEntityFromPath(path);
                 }

@@ -237,6 +237,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         String summary = resource.getSummary();
         String id = resource.getId();
         String kind = resource.getKind();
+        String location = resource.getLocation();
         attrs = resource.getAttributes();
         List<InputData> datas = getInputDatas();
         if (attrs == null) {
@@ -264,6 +265,8 @@ public class JsonOcciParser extends AbstractRequestParser {
             throw new CategoryParseException("Kind is not defined for resource: " + id);
         }
         data.setKind(kind);
+
+        data.setLocation(location);
 
         List<String> mixinsRes = resource.getMixins();
         if (mixinsRes != null && !mixinsRes.isEmpty()) {
@@ -300,6 +303,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         String summary = link.getSummary();
         String id = link.getId();
         String kind = link.getKind();
+        String location = link.getLocation();
         SourceJson source = link.getSource();
         TargetJson target = link.getTarget();
         String sourceLocation;
@@ -348,6 +352,8 @@ public class JsonOcciParser extends AbstractRequestParser {
         }
         data.setKind(kind);
 
+        data.setLocation(location);
+
         List<String> mixinsRes = link.getMixins();
         if (mixinsRes != null && !mixinsRes.isEmpty()) {
             data.setMixins(mixinsRes);
@@ -388,7 +394,8 @@ public class JsonOcciParser extends AbstractRequestParser {
         data.setAttrObjects(attrs);
         data.setMixinTag(scheme + term);
         data.setMixinTagTitle(title);
-        data.setMixinTagLocation(location);
+        data.setMixinTagLocation(location); // TODO : Check if this value is really necessary here. this maybe a doublon of location property.
+        data.setLocation(location);
         datas.add(data);
         this.setInputDatas(datas);
     }
@@ -510,16 +517,11 @@ public class JsonOcciParser extends AbstractRequestParser {
                             .header("Accept", getAcceptedTypes())
                             .entity(msg)
                             .type(Constants.MEDIA_TYPE_JSON);
-//                    for (String location : locations) {
-//                        String absLocation = getServerURI().toString() + location;
-//                        responseBuilder.header(Constants.X_OCCI_LOCATION, absLocation);
-//                    }
                     response = responseBuilder.build();
                 }
                 if (!entities.isEmpty()) {
                     response = renderEntitiesResponse(entities, status);
                 }
-
             }
 
             if (response == null) {
@@ -535,8 +537,6 @@ public class JsonOcciParser extends AbstractRequestParser {
                         .type(Constants.MEDIA_TYPE_JSON)
                         .status(Response.Status.INTERNAL_SERVER_ERROR)
                         .build();
-
-                // throw new ResponseParseException("Cannot parse the object to application/json representation.");
             }
 
             return response;
@@ -638,24 +638,6 @@ public class JsonOcciParser extends AbstractRequestParser {
                         attributes.put(key, val);
                     }
                 }
-//
-//                    if (eAttrType != null
-//                            && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
-//                        // value with quote only for String and EEnum type.
-//                        attributes.put(key, val);
-//                    } else if (eAttrType == null) {
-//                        // Cant determine the type.
-//                        attributes.put(key, val);
-//                    } else {
-//                        // Not a string nor an enum val.
-//                        try {
-//                            Number num = Utils.parseNumber(val, eAttrType.getInstanceClassName());
-//                            attributes.put(key, num);
-//                        } catch (NumberFormatException ex) {
-//                            attributes.put(key, val);
-//                        }
-//                    }
-
             }
             if (key.equals(Constants.OCCI_CORE_ID)) {
                 if (!val.startsWith(Constants.URN_UUID_PREFIX)) {

@@ -99,10 +99,19 @@ public class PutQuery extends AbstractPutQuery {
         }
         // Normalize the path without prefix slash and suffix slash.
         path = getPathWithoutPrefixSlash(path);
+
         LOGGER.info("PUT Query on path: " + path);
 
         // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
         for (InputData data : datas) {
+
+            String location = data.getLocation(); // Location where the resource is on, this override path if necessary.
+            if (location == null || location.trim().isEmpty()) {
+                location = path;
+            } else {
+                location = getPathWithoutPrefixSlash(location);
+            }
+
             if (data.getAction() != null) {
                 try {
                     response = outputParser.parseResponse("you cannot use an action with PUT method", Response.Status.BAD_REQUEST);
@@ -121,7 +130,7 @@ public class PutQuery extends AbstractPutQuery {
                 isMixinTag = true;
             } else {
                 // Check the path.
-                if (Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER)) {
+                if (Utils.isMixinTagRequest(location, ConfigurationManager.DEFAULT_OWNER)) {
                     isMixinTag = true;
                 }
             }
@@ -138,21 +147,21 @@ public class PutQuery extends AbstractPutQuery {
             // Check if the query is a create/overwrite mixin tag definition.
             if (isMixinTag) {
                 LOGGER.info("Define or overwrite mixin tag definitions");
-                response = defineMixinTag(data, path);
+                response = defineMixinTag(data, location);
                 continue;
             }
 
             String entityId = data.getEntityUUID();
             if (entityId == null) {
-                entityId = Utils.getUUIDFromPath(path, data.getAttrs());
+                entityId = Utils.getUUIDFromPath(location, data.getAttrs());
                 // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
             }
 
             if (kind != null) {
-                String relativePath = path;
+                String relativePath = location;
 
-                if (entityId != null && path.contains(entityId)) {
-                    relativePath = path.replace(entityId, "");
+                if (entityId != null && location.contains(entityId)) {
+                    relativePath = location.replace(entityId, "");
                 }
 
                 response = createEntity(relativePath, entityId, kind, mixins, data.getAttrs());
@@ -190,7 +199,7 @@ public class PutQuery extends AbstractPutQuery {
         // Later, owner / group will be implemented, for now owner "anonymous" is the default.
         String owner = ConfigurationManager.DEFAULT_OWNER;
 
-        String location;
+        String xabsoluteLocation;
         // Link or resource ?
         boolean isResource;
         boolean hasCreatedUUID = false;
@@ -202,14 +211,24 @@ public class PutQuery extends AbstractPutQuery {
         }
 
         isResource = ConfigurationManager.checkIfEntityIsResourceOrLinkFromAttributes(attributes);
-        location = getUri().getPath();
-        if (hasCreatedUUID) {
-            location += "/" + entityId;
+        xabsoluteLocation = getUri().getBaseUri().toString();
+        if (path.endsWith("/")) {
+            xabsoluteLocation += path;
+        } else {
+            if (!path.isEmpty()) {
+                xabsoluteLocation += "/" + path;
+            }
         }
 
-        // Add location attribute.
-//        attrs.put(Constants.X_OCCI_LOCATION, location);
-        LOGGER.info("Create entity with location: " + location);
+        if (hasCreatedUUID) {
+            if (xabsoluteLocation.endsWith("/")) {
+                xabsoluteLocation += entityId;
+            } else {
+                xabsoluteLocation += "/" + entityId;
+            }
+        }
+
+        LOGGER.info("Create entity with location: " + xabsoluteLocation);
         LOGGER.info("Kind: " + kind);
 
         for (String mixin : mixins) {
@@ -236,15 +255,16 @@ public class PutQuery extends AbstractPutQuery {
                 }
             }
 
-            LOGGER.info("Overwriting entity : " + location);
+            LOGGER.info("Overwriting entity : " + xabsoluteLocation);
         } else {
-            LOGGER.info("Creating entity : " + location);
+            LOGGER.info("Creating entity : " + xabsoluteLocation);
         }
 
         try {
             String coreId = Constants.URN_UUID_PREFIX + entityId;
             if (isResource) {
                 attributes.put("occi.core.id", coreId);
+                LOGGER.info("Relative path location: " + path);
                 ConfigurationManager.addResourceToConfiguration(entityId, kind, mixins, attributes, owner, path);
             } else {
                 String src = attributes.get(Constants.OCCI_CORE_SOURCE);
@@ -269,6 +289,7 @@ public class PutQuery extends AbstractPutQuery {
                 }
 
                 attributes.put("occi.core.id", coreId);
+                LOGGER.info("Relative path location : " + path);
                 ConfigurationManager.addLinkToConfiguration(entityId, kind, mixins, src, target, attributes, owner, path);
             }
         } catch (ConfigurationException ex) {
@@ -283,7 +304,7 @@ public class PutQuery extends AbstractPutQuery {
         Entity entity = ConfigurationManager.findEntity(owner, entityId);
         if (entity != null) {
             entity.occiCreate();
-            LOGGER.info("Create entity done returning location : " + location);
+            LOGGER.info("Create entity done returning location : " + path);
         } else {
             LOGGER.error("Error, entity was not created on object model, please check your query.");
             try {
@@ -296,7 +317,7 @@ public class PutQuery extends AbstractPutQuery {
 
         try {
 
-            response = Response.created(new URI(location))
+            response = Response.created(new URI(xabsoluteLocation))
                     .header("Server", Constants.OCCI_SERVER_HEADER)
                     .type(getContentType())
                     .header("Accept", getAcceptType())
