@@ -69,15 +69,18 @@ public class GetQuery extends AbstractGetQuery {
 
             PathParser pathParser = new PathParser(data, path);
 
+            String location = pathParser.getLocation();
+            if (location == null || location.trim().isEmpty()) {
+                location = pathParser.getPath();
+            }
+
+            String categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
+
+
             // Query interface check, the last case of this check is for query for ex: /compute/-/ where we filter for a category (kind or mixin).
             if (pathParser.isInterfQuery()) {
                 // Delegate to query interface method.
                 return getQueryInterface(path, headers);
-            }
-
-            String location = pathParser.getLocation();
-            if (location == null || location.trim().isEmpty()) {
-                location = pathParser.getPath();
             }
 
             if (pathParser.isActionInvocationQuery()) {
@@ -95,7 +98,7 @@ public class GetQuery extends AbstractGetQuery {
             if (entityId == null) {
                 entityId = Utils.getUUIDFromPath(location, attrs);
             }
-            String categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
+
 
             // Get one entity check with uuid provided.
             // path with category/kind : http://localhost:8080/compute/uuid

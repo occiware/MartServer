@@ -273,7 +273,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         // Case of the mixin tag entities request.
         boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
         if (isMixinTagRequest) {
-            LOGGER.info("Mixin tag get request... ");
+            LOGGER.info("Mixin tag request... ");
             Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
             if (mixin == null) {
                 throw new ConfigurationException("The mixin location : " + path + " is not defined");

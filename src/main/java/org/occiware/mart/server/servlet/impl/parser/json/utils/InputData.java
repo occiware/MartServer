@@ -117,7 +117,7 @@ public class InputData {
     }
 
     /**
-     * Get entity UUID with format urn:uuid:xxxx-xxxx-xxxx-xxxx
+     * Get entity UUID without format urn:uuid:xxxx-xxxx-xxxx-xxxx
      *
      * @return
      */

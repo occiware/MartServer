@@ -445,7 +445,6 @@ public class JsonOcciParser extends AbstractRequestParser {
 
                 } else {
                     msgJson.setMessage((String) ((Response) object).getEntity());
-                    // msg = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(((Response) object).getEntity());
                 }
                 response = Response.fromResponse((Response) object)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
@@ -465,14 +464,6 @@ public class JsonOcciParser extends AbstractRequestParser {
                     msgJson.setMessage((String) object);
                 }
                 response = renderResponseWithMesssageContent(status, msgJson.toStringJson());
-
-//                response = Response.status(status)
-//                        .header("Server", Constants.OCCI_SERVER_HEADER)
-//                        .header("content", object)
-//                        .header("Accept", getAcceptedTypes())
-//                        .entity(msgJson.toStringJson())
-//                        .type(Constants.MEDIA_TYPE_JSON)
-//                        .build();
             }
 
             if (object instanceof Entity) {
@@ -599,7 +590,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         List<String> mixinsStr = new LinkedList<>();
         List<LinkJson> links = new LinkedList<>();
         resJson.setKind(kind.getScheme() + kind.getTerm());
-        resJson.setId(res.getId());
+        resJson.setId(Constants.URN_UUID_PREFIX + res.getId());
         resJson.setTitle(res.getTitle());
         resJson.setSummary(res.getSummary());
         resJson.setLocation(ConfigurationManager.getLocation(entity));
@@ -674,7 +665,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         Map<String, Object> attributes = new LinkedHashMap<>();
         kind = link.getKind();
         linkJson.setKind(kind.getScheme() + kind.getTerm());
-        linkJson.setId(link.getId());
+        linkJson.setId(Constants.URN_UUID_PREFIX + link.getId());
         linkJson.setTitle(link.getTitle());
         linkJson.setLocation(ConfigurationManager.getLocation(entity));
         actions = kind.getActions();

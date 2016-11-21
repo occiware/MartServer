@@ -18,6 +18,8 @@
  */
 package org.occiware.mart.server.servlet.facade;
 
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
+
 import javax.ws.rs.core.Response;
 import java.util.Map;
 
@@ -36,5 +38,7 @@ public abstract class AbstractDeleteQuery extends AbstractEntryPoint implements 
     @Override
     public abstract Response deleteEntity(String path, Map<String, String> attrs);
 
+    @Override
+    public abstract Response dissociateMixinFromEntities(String mixinId, String owner, InputData data, String location);
 
 }

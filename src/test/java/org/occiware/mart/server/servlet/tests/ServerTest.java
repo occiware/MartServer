@@ -263,7 +263,7 @@ public class ServerTest {
 
         try {
             testCreateResourceInputJson(); // Launch create tests resources....
-            // 1 : update attributes.
+
             System.out.println("POST Request on resource location : /f88486b7-0632-482d-a184-a9195733ddd0" );
 
             File resource1 = getResourceInputFile("/testjson/integration/update/resource1.json");
@@ -336,8 +336,23 @@ public class ServerTest {
             ex.printStackTrace();
             throw new RuntimeException(ex);
         }
+    }
+
+    @Test
+    public void testDeleteResources() {
+
+        try {
+            testCreateResourceInputJson(); // Launch create tests resources....
+
+            System.out.println("DELETE Request on collection resource location : /testlocation/" );
+            // TODO : finish integration test with delete method.
 
 
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw new RuntimeException(ex);
+        }
     }
 
 
