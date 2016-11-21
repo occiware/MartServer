@@ -130,7 +130,7 @@ public class PostQuery extends AbstractPostQuery {
 
                     // Check if location path correspond to entity registered path.
                     String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
-                    locationTmp.replace(entityId, "");
+                    locationTmp = locationTmp.replace(entityId, "");
                     String locationCompare = location.replace(entityId, "");
                     // Check if location is a category location and not an entity location.
                     if (!locationCompare.equals(locationTmp)) {
@@ -276,7 +276,7 @@ public class PostQuery extends AbstractPostQuery {
                     List<String> xocciLocations = data.getXocciLocation();
                     if (!xocciLocations.isEmpty()) {
                         for (String xocciLocation : xocciLocations) {
-                            LOGGER.info("On X-OCCI-Location: "+ xocciLocation);
+                            LOGGER.info("On X-OCCI-Location: " + xocciLocation);
                             response = Response.fromResponse(updateMixinTagAssociation(categoryId, xocciLocation)).build();
                             if (!response.getStatusInfo().equals(Response.Status.OK)) {
                                 return response;
@@ -338,7 +338,7 @@ public class PostQuery extends AbstractPostQuery {
      *
      * @param path
      * @param entity
-     * @param data InputData object, must be never null.
+     * @param data   InputData object, must be never null.
      * @return
      */
     @Override
@@ -371,11 +371,14 @@ public class PostQuery extends AbstractPostQuery {
         }
 
         Map<String, String> attrs = data.getAttrs();
-        // entity.occiRetrieve();
+
         // update attributes .
         entity = ConfigurationManager.updateAttributesToEntity(entity, attrs);
         ConfigurationManager.updateVersion(ConfigurationManager.DEFAULT_OWNER, path + entity.getId());
         entity.occiUpdate();
+        // entity.occiRetrieve();
+        // TODO : to see if this case is important to retrieve from provider the entity before returning it in response object.
+        // TODO : Another solution is to set "ok" to response and force user to get request for entity attributes updated.
 
         try {
             response = outputParser.parseResponse(entity);
@@ -387,7 +390,6 @@ public class PostQuery extends AbstractPostQuery {
     }
 
     /**
-     *
      * @param path
      * @param entities
      * @param data

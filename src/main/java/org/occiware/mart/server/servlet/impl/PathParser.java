@@ -107,8 +107,9 @@ public class PathParser {
             actionInvocationQuery = true;
         }
 
+        String pathTmp = "/" + path + "/";
         // Check if interface query.
-        if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
+        if (pathTmp.equals("/.well-known/org/ogf/occi/-/") || pathTmp.endsWith("/-/")) {
             if (location != null && data.getMixinTag() != null && !data.getMixinTag().isEmpty()) {
                 mixinTagDefinitionRequest = true;
             } else {

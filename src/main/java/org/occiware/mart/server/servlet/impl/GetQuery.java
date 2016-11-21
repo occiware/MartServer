@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.impl;
 
+import org.occiware.clouddesigner.occi.Category;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractGetQuery;
@@ -43,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
  * @author Christophe Gourdin
  */
 @Path("/")
@@ -53,28 +53,34 @@ public class GetQuery extends AbstractGetQuery {
 
     @Path("{path:.*}/")
     @GET
-    // @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
-    // @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
     @Override
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOGGER.info("Call GET method in inputQuery() for path: " + path);
+
         Response response = super.inputQuery(path, headers, request);
         if (response != null) {
             return response;
         }
+
         List<InputData> datas = inputParser.getInputDatas();
 
-        // Query interface check, the last case of this check is for query for ex: /compute/-/ where we filter for a category (kind or mixin).
-        if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
-            // Delegate to query interface method.
-            return getQueryInterface(path, headers);
-        }
-        // Normalize the path without prefix slash and suffix slash.
-        path = Utils.getPathWithoutPrefixSuffixSlash(path);
-        LOGGER.info("GET Query on path: " + path);
+
         for (InputData data : datas) {
-            String actionId = data.getAction();
-            if (actionId != null) {
+
+            PathParser pathParser = new PathParser(data, path);
+
+            // Query interface check, the last case of this check is for query for ex: /compute/-/ where we filter for a category (kind or mixin).
+            if (pathParser.isInterfQuery()) {
+                // Delegate to query interface method.
+                return getQueryInterface(path, headers);
+            }
+
+            String location = pathParser.getLocation();
+            if (location == null || location.trim().isEmpty()) {
+                location = pathParser.getPath();
+            }
+
+            if (pathParser.isActionInvocationQuery()) {
                 try {
                     response = outputParser.parseResponse("You cannot use an action with GET method.", Response.Status.BAD_REQUEST);
                     return response;
@@ -84,162 +90,86 @@ public class GetQuery extends AbstractGetQuery {
             }
 
             Entity entity;
-            String entityId;
-
+            String entityId = data.getEntityUUID();
             Map<String, String> attrs = data.getAttrs();
-            String acceptType = getAcceptType();
-            if (acceptType == null || acceptType.isEmpty()) {
-                // Default to MEDIA_TYPE_TEXT_OCCI.
-                acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
+            if (entityId == null) {
+                entityId = Utils.getUUIDFromPath(location, attrs);
             }
+            String categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
 
             // Get one entity check with uuid provided.
             // path with category/kind : http://localhost:8080/compute/uuid
             // custom location: http://localhost:8080/foo/bar/myvm/uuid
-            boolean isEntityRequest = Utils.isEntityRequest(path, attrs);
-            if (isEntityRequest && !acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
-                // Get uuid.
-                if (Utils.isEntityUUIDProvided(path, attrs)) {
-                    entityId = Utils.getUUIDFromPath(path, attrs);
-                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
-                    String pathTmp = path;
+            if (pathParser.isEntityQuery()) {
 
-
-
-                    String entityLocation = ConfigurationManager.getLocation(entity);
-                    if (pathTmp.contains(entityId)) {
-                        pathTmp = pathTmp.replace(entityId, "");
-                    }
-
-                    if (entityLocation == null) {
-                        entity = null;
-                    } else {
-                        if (entityLocation.contains(entityId)) {
-                            entityLocation = entityLocation.replace(entityId, "");
-                        }
-                        // Remove leading slash and ending slash if any.
-                        entityLocation = Utils.getPathWithoutPrefixSuffixSlash(entityLocation);
-                        pathTmp = Utils.getPathWithoutPrefixSuffixSlash(pathTmp);
-
-                        // Check if the path correspond to the entityLocation path.
-                        if (!entityLocation.equals(pathTmp)) {
-                            String categoryId = Utils.getCategoryFilterSchemeTerm(pathTmp, ConfigurationManager.DEFAULT_OWNER);
-                            if (!ConfigurationManager.isCategoryReferencedOnEntity(categoryId, entity)) {
-                                try {
-                                    response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + entityLocation, Response.Status.NOT_FOUND);
-                                    return response;
-                                } catch (ResponseParseException ex) {
-                                    throw new InternalServerErrorException(ex);
-                                }
-                            }
-                        }
-                    }
+                if (entityId == null) {
+                    entity = ConfigurationManager.getEntityFromPath(location);
 
                 } else {
-                    entity = ConfigurationManager.getEntityFromPath(path);
+                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+                    String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
+                    locationTmp = locationTmp.replace(entityId, "");
+                    locationTmp = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
+                    String locationCompare = location.replace(entityId, "");
+                    locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationCompare);
+
+                    if (entity != null && !locationCompare.equals(locationTmp) && !ConfigurationManager.isCategoryReferencedOnEntity(categoryId, entity)) {
+                        try {
+                            response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + locationTmp, Response.Status.NOT_FOUND);
+                            return response;
+                        } catch (ResponseParseException ex) {
+                            throw new InternalServerErrorException(ex);
+                        }
+                    }
                 }
-                if (entity == null) {
+
+                if (entity != null) {
+                    entity.occiRetrieve();
+
+                    if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+                        try {
+                            String locationTmp = ConfigurationManager.getLocation(entity);
+                            List<String> locations = new ArrayList<>();
+                            locations.add(locationTmp);
+                            response = outputParser.parseResponse(locations);
+                            return response;
+                        } catch (ResponseParseException ex) {
+                            // This must never go here. If that's the case this is a bug in parser.
+                            throw new InternalServerErrorException(ex);
+                        }
+                    } else {
+                        try {
+                            response = outputParser.parseResponse(entity);
+                            return response;
+                        } catch (ResponseParseException ex) {
+                            // This must never go here. If that's the case this is a bug in parser.
+                            throw new InternalServerErrorException(ex);
+                        }
+                    }
+                } else {
                     try {
                         response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
                         return response;
                     } catch (ResponseParseException ex) {
                         throw new InternalServerErrorException(ex);
                     }
-                } else {
-                    // Retrieve entity informations from provider.
-                    entity.occiRetrieve();
-                    // Entity is found, we must parse the result (on accept type media if defined in header of the query elsewhere this will be text/occi) to a response ok --> 200 object
-                    //   AND the good rendering output (text/occi, application/json etc.).
-                    try {
-                        response = outputParser.parseResponse(entity);
-                        return response;
-                    } catch (ResponseParseException ex) {
-                        // This must never go here. If that's the case this is a bug in parser.
-                        throw new InternalServerErrorException(ex);
-                    }
-
-                }
-            }
-            // case if entity request on custom path like vms/foo/bar/ (without uuid provided). 
-            if (isEntityRequest && acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST) && !Utils.isEntityUUIDProvided(path, attrs)) {
-                entity = ConfigurationManager.getEntityFromPath(path);
-                if (entity == null) {
-                    try {
-                        response = outputParser.parseResponse("you must not use the accept type " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " in this way.", Response.Status.BAD_REQUEST);
-                        return response;
-                    } catch (ResponseParseException ex) {
-                        // Must never happen if input query is ok.
-                        throw new InternalServerErrorException(ex);
-                    }
-                } else {
-                    // Retrieve entity informations from provider.
-                    entity.occiRetrieve();
-                    // Entity is found, we must parse the result (on accept type media if defined in header of the query elsewhere this will be text/occi) to a response ok --> 200 object
-                    //   AND the good rendering output (text/occi, application/json etc.).
-                    try {
-                        String location = ConfigurationManager.getLocation(entity);
-                        List<String> locations = new ArrayList<>();
-                        locations.add(location);
-                        response = outputParser.parseResponse(locations);
-                        return response;
-                    } catch (ResponseParseException ex) {
-                        // This must never go here. If that's the case this is a bug in parser.
-                        throw new InternalServerErrorException(ex);
-                    }
                 }
             }
 
-            // Case if entity request with uuid provided but accept type is text/uri-list => bad request.
-            if (isEntityRequest && acceptType.equals(Constants.MEDIA_TYPE_TEXT_URI_LIST) && Utils.isEntityUUIDProvided(path, attrs)) {
-                // To be compliant with occi specification (text/rendering and all others), it must check if uri-list is used with entity request, if this is the case ==> badrequest.
-                try {
-                    response = outputParser.parseResponse("you must not use the accept type " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " in this way.", Response.Status.BAD_REQUEST);
-                } catch (ResponseParseException ex) {
-                    // Must never happen if input query is ok.
-                    throw new InternalServerErrorException(ex);
-                }
+            if (pathParser.isCollectionQuery()) {
+                // Collections part.
+                response = getEntities(path);
                 return response;
-            }
-
-            // Collections part.
-            response = getEntities(path);
-            if (response == null) {
+            } else {
                 try {
                     response = outputParser.parseResponse("Unknown GET query type.", Response.Status.BAD_REQUEST);
+                    return response;
                 } catch (ResponseParseException ex) {
                     throw new InternalServerErrorException(ex);
                 }
             }
-
         } // End for each data.
 
-        return response;
-
-    }
-
-    /**
-     *
-     * @param path
-     * @param entityId
-     * @param headers
-     * @param request, use only for json and file upload features (use
-     * request.getReader() to retrieve json String).
-     * @return
-     */
-    @Override
-    public Response getEntity(String path, String entityId, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-
-        // Manage occi server version and other things before processing the query.
-        Response response = super.getEntity(path, entityId, headers, request);
-        // If something goes wrong, the response here is not null.
-        if (response != null) {
-            return response;
-        }
-
-        String pathMsg = "Path given : " + Constants.PATH_SEPARATOR + path + "\n "; // + PATH_SEPARATOR + pathB + PATH_SEPARATOR + id;
-        response = Response.ok().
-                entity(pathMsg).
-                header("Server", Constants.OCCI_SERVER_HEADER).build();
         return response;
     }
 
@@ -274,9 +204,6 @@ public class GetQuery extends AbstractGetQuery {
     public Response getEntities(final String path) {
         Response response;
         String acceptType = getAcceptType();
-        if (acceptType == null) {
-            acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
-        }
         List<Entity> entities;
         try {
             try {

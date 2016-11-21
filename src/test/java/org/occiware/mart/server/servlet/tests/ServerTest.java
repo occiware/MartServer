@@ -150,18 +150,32 @@ public class ServerTest {
     }
 
     @Test
-    public void getComputeResource() {
+    public void testGetResourceLink() {
+
         try {
             testCreateResourceInputJson(); // Launch create tests resources....
 
-            System.out.println("GET Request on resource location : /testlocation/" );
-            // See file: resource_location.json.
-            ContentResponse response = httpClient.newRequest("http://localhost:9090/testlocation/")  // uuid: f89486b7-0632-482d-a184-a9195733ddd9
+            System.out.println("GET Request interface /-/.");
+            ContentResponse response = httpClient.newRequest("http://localhost:9090/-/?category=network")  // uuid: f89486b7-0632-482d-a184-a9195733ddd9
                     .method(HttpMethod.GET)
                     .accept("application/json")
                     .send();
             int statusResponse = response.getStatus();
             assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+            String result = response.getContentAsString();
+            assertFalse(result.isEmpty());
+
+
+            System.out.println("GET Request on resource location : /testlocation/" );
+            // See file: resource_location.json.
+            response = httpClient.newRequest("http://localhost:9090/testlocation/")  // uuid: f89486b7-0632-482d-a184-a9195733ddd9
+                    .method(HttpMethod.GET)
+                    .accept("application/json")
+                    .send();
+            statusResponse = response.getStatus();
+            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+            result = response.getContentAsString();
+            assertFalse(result.isEmpty());
 
             // Search on an invalid location path.
             System.out.println("GET Request on resource location : /otherlocation/other2/" );
@@ -205,13 +219,13 @@ public class ServerTest {
             statusResponse = response.getStatus();
             assertTrue(statusResponse == Response.Status.OK.getStatusCode());
 
-            String result = response.getContentAsString();
+            result = response.getContentAsString();
             assertNotNull(result);
             assertFalse(result.isEmpty());
             System.out.println(result);
 
             // Test network kind.
-            System.out.println("GET Request on Network kind... http://localhost:9090/compute/");
+            System.out.println("GET Request on Network kind... http://localhost:9090/network/");
             response = httpClient.newRequest("http://localhost:9090/network/")
                     .method(HttpMethod.GET)
                     .accept("application/json")

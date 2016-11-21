@@ -79,6 +79,15 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         // check content-type header.
         contentType = Utils.findContentTypeFromHeader(headers);
         acceptType = Utils.findAcceptTypeFromHeader(headers);
+        // Default values.
+        if (contentType == null || contentType.isEmpty()) {
+            contentType = Constants.MEDIA_TYPE_TEXT_OCCI;
+        }
+        if (acceptType == null || acceptType.isEmpty()) {
+            // Default to MEDIA_TYPE_TEXT_OCCI.
+            acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
+        }
+
         inputParser = ParserFactory.build(contentType);
         outputParser = ParserFactory.build(acceptType);
         inputParser.setServerURI(uri.getBaseUri());
