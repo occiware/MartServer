@@ -57,17 +57,13 @@ public class DeleteQuery extends AbstractDeleteQuery {
     @Override
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOGGER.info("--> Call DELETE method input query for relative path mode --> " + path);
-        // Check header, load parsers, and check occi version.
         Response response = super.inputQuery(path, headers, request);
         if (response != null) {
-            // There was a badrequest, the headers are maybe malformed..
             return response;
         }
+        List<InputData> datas = inputParser.getInputDatas();
 
-        // Check if the query is not on interface query, this path is used only on GET method.
         if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
-            List<InputData> datas = inputParser.getInputDatas();
-
             boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
             if (!isMixinTagRequest) {
                 // Check if there is inputdata referencing mixintag.
@@ -91,11 +87,8 @@ public class DeleteQuery extends AbstractDeleteQuery {
         }
 
         // Normalize the path without prefix slash and suffix slash.
-        path = getPathWithoutPrefixSlash(path);
-        LOGGER.info("DELETE Query on path: " + path);
+        path = Utils.getPathWithoutPrefixSuffixSlash(path);
 
-        // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
-        List<InputData> datas = inputParser.getInputDatas();
         for (InputData data : datas) {
             String actionId = data.getAction();
             if (actionId != null) {
@@ -113,17 +106,13 @@ public class DeleteQuery extends AbstractDeleteQuery {
                 if (data.getMixinTag() != null) {
                     return deleteMixin(data.getMixinTag(), ConfigurationManager.DEFAULT_OWNER, true);
                 }
-                if (!data.getMixins().isEmpty()) {
-                    // Remove association if there is mixins or remove it if mixins tag defined without locations.
-                    for (String mixinId : data.getMixins()) {
-                        response = Response.fromResponse(deleteMixin(mixinId, ConfigurationManager.DEFAULT_OWNER, false)).build();
-                    }
-                    return response;
+
+                // Remove association if there is mixins or remove it if mixins tag defined without locations.
+                for (String mixinId : data.getMixins()) {
+                    response = Response.fromResponse(deleteMixin(mixinId, ConfigurationManager.DEFAULT_OWNER, false)).build();
                 }
-
-
+                return response;
             }
-
 
             Map<String, String> attrs = data.getAttrs();
             boolean isEntityRequest = Utils.isEntityRequest(path, attrs);

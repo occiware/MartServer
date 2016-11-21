@@ -278,9 +278,7 @@ public class Utils {
         byte[] messageDigest = md.digest(bytes);
         BigInteger number = new BigInteger(1, messageDigest);
         // prepend a zero to get a "proper" MD5 hash value
-        StringBuilder sb = new StringBuilder().append('0');
-        sb.append(number.toString(16));
-        return sb.toString();
+        return "0" + number.toString(16);
     }
 
     /**
@@ -384,7 +382,6 @@ public class Utils {
     public static String getUUIDFromPath(final String path, final Map<String, String> attr) {
         String[] uuids = path.split("/");
         String uuidToReturn = null;
-        boolean match = false;
 
         for (String uuid : uuids) {
             if (uuid.matches(REGEX_CONTROL_UUID)) {
@@ -402,22 +399,16 @@ public class Utils {
             return null;
         }
         occiCoreId = occiCoreId.replace(Constants.URN_UUID_PREFIX, "");
-
-        if (!match && occiCoreId != null && !occiCoreId.isEmpty()) {
+        if (!occiCoreId.isEmpty()) {
             String[] spls = {"/", ":"};
             for (String spl : spls) {
                 uuids = occiCoreId.split(spl);
                 for (String uuid : uuids) {
                     if (uuid.matches(REGEX_CONTROL_UUID)) {
-                        uuidToReturn = uuid;
-                        break;
+                        return uuid;
                     }
                 }
-                if (match) {
-                    break;
-                }
             }
-
         }
 
         return uuidToReturn;
@@ -593,7 +584,7 @@ public class Utils {
      * @return
      */
     public static boolean checkIfCategorySchemeTerm(String categoryFilter, String user) {
-        boolean result = false;
+
         List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(user);
         List<Mixin> mixins = ConfigurationManager.getAllConfigurationMixins(user);
         String term;
@@ -629,7 +620,7 @@ public class Utils {
             }
         }
 
-        return result;
+        return false;
     }
 
     /**
@@ -675,65 +666,6 @@ public class Utils {
             }
         }
         return mixinModel;
-    }
-
-    /**
-     *
-     * @param occiAttributes
-     * @param kind
-     * @param mixins
-     * @param action
-     * @return true if all attributes are referenced on kind /and/or mixins.
-     */
-    public static boolean checkIfAttributesExistOnCategory(Map<String, String> occiAttributes, Kind kind, List<Mixin> mixins, Action action) {
-        List<Attribute> attrsKind = kind.getAttributes();
-        List<Attribute> attrsMixin;
-        List<Attribute> attrsAction;
-
-        // TODO : Refactor this method. There is a hic with occi.compute.state.message attribute.
-//        String attrName;
-//        boolean result = true;
-//        boolean allFound = false;
-//        if (occiAttributes.isEmpty()) {
-//            return true;
-//        }
-//        for (Attribute attr : attrsKind) {
-//            attrName = attr.getName();
-//            result = occiAttributes.containsKey(attrName);
-//            if (!result) {
-//                break;
-//            }
-//        }
-//
-//        if (!result) {
-//            // Check the applied mixins.
-//            for (Mixin mixin : mixins) {
-//                attrsMixin = mixin.getAttributes();
-//                for (Attribute attr : attrsMixin) {
-//                    attrName = attr.getName();
-//                    result = occiAttributes.containsKey(attrName);
-//                    if (!result) {
-//                        break;
-//                    }
-//                }
-//                if (!result) {
-//                    break;
-//                }
-//            }
-//        }
-//        // Check on action.
-//        if (!result && action != null) {
-//           attrsAction = action.getAttributes();
-//           for (Attribute attr : attrsAction) {
-//               attrName = attr.getName();
-//               result = occiAttributes.containsKey(attrName);
-//               if (!result) {
-//                   break;
-//               }
-//           }
-//        }
-        // return result;
-        return true;
     }
 
     public static synchronized int getUniqueInt() {
@@ -844,7 +776,7 @@ public class Utils {
      * @return a non null number object.
      */
     public static Number parseNumber(String str, String instanceClassType) {
-        Number number = null;
+        Number number;
         if (instanceClassType == null) {
 
             try {
@@ -937,5 +869,21 @@ public class Utils {
         }
         contentStr = content.toString();
         return contentStr;
+    }
+
+    /**
+     *
+     * @param path
+     * @return
+     */
+    public static String getPathWithoutPrefixSuffixSlash(final String path) {
+        String pathTmp = path;
+        if (path.startsWith("/")) {
+            pathTmp = pathTmp.substring(1);
+        }
+        if (path.endsWith("/")) {
+            pathTmp = pathTmp.substring(0, path.length() - 1);
+        }
+        return pathTmp;
     }
 }

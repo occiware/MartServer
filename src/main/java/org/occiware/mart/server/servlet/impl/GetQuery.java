@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.impl;
 
+import org.occiware.clouddesigner.occi.Category;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractGetQuery;
@@ -57,13 +58,12 @@ public class GetQuery extends AbstractGetQuery {
     // @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
     @Override
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
-        Response response;
         LOGGER.info("Call GET method in inputQuery() for path: " + path);
-        response = super.inputQuery(path, headers, request);
+        Response response = super.inputQuery(path, headers, request);
         if (response != null) {
-            // May have a malformed query.
             return response;
         }
+        List<InputData> datas = inputParser.getInputDatas();
 
         // Query interface check, the last case of this check is for query for ex: /compute/-/ where we filter for a category (kind or mixin).
         if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
@@ -71,10 +71,8 @@ public class GetQuery extends AbstractGetQuery {
             return getQueryInterface(path, headers);
         }
         // Normalize the path without prefix slash and suffix slash.
-        path = getPathWithoutPrefixSlash(path);
+        path = Utils.getPathWithoutPrefixSuffixSlash(path);
         LOGGER.info("GET Query on path: " + path);
-
-        List<InputData> datas = inputParser.getInputDatas();
         for (InputData data : datas) {
             String actionId = data.getAction();
             if (actionId != null) {
@@ -120,18 +118,23 @@ public class GetQuery extends AbstractGetQuery {
                         if (entityLocation.contains(entityId)) {
                             entityLocation = entityLocation.replace(entityId, "");
                         }
+                        // Remove leading slash and ending slash if any.
+                        entityLocation = Utils.getPathWithoutPrefixSuffixSlash(entityLocation);
+                        pathTmp = Utils.getPathWithoutPrefixSuffixSlash(pathTmp);
+
                         // Check if the path correspond to the entityLocation path.
                         if (!entityLocation.equals(pathTmp)) {
-                            try {
-                                response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + entityLocation, Response.Status.NOT_FOUND);
-                                return response;
-                            } catch (ResponseParseException ex) {
-                                throw new InternalServerErrorException(ex);
+                            String categoryId = Utils.getCategoryFilterSchemeTerm(pathTmp, ConfigurationManager.DEFAULT_OWNER);
+                            if (!ConfigurationManager.isCategoryReferencedOnEntity(categoryId, entity)) {
+                                try {
+                                    response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + entityLocation, Response.Status.NOT_FOUND);
+                                    return response;
+                                } catch (ResponseParseException ex) {
+                                    throw new InternalServerErrorException(ex);
+                                }
                             }
                         }
                     }
-
-
 
                 } else {
                     entity = ConfigurationManager.getEntityFromPath(path);
@@ -275,7 +278,7 @@ public class GetQuery extends AbstractGetQuery {
         if (acceptType == null) {
             acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
         }
-        List<Entity> entities = new ArrayList<>();
+        List<Entity> entities;
         try {
             try {
                 entities = getEntityCollection(path);

@@ -243,6 +243,90 @@ public class ServerTest {
 
     }
 
+
+    @Test
+    public void testUpdateResources() {
+
+        try {
+            testCreateResourceInputJson(); // Launch create tests resources....
+            // 1 : update attributes.
+            System.out.println("POST Request on resource location : /f88486b7-0632-482d-a184-a9195733ddd0" );
+
+            File resource1 = getResourceInputFile("/testjson/integration/update/resource1.json");
+            ContentResponse response = httpClient.newRequest("localhost", 9090)
+                    .accept("application/json")
+                    .method(HttpMethod.POST)
+                    .file(resource1.toPath(), "application/json")
+                    .agent("martclient")
+                    .send();
+            int statusResponse = response.getStatus();
+            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+
+            // Check GET :
+            System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
+            response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
+                    .method(HttpMethod.GET)
+                    .accept("application/json")
+                    .send();
+            statusResponse = response.getStatus();
+
+            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+            String result = response.getContentAsString();
+            assertNotNull(result);
+            assertFalse(result.isEmpty());
+            assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
+            System.out.println(result);
+
+            // 2 : associate a mixin tag to a resource.
+            File mixintagasso = getResourceInputFile("/testjson/integration/update/mixintag_asso.json");
+            response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
+                    .accept("application/json")
+                    .method(HttpMethod.POST)
+                    .file(mixintagasso.toPath(), "application/json")
+                    .agent("martclient")
+                    .send();
+            statusResponse = response.getStatus();
+            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+
+            System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
+            response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
+                    .method(HttpMethod.GET)
+                    .accept("application/json")
+                    .send();
+            statusResponse = response.getStatus();
+
+            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+            result = response.getContentAsString();
+            assertNotNull(result);
+            assertFalse(result.isEmpty());
+            assertTrue(result.contains("\"http://occiware.org/occi/tags#my_mixin2\""));
+            System.out.println(result);
+
+
+
+            // 3 : action invocation.
+            File action_invocation = getResourceInputFile("/testjson/integration/update/action_invocation_test.json");
+            response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop")
+                    .accept("application/json")
+                    .method(HttpMethod.POST)
+                    .file(action_invocation.toPath(), "application/json")
+                    .agent("martclient")
+                    .send();
+            statusResponse = response.getStatus();
+            result = response.getContentAsString();
+
+            // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
+            assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw new RuntimeException(ex);
+        }
+
+
+    }
+
+
     /**
      * Load file resource test (for json or others files).
      *

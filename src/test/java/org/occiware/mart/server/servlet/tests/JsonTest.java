@@ -78,44 +78,16 @@ public class JsonTest {
     }
 
     private File getJsonSchemaControl() {
-        InputStream in = null;
-        // File inputSchemaJsonFile = new File(this.getClass().getResource("/jsonschemas/OCCI-schema.json").getFile());
         File inputSchemaJsonFile = new File(this.getClass().getResource("/jsonschemas/OCCI-schema.json").getFile());
         System.out.println(inputSchemaJsonFile.getAbsolutePath());
-//        try {
-//          in = new FileInputStream(inputSchemaJsonFile);
-//        } catch (FileNotFoundException ex) {
-//        }
-//        try {
-//            List<String> lines = IOUtils.readLines(in, "UTF8");
-//            for (String line : lines ) {
-//                System.out.println("Line: "+ line);
-//            }
-//        } catch (IOException ex) {
-//        }
         assertNotNull(inputSchemaJsonFile);
         return inputSchemaJsonFile;
     }
 
     private File getJsonResourceOneInput() {
-        InputStream in = null;
         File inputJsonFile = new File(this.getClass().getResource("/testjson/integration/creation/resource1.json").getFile());
         System.out.println(inputJsonFile.getAbsolutePath());
-//        try {
-//            in = new FileInputStream(inputJsonFile);
-//        } catch (FileNotFoundException ex) {
-//        }
-//        
-        // in = this.getClass().getResourceAsStream("test/resources/testjson/resources.json");
         assertNotNull(inputJsonFile);
-//        try {
-//            List<String> lines = IOUtils.readLines(in, "UTF8");
-//            for (String line : lines ) {
-//                System.out.println("Line: "+ line);
-//            }
-//        } catch (IOException ex) {
-//        }
-
         return inputJsonFile;
     }
 
@@ -182,7 +154,6 @@ public class JsonTest {
     }
 
     private File getJsonResourceInput(String path) {
-        InputStream in = null;
         File inputJsonFile = new File(this.getClass().getResource(path).getFile());
         System.out.println(inputJsonFile.getAbsolutePath());
         return inputJsonFile;

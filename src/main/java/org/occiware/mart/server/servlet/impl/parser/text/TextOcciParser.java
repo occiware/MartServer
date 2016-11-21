@@ -94,7 +94,7 @@ public class TextOcciParser extends AbstractRequestParser {
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_MIXIN)) {
                             if (matcher.group(Constants.GROUP_LOCATION) != null) {
                                 // is a mixin tag.
-                                data.setMixinTagLocation(matcher.group(Constants.GROUP_LOCATION));
+                                data.setLocation(matcher.group(Constants.GROUP_LOCATION));
                                 data.setMixinTag(scheme + term);
 
                             } else {
@@ -114,6 +114,10 @@ public class TextOcciParser extends AbstractRequestParser {
             data.setMixins(mixinsToAdd);
         }
         // Update the data in the list of input datas. for this parser, there is only one inputdata.
+        updateInputDatas();
+    }
+
+    private void updateInputDatas() {
         List<InputData> inputDatas = getInputDatas();
 
         if (inputDatas.isEmpty()) {
@@ -149,7 +153,7 @@ public class TextOcciParser extends AbstractRequestParser {
                     for (String valueTmp : valuesTmp) {
                         // Parse the value:
                         String[] attr = valueTmp.split("=");
-                        if (attr != null && attr.length > 1) {
+                        if (attr.length > 1) {
                             attr[0] = attr[0].replace("\"", "");
                             if (attr[0].startsWith(" ")) {
                                 attr[0] = attr[0].substring(1); // remove starting space.
@@ -174,15 +178,7 @@ public class TextOcciParser extends AbstractRequestParser {
         }
         data.setAttrs(attrs);
         // Update the data in the list of input datas. for this parser, there is only one inputdata.
-        List<InputData> inputDatas = getInputDatas();
-
-        if (inputDatas.isEmpty()) {
-            inputDatas.add(data);
-            setInputDatas(inputDatas);
-        } else {
-            inputDatas.clear();
-            inputDatas.add(data);
-        }
+        updateInputDatas();
     }
 
     /**
@@ -196,43 +192,26 @@ public class TextOcciParser extends AbstractRequestParser {
     @Override
     public Response parseResponse(Object object, Response.Status status) throws ResponseParseException {
         Response response = null;
+        String msg;
         // Case 1 : Object is a Response object.
         if (object instanceof Response) {
             if (status != null && status.equals(Response.Status.OK)) {
-                response = Response.fromResponse((Response) object)
-                        .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .header("Accept", getAcceptedTypes())
-                        .type(Constants.MEDIA_TYPE_TEXT_OCCI)
-                        .entity("OK \n")
-                        .status(status)
-                        .build();
+                msg = "ok \n";
+
+                response = renderObjResponse((Response) object, status, msg);
             } else {
-                response = Response.fromResponse((Response) object)
-                        .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .header("Accept", getAcceptedTypes())
-                        .type(Constants.MEDIA_TYPE_TEXT_OCCI)
-                        .status(status)
-                        .build();
+                msg = "";
+                response = renderObjResponse((Response) object, status, msg);
             }
         }
         // Case 2 : Object is a String.
         if (object instanceof String) {
             if (status != null && status.equals(Response.Status.OK)) {
-                response = Response.status(status)
-                        .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .header("content", object)
-                        .header("Accept", getAcceptedTypes())
-                        .entity("OK \n")
-                        .type(Constants.MEDIA_TYPE_TEXT_OCCI)
-                        .build();
+                msg = "ok \n";
+                response = renderObjResponse(msg, status);
+
             } else {
-                response = Response.status(status)
-                        .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .header("content", object)
-                        .header("Accept", getAcceptedTypes())
-                        .entity(object)
-                        .type(Constants.MEDIA_TYPE_TEXT_OCCI)
-                        .build();
+                response = renderObjResponse(object, status);
             }
 
         }
@@ -270,7 +249,7 @@ public class TextOcciParser extends AbstractRequestParser {
                 Response.ResponseBuilder responseBuilder = Response.status(status)
                         .header("Server", Constants.OCCI_SERVER_HEADER)
                         .header("Accept", getAcceptedTypes())
-                        .entity("OK \n")
+                        .entity("ok \n")
                         .type(Constants.MEDIA_TYPE_TEXT_OCCI);
                 for (String location : locations) {
                     String absLocation = getServerURI().toString() + location;
@@ -295,6 +274,30 @@ public class TextOcciParser extends AbstractRequestParser {
 
     }
 
+    private Response renderObjResponse(Response object, Response.Status status, String msg) {
+        Response response;
+        response = Response.fromResponse(object)
+                .header("Server", Constants.OCCI_SERVER_HEADER)
+                .header("Accept", getAcceptedTypes())
+                .type(Constants.MEDIA_TYPE_TEXT_OCCI)
+                .entity(msg)
+                .status(status)
+                .build();
+        return response;
+    }
+
+    private Response renderObjResponse(Object object, Response.Status status) {
+        Response response;
+        response = Response.status(status)
+                .header("Server", Constants.OCCI_SERVER_HEADER)
+                .header("content", object)
+                .header("Accept", getAcceptedTypes())
+                .type(Constants.MEDIA_TYPE_TEXT_OCCI)
+                .entity(object)
+                .build();
+        return response;
+    }
+
     /**
      * Build interface /-/ for accept type : text/occi.
      *
@@ -316,29 +319,23 @@ public class TextOcciParser extends AbstractRequestParser {
         sb.append(renderOcciMixins(mixins, true));
 
         String msg = sb.toString();
-        if (msg != null && !msg.isEmpty()) {
+        if (!msg.isEmpty()) {
             if (msg.getBytes().length < 8000) {
-                response = Response.ok().entity("OK \n")
+
+                // response = renderObjResponse("ok \n", Response.Status.OK);
+                response = Response.ok().entity("ok \n")
                         .header("Server", Constants.OCCI_SERVER_HEADER)
                         .header("interface", sb.toString())
                         .type(Constants.MEDIA_TYPE_TEXT_OCCI)
                         .header("Accept", getAcceptedTypes())
                         .build();
             } else {
-                response = Response.ok().entity("OK \n")
-                        .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .entity(sb.toString())
-                        .type(Constants.MEDIA_TYPE_TEXT_OCCI)
-                        .header("Accept", getAcceptedTypes())
-                        .build();
+                response = renderObjResponse(sb.toString(), Response.Status.OK);
             }
-
         } else {
-
             // May not be called.
             response = Response.noContent().build();
         }
-
         return response;
     }
 
@@ -354,20 +351,7 @@ public class TextOcciParser extends AbstractRequestParser {
 
         for (Kind kind : kinds) {
             if (!kind.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
-                sb.append(kind.getTerm()).append(";").append(Constants.CRLF)
-                        .append("scheme=\"").append(kind.getScheme()).append("\";").append(Constants.CRLF)
-                        .append("class=\"kind\"").append(";");
-                if (detailed) {
-                    sb.append(Constants.CRLF);
-                    sb.append("title=\"").append(kind.getTitle()).append('\"').append(";").append(Constants.CRLF);
-                    Kind parent = kind.getParent();
-                    if (parent != null) {
-                        sb.append("rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"').append(";").append(Constants.CRLF);
-                    }
-                    sb.append("location=\"").append(ConfigurationManager.getLocation(kind)).append('\"').append(";").append(Constants.CRLF);
-                    appendAttributes(sb, kind.getAttributes());
-                    appendActions(sb, kind.getActions());
-                }
+                renderOcciKind(kind, detailed, sb);
             }
         }
         return sb;
@@ -383,29 +367,41 @@ public class TextOcciParser extends AbstractRequestParser {
     private StringBuilder renderOcciMixins(List<Mixin> mixins, boolean detailed) {
         StringBuilder sb = new StringBuilder();
         for (Mixin mixin : mixins) {
-            sb.append(mixin.getTerm()).append(";").append(Constants.CRLF)
-                    .append("scheme=\"").append(mixin.getScheme()).append("\";").append(Constants.CRLF)
-                    .append("class=\"mixin\"").append(";");
-            if (detailed) {
-                sb.append(Constants.CRLF);
-                sb.append("title=\"").append(mixin.getTitle()).append('\"').append(";").append(Constants.CRLF);
-                List<Mixin> mixinsDep = mixin.getDepends();
-                if (!mixinsDep.isEmpty()) {
-                    sb.append("rel=\"");
-                    String sep = "";
-                    for (Mixin md : mixinsDep) {
-                        sb.append(sep).append(md.getScheme()).append(md.getTerm());
-                        sep = " ";
-                    }
-                    sb.append('\"').append(";").append(Constants.CRLF);
-                }
-                sb.append("location=\"").append(ConfigurationManager.getLocation(mixin)).append('\"').append(";").append(Constants.CRLF);
-                appendAttributes(sb, mixin.getAttributes());
-                appendActions(sb, mixin.getActions());
-            }
+            renderOcciMixin(detailed, sb, mixin);
 
         }
         return sb;
+    }
+
+    private void renderOcciMixin(boolean detailed, StringBuilder sb, Mixin mixin) {
+        sb.append(mixin.getTerm()).append(";").append(Constants.CRLF)
+                .append("scheme=\"").append(mixin.getScheme()).append("\";").append(Constants.CRLF)
+                .append("class=\"mixin\"").append(";");
+        if (detailed) {
+            sb.append(Constants.CRLF);
+            sb.append("title=\"").append(mixin.getTitle()).append('\"').append(";").append(Constants.CRLF);
+            List<Mixin> mixinsDep = mixin.getDepends();
+            if (!mixinsDep.isEmpty()) {
+                sb.append("rel=\"");
+                String sep = "";
+                for (Mixin md : mixinsDep) {
+                    sb.append(sep).append(md.getScheme()).append(md.getTerm());
+                    sep = " ";
+                }
+                sb.append('\"').append(";").append(Constants.CRLF);
+            }
+            appendCategoryLocation(sb, ConfigurationManager.getLocation(mixin));
+            appendAttributes(sb, mixin.getAttributes());
+            appendActions(sb, mixin.getActions());
+        }
+    }
+
+    private void appendCategoryLocation(StringBuilder sb, String location) {
+        sb.append("location=\"");
+        sb.append(location);
+        sb.append('\"');
+        sb.append(";");
+        sb.append(Constants.CRLF);
     }
 
     /**
@@ -521,15 +517,15 @@ public class TextOcciParser extends AbstractRequestParser {
 
         // Convert all actions to links.
         javax.ws.rs.core.Link[] links = renderActionsLink(entity, absoluteEntityLocation);
-
+        String msg = "ok \n";
         response = Response.status(status)
                 .header("Server", Constants.OCCI_SERVER_HEADER)
                 .header(Constants.CATEGORY, categories)
                 .header(Constants.X_OCCI_ATTRIBUTE, renderAttributes(entity))
                 .header(Constants.X_OCCI_LOCATION, renderXOCCILocationAttr(entity))
-                .type(Constants.MEDIA_TYPE_TEXT_OCCI)
                 .header("Accept", getAcceptedTypes())
-                .entity("OK")
+                .type(Constants.MEDIA_TYPE_TEXT_OCCI)
+                .entity(msg)
                 .links(links)
                 .build();
         return response;
@@ -544,8 +540,14 @@ public class TextOcciParser extends AbstractRequestParser {
      */
     private String renderCategory(Kind kind, boolean detailed) {
         StringBuilder sb = new StringBuilder();
+
+        renderOcciKind(kind, detailed, sb);
+        return sb.toString();
+    }
+
+    private void renderOcciKind(Kind kind, boolean detailed, StringBuilder sb) {
         sb.append(kind.getTerm()).append(";").append(Constants.CRLF)
-                .append("scheme=\"").append(kind.getScheme()).append("\"").append(";").append(Constants.CRLF)
+                .append("scheme=\"").append(kind.getScheme()).append("\";").append(Constants.CRLF)
                 .append("class=\"kind\"").append(";");
         if (detailed) {
             sb.append(Constants.CRLF);
@@ -554,11 +556,10 @@ public class TextOcciParser extends AbstractRequestParser {
             if (parent != null) {
                 sb.append("rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"').append(";").append(Constants.CRLF);
             }
-            sb.append("location=\"").append(ConfigurationManager.getLocation(kind)).append('\"').append(";").append(Constants.CRLF);
+            appendCategoryLocation(sb, ConfigurationManager.getLocation(kind));
             appendAttributes(sb, kind.getAttributes());
             appendActions(sb, kind.getActions());
         }
-        return sb.toString();
     }
 
     /**
@@ -571,26 +572,7 @@ public class TextOcciParser extends AbstractRequestParser {
     private String renderCategory(Mixin mixin, boolean detailed) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(mixin.getTerm()).append(";").append(Constants.CRLF)
-                .append("scheme=\"").append(mixin.getScheme()).append("\";").append(Constants.CRLF)
-                .append("class=\"mixin\"").append(";");
-        if (detailed) {
-            sb.append(Constants.CRLF);
-            sb.append("title=\"").append(mixin.getTitle()).append('\"').append(";").append(Constants.CRLF);
-            List<Mixin> mixinsDep = mixin.getDepends();
-            if (!mixinsDep.isEmpty()) {
-                sb.append("rel=\"");
-                String sep = "";
-                for (Mixin md : mixinsDep) {
-                    sb.append(sep).append(md.getScheme()).append(md.getTerm());
-                    sep = " ";
-                }
-                sb.append('\"').append(";").append(Constants.CRLF);
-            }
-            sb.append("location=\"").append(ConfigurationManager.getLocation(mixin)).append('\"').append(";").append(Constants.CRLF);
-            appendAttributes(sb, mixin.getAttributes());
-            appendActions(sb, mixin.getActions());
-        }
+        renderOcciMixin(detailed, sb, mixin);
 
         return sb.toString();
     }

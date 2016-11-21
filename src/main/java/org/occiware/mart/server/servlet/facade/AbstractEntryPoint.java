@@ -160,23 +160,6 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
                                 hasError = true;
                             }
                         }
-
-//                        if (!hasError && !Utils.checkIfMixinAppliedToKind(mixinsModel, kindModel)) {
-//                            error += " \n ";
-//                            error += "Some mixins doesnt apply to kind : " + data.getKind();
-//                            hasError = true;
-//                        }
-
-                        if (!hasError) {
-
-                            if (!Utils.checkIfAttributesExistOnCategory(data.getAttrs(), kindModel, mixinsModel, actionModel)) {
-                                error += " \n ";
-                                error += "Some attributes doesnt exist on kind and mixins : " + data.getKind();
-                                hasError = true;
-                            }
-
-                        }
-
                     }
                 }
                 if (hasError) {
@@ -297,20 +280,5 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
 
     }
 
-    /**
-     *
-     * @param path
-     * @return
-     */
-    public String getPathWithoutPrefixSlash(final String path) {
-        String pathTmp = path;
-        if (path.startsWith("/")) {
-            pathTmp = pathTmp.substring(1);
-        }
-        if (path.endsWith("/")) {
-            pathTmp = pathTmp.substring(0, path.length() - 1);
-        }
-        return pathTmp;
-    }
 
 }

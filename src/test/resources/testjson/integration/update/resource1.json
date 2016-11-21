@@ -1,0 +1,17 @@
+{
+  "resources": [
+    {
+      "id": "urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0",
+      "title": "other compute 1 title",
+      "summary": "other My compute",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+      "location":"/f88486b7-0632-482d-a184-a9195733ddd0",
+      "attributes": {
+        "occi.compute.speed": 5.0,
+        "occi.compute.memory": 4.1,
+        "occi.compute.cores": 4,
+        "occi.compute.state" : "inactive"
+      }
+    }
+  ]
+}

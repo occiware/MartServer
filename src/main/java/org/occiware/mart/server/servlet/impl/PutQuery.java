@@ -54,41 +54,28 @@ public class PutQuery extends AbstractPutQuery {
      * Create or replace input point, this method is for creating entity with a
      * relative path like '/foo/bar/uuid'.
      *
-     * @param path
-     * @param headers
-     * @param request
+     * @param path object location path.
+     * @param headers http headers
+     * @param request http request object
      * @return
      */
     @Override
     @Path("{path:.*}")
     @PUT
-//    @Consumes({Constants.MEDIA_TYPE_TEXT_OCCI, Constants.MEDIA_TYPE_TEXT_URI_LIST})
-//    @Produces(Constants.MEDIA_TYPE_TEXT_OCCI)
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
+        LOGGER.info("--> Call PUT method input query for path : " + path);
 
-        LOGGER.info("--> Call CREATE method input query for relative path mode --> " + path);
-        // Check header, load parsers, and check occi version.
         Response response = super.inputQuery(path, headers, request);
         if (response != null) {
-            // There was a badrequest, the headers are maybe malformed..
             return response;
         }
         List<InputData> datas = inputParser.getInputDatas();
-        // Check if the query is not on interface query, this path is used only on GET method.
-        // One case is authorized here, if mixinTag definition.
-        boolean hasMixinTag = false;
-        if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
-            // Check the input datas, if one mixin tag is defined on the first inputdata, we define the mixintag (this must have location field in inputdata).
 
-            for (InputData data : datas) {
-                if (data.getMixinTag() != null) {
-                    // Has mixin tag we continue so.
-                    hasMixinTag = true;
-                    break;
-                }
-            }
-            if (!hasMixinTag) {
+        for (InputData data : datas) {
 
+            PathParser pathParser = new PathParser(data, path);
+
+            if (pathParser.isInterfQuery()) {
                 try {
                     response = outputParser.parseResponse("you cannot use interface query on PUT method", Response.Status.BAD_REQUEST);
                     return response;
@@ -96,23 +83,13 @@ public class PutQuery extends AbstractPutQuery {
                     throw new InternalServerErrorException(ex);
                 }
             }
-        }
-        // Normalize the path without prefix slash and suffix slash.
-        path = getPathWithoutPrefixSlash(path);
 
-        LOGGER.info("PUT Query on path: " + path);
-
-        // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
-        for (InputData data : datas) {
-
-            String location = data.getLocation(); // Location where the resource is on, this override path if necessary.
+            String location = pathParser.getLocation();
             if (location == null || location.trim().isEmpty()) {
-                location = path;
-            } else {
-                location = getPathWithoutPrefixSlash(location);
+                location = pathParser.getPath();
             }
 
-            if (data.getAction() != null) {
+            if (pathParser.isActionInvocationQuery()) {
                 try {
                     response = outputParser.parseResponse("you cannot use an action with PUT method", Response.Status.BAD_REQUEST);
                     return response;
@@ -123,19 +100,8 @@ public class PutQuery extends AbstractPutQuery {
 
             String kind = data.getKind();
             List<String> mixins = data.getMixins();
-            String mixinTag = data.getMixinTag();
-            boolean isMixinTag = false;
-            // If the path is a category and a mixin tag 
-            if (mixinTag != null) {
-                isMixinTag = true;
-            } else {
-                // Check the path.
-                if (Utils.isMixinTagRequest(location, ConfigurationManager.DEFAULT_OWNER)) {
-                    isMixinTag = true;
-                }
-            }
 
-            if (kind == null && (mixins == null || mixins.isEmpty()) && !isMixinTag) {
+            if (kind == null && (mixins == null || mixins.isEmpty()) && !pathParser.isMixinTagDefinitionRequest()) {
                 try {
                     response = outputParser.parseResponse("No category provided !", Response.Status.BAD_REQUEST);
                     return response;
@@ -144,28 +110,29 @@ public class PutQuery extends AbstractPutQuery {
                 }
             }
 
-            // Check if the query is a create/overwrite mixin tag definition.
-            if (isMixinTag) {
-                LOGGER.info("Define or overwrite mixin tag definitions");
-                response = defineMixinTag(data, location);
-                continue;
-            }
-
-            String entityId = data.getEntityUUID();
-            if (entityId == null) {
-                entityId = Utils.getUUIDFromPath(location, data.getAttrs());
-                // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
-            }
-
-            if (kind != null) {
-                String relativePath = location;
-
-                if (entityId != null && location.contains(entityId)) {
-                    relativePath = location.replace(entityId, "");
+            if (pathParser.isEntityQuery()) {
+                String entityId = data.getEntityUUID();
+                if (entityId == null) {
+                    entityId = Utils.getUUIDFromPath(location, data.getAttrs());
+                    // if entityId is null here, no uuid provided for this entity so createEntity method will create a new uuid for future use..
                 }
 
-                response = createEntity(relativePath, entityId, kind, mixins, data.getAttrs());
+                if (kind != null) {
+                    String relativePath = location;
+
+                    if (entityId != null && location.contains(entityId)) {
+                        relativePath = location.replace(entityId, "");
+                    }
+
+                    response = createEntity(relativePath, entityId, kind, mixins, data.getAttrs());
+                }
             }
+
+            if (pathParser.isMixinTagDefinitionRequest()) {
+                LOGGER.info("Define a mixin tag : " + data.getMixinTag());
+                defineMixinTag(data, location);
+            }
+
         } // End for each inputdatas.
         if (datas.isEmpty()) {
             try {
@@ -340,7 +307,7 @@ public class PutQuery extends AbstractPutQuery {
         Response response;
         String mixinTag = data.getMixinTag();
         LOGGER.info("Define mixin tag : " + mixinTag);
-        String mixinLocation = data.getMixinTagLocation();
+        String mixinLocation = data.getLocation();
         String title = data.getMixinTagTitle();
         List<String> xocciLocations = data.getXocciLocation();
         try {
@@ -402,13 +369,6 @@ public class PutQuery extends AbstractPutQuery {
                 .type(getContentType())
                 .header("Accept", getAcceptType())
                 .build();
-//        } catch (URISyntaxException ex) {
-//            response = Response.created(getUri().getAbsolutePath())
-//                    .header("Server", Constants.OCCI_SERVER_HEADER)
-//                    .type(getContentType())
-//                    .header("Accept", getAcceptType())
-//                    .build();
-//        }
 
         return response;
     }

@@ -52,12 +52,9 @@ public class InputData {
      */
     private String entityUUID = null;
 
-    // For mixin association and mixin user tag.
-    private String mixinTagLocation = null;
     // Mixin tag scheme+term.
     private String mixinTag = null;
     private String mixinTagTitle = null;
-
     private List<String> xocciLocation = null;
     /**
      * Location of a resource/link or a mixin tag.
@@ -108,13 +105,7 @@ public class InputData {
         this.mixins = mixins;
     }
 
-    public String getMixinTagLocation() {
-        return mixinTagLocation;
-    }
 
-    public void setMixinTagLocation(String mixinTagLocation) {
-        this.mixinTagLocation = mixinTagLocation;
-    }
 
 
     public String getAction() {

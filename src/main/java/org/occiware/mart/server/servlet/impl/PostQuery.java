@@ -53,27 +53,10 @@ public class PostQuery extends AbstractPostQuery {
     @Override
     public Response inputQuery(@PathParam("path") String path, @Context HttpHeaders headers, @Context HttpServletRequest request) {
         LOGGER.info("--> Call POST method input query for relative path mode --> " + path);
-        // Check header, load parsers, and check occi version.
         Response response = super.inputQuery(path, headers, request);
         if (response != null) {
-            // There was a badrequest, the headers are maybe malformed..
             return response;
         }
-
-        // Check if the query is not on interface query, this path is used only on GET method.
-        if (path.equals("-/") || path.equals(".well-known/org/ogf/occi/-/") || path.endsWith("/-/")) {
-            try {
-                response = outputParser.parseResponse("you cannot use interface query on POST method", Response.Status.BAD_REQUEST);
-                return response;
-            } catch (ResponseParseException ex) {
-                throw new InternalServerErrorException(ex);
-            }
-        }
-
-        // Normalize the path without prefix slash and suffix slash.
-        path = getPathWithoutPrefixSlash(path);
-        LOGGER.info("POST Query on path: " + path);
-
         if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
             try {
                 response = outputParser.parseResponse("You cannot use " + Constants.MEDIA_TYPE_TEXT_URI_LIST + " on POST method", Response.Status.BAD_REQUEST);
@@ -82,43 +65,43 @@ public class PostQuery extends AbstractPostQuery {
                 throw new InternalServerErrorException(ex);
             }
         }
-        // For each data block received on input (only one for text/occi or text/plain, but could be multiple for application/json.
         List<InputData> datas = inputParser.getInputDatas();
+
         for (InputData data : datas) {
-            boolean isActionPost = data.getAction() != null && !data.getAction().isEmpty();
-            if (isActionPost && inputParser.getParameter("action") == null) {
+
+            PathParser pathParser = new PathParser(data, path);
+
+            if (pathParser.isInterfQuery()) {
                 try {
-                    response = outputParser.parseResponse("you forgot the parameter ?action=action term", Response.Status.BAD_REQUEST);
+                    response = outputParser.parseResponse("you cannot use interface query on POST method", Response.Status.BAD_REQUEST);
                     return response;
                 } catch (ResponseParseException ex) {
                     throw new InternalServerErrorException(ex);
                 }
             }
 
-            Map<String, String> attrs = data.getAttrs();
-            boolean isEntityUUIDProvided = Utils.isEntityUUIDProvided(path, attrs);
-            String entityUUID = Utils.getUUIDFromPath(path, attrs);
-
-
-            // Check if uuid is set on path... and replace path without entityuuid.
-            if (Utils.isEntityUUIDProvided(path, new HashMap<>())) {
-                // UUID is set on path.
-                path = path.replace(entityUUID, "");
+            String location = pathParser.getLocation();
+            if (location == null || location.trim().isEmpty()) {
+                location = pathParser.getPath();
             }
-            String categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
 
-            // actionId ==> scheme + term.
             String actionId = data.getAction();
+            Map<String, String> attrs = data.getAttrs();
             List<Entity> entities;
             Entity entity;
+            String categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
 
-
-            // Action part.
-            if (isActionPost) {
-
-                // Check if this action exist.
+            if (pathParser.isActionInvocationQuery()) {
+                // Check if action exist on extensions and if the parameter ?action=myaction is set.
+                if (inputParser.getParameter("action") == null) {
+                    try {
+                        response = outputParser.parseResponse("you forgot the parameter ?action=action term", Response.Status.BAD_REQUEST);
+                        return response;
+                    } catch (ResponseParseException ex) {
+                        throw new InternalServerErrorException(ex);
+                    }
+                }
                 if (ConfigurationManager.getExtensionForAction(ConfigurationManager.DEFAULT_OWNER, actionId) == null) {
-                    // Cant find the action on referenced extension.
                     try {
                         response = outputParser.parseResponse("Action : " + actionId + " not found on used extension.", Response.Status.BAD_REQUEST);
                         return response;
@@ -127,57 +110,69 @@ public class PostQuery extends AbstractPostQuery {
                     }
                 }
 
-                // It's an action query on entity or on entity collection.
-                if (categoryId != null && !isEntityUUIDProvided) {
-                    // This is a collection action.
-                    LOGGER.info("Executing action: " + data.getAction() + " on Category: " + categoryId + " collection.");
-                    // Load all entities for this category.
-                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
-
-                    response = executeActionsOnEntities(actionId, entities);
-
-                } else if (categoryId != null && isEntityUUIDProvided) {
-                    // This is an action on an entity category.
-                    LOGGER.info("Executing action: " + data.getAction() + " on Entity path: " + path + " for id: " + entityUUID);
-                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityUUID);
-
-                    // Check if category exist on extensions, this must be a kind or a mixin.
-                    Category cat = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
-                    if (cat == null) {
-                        cat = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                // action invocation may be invoke on an entity or a collection.
+                if (pathParser.isEntityQuery()) {
+                    String entityId = data.getEntityUUID();
+                    if (entityId == null) {
+                        entityId = Utils.getUUIDFromPath(location, attrs);
                     }
-                    if (cat == null) {
-                        try {
-                            response = outputParser.parseResponse("The category : " + categoryId + " doesn't exist on extensions", Response.Status.BAD_REQUEST);
-                            return response;
-                        } catch (ResponseParseException ex) {
-                            throw new InternalServerErrorException(ex);
-                        }
 
-                    }
+                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
 
                     if (entity == null) {
                         try {
-                            response = outputParser.parseResponse("The entity : " + entityUUID + " doesn't exist on path : " + path, Response.Status.NOT_FOUND);
+                            response = outputParser.parseResponse("The entity : " + entityId + " doesn't exist on path : " + location, Response.Status.NOT_FOUND);
                             return response;
                         } catch (ResponseParseException ex) {
                             throw new InternalServerErrorException(ex);
                         }
                     }
-                    response = executeAction(actionId, entity);
 
-                } else {
-                    // This is an action on an entity collection.
-                    LOGGER.info("Executing action: " + data.getAction() + " on path: " + path);
+                    // Check if location path correspond to entity registered path.
+                    String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
+                    locationTmp.replace(entityId, "");
+                    String locationCompare = location.replace(entityId, "");
+                    // Check if location is a category location and not an entity location.
+                    if (!locationCompare.equals(locationTmp)) {
+
+                        Category cat = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                        if (cat == null) {
+                            cat = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                        }
+                        if (cat == null) {
+                            // Find user mixin tag.
+                            cat = ConfigurationManager.getUserMixinFromLocation(locationTmp, ConfigurationManager.DEFAULT_OWNER);
+                        }
+                        if (cat == null) {
+                            try {
+                                response = outputParser.parseResponse("The category : " + categoryId + " doesn't exist on your configuration/extension", Response.Status.BAD_REQUEST);
+                                return response;
+                            } catch (ResponseParseException ex) {
+                                throw new InternalServerErrorException(ex);
+                            }
+                        }
+                    }
+                    response = executeAction(actionId, entity, data);
+                }
+
+                // path like /compute/
+                if (pathParser.isCollectionOnCategory()) {
+                    LOGGER.info("Collection --> Executing action: " + actionId + " on Category: " + categoryId);
+                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                    response = executeActionsOnEntities(actionId, entities, data);
+                }
+
+                // path like /mycustompath/myentities/
+                if (pathParser.isCollectionCustomPath()) {
+                    LOGGER.info("Collection --> Executing action: " + actionId + " on inbound path: " + location);
                     entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, actionId);
                     // Remove entities that have not their location equals to path.
                     Iterator<Entity> it = entities.iterator();
                     while (it.hasNext()) {
                         Entity entityTmp = it.next();
 
-                        String location = ConfigurationManager.getEntityRelativePath(entityTmp.getId());
-
-                        if (!location.equals(path)) {
+                        String locationTmp = Utils.getPathWithoutPrefixSuffixSlash(ConfigurationManager.getEntityRelativePath(entityTmp.getId()));
+                        if (!location.equals(locationTmp)) {
                             it.remove();
                         }
                     }
@@ -191,114 +186,142 @@ public class PostQuery extends AbstractPostQuery {
                         }
 
                     }
-                    // launch the action on collection.
-                    response = executeActionsOnEntities(actionId, entities);
-
+                    response = executeActionsOnEntities(actionId, entities, data);
+                    continue;
                 }
+            } // end if action query part.
 
-                return response;
-            } // End if action part.
 
-            boolean mixinTagAsso;
-
-            if (isEntityUUIDProvided) {
-                if ((attrs != null && !attrs.isEmpty()) || !data.getMixins().isEmpty()) {
-                    // Load the entity.
-                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityUUID);
-                    if (entity == null) {
-                        try {
-                            response = outputParser.parseResponse("The entity : " + entityUUID + " doest exit on path : " + path, Response.Status.NOT_FOUND);
-                            return response;
-                        } catch (ResponseParseException ex) {
-                            throw new InternalServerErrorException(ex);
+            // Update mixins, tags, attributes etc. on an entity.
+            if (pathParser.isEntityQuery()) {
+                String entityId = data.getEntityUUID();
+                if (entityId == null) {
+                    entityId = Utils.getUUIDFromPath(location, attrs);
+                }
+                if (entityId == null) {
+                    if (data.getKind() != null) {
+                        // Search if entities below on the given location/path.
+                        List<String> entitiesUUIDs = Utils.getEntityUUIDsFromPath(location);
+                        if (entitiesUUIDs.size() == 1) {
+                            entityId = entitiesUUIDs.get(0);
                         }
                     }
 
-                    response = updateEntity(path, entity);
-                    return response;
-                } else {
-                    // No attribute to update.
+                }
+                if (entityId == null) {
+                    LOGGER.warn("Cant retrieve entity for path : " + location);
                     try {
-                        response = outputParser.parseResponse("No attributes found", Response.Status.NOT_FOUND);
+                        response = outputParser.parseResponse("Cant retrieve entity for path : " + location, Response.Status.NOT_FOUND);
                         return response;
                     } catch (ResponseParseException ex) {
                         throw new InternalServerErrorException(ex);
                     }
                 }
 
-            } else if (categoryId != null) {
-                // Check if this is a mixin tag association or a collection of entities..
 
-                // Check if this is a mixin without attribute.
-                Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(categoryId, ConfigurationManager.DEFAULT_OWNER);
-                if (mixin != null) {
-                    // This is a mixin tag.
-                    mixinTagAsso = true;
-                } else {
-                    // This must be a collection on category.
-                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
-                    response = updateEntityCollection(path, entities);
-                    return response;
-                }
-            } else {
-                // Defined on a path.
-                entities = ConfigurationManager.findAllEntitiesOwner(ConfigurationManager.DEFAULT_OWNER);
-                // Remove entities that have not their location equals to path.
-                Iterator<Entity> it = entities.iterator();
-                while (it.hasNext()) {
-                    Entity entityTmp = it.next();
-                    String location = ConfigurationManager.getEntityRelativePath(entityTmp.getId());
-                    if (!location.equals(path)) {
-                        it.remove();
+                // Check if location path correspond to entity registered path.
+                String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
+                locationTmp.replace(entityId, "");
+                String locationCompare = location.replace(entityId, "");
+                // Check if location is a category location and not an entity location.
+                if (!locationCompare.equals(locationTmp)) {
+                    Category cat = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                    if (cat == null) {
+                        cat = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
                     }
-                }
-                response = updateEntityCollection(path, entities);
-                return response;
-
-            }
-
-            // - update a mixin association (mixin tag included) 
-            if (mixinTagAsso || (data.getMixinTag() != null && ConfigurationManager.isMixinTags(ConfigurationManager.DEFAULT_OWNER, data.getMixinTag()))) {
-                String location = data.getMixinTagLocation();
-                List<String> xocciLocations = data.getXocciLocation();
-                if (location == null) {
-                    // Check if X-OCCI-Location is used.
-                    if (xocciLocations.isEmpty()) {
+                    if (cat == null) {
+                        cat = ConfigurationManager.getUserMixinFromLocation(locationTmp, ConfigurationManager.DEFAULT_OWNER);
+                    }
+                    if (cat == null) {
                         try {
-                            response = outputParser.parseResponse("Request is invalid, mixin tag location is unknown", Response.Status.BAD_REQUEST);
+                            response = outputParser.parseResponse("The category : " + categoryId + " doesn't exist on your configuration/extension", Response.Status.BAD_REQUEST);
                             return response;
                         } catch (ResponseParseException ex) {
                             throw new InternalServerErrorException(ex);
                         }
                     }
                 }
-                if (!xocciLocations.isEmpty()) {
-                    for (String xocciLocation : xocciLocations) {
-                        response = Response.fromResponse(updateMixinTagAssociation(categoryId, xocciLocation)).build();
-                        if (!response.getStatusInfo().equals(Response.Status.OK)) {
+
+                if ((attrs != null && !attrs.isEmpty()) || !data.getMixins().isEmpty()) {
+                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+                    if (entity == null) {
+                        try {
+                            response = outputParser.parseResponse("The entity : " + entityId + " doest exit on path : " + path, Response.Status.NOT_FOUND);
                             return response;
+                        } catch (ResponseParseException ex) {
+                            throw new InternalServerErrorException(ex);
                         }
                     }
-                } else {
-                    response = updateMixinTagAssociation(categoryId, location);
-                }
 
-                return response;
-            } else {
-                // Request is undefined.
-                try {
-                    response = outputParser.parseResponse("Request is invalid, please check your query", Response.Status.BAD_REQUEST);
-                    return response;
-                } catch (ResponseParseException ex) {
-                    throw new InternalServerErrorException(ex);
+                    response = updateEntity(path, entity, data);
+
+                } else {
+                    try {
+                        response = outputParser.parseResponse("No attributes found and no mixins to associate", Response.Status.NOT_FOUND);
+                        return response;
+                    } catch (ResponseParseException ex) {
+                        throw new InternalServerErrorException(ex);
+                    }
                 }
+                continue;
+            }
+
+
+            if (pathParser.isCollectionOnCategory()) {
+                Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(categoryId, ConfigurationManager.DEFAULT_OWNER);
+                if (mixin != null) {
+                    LOGGER.info("Mixin tag association query...");
+                    List<String> xocciLocations = data.getXocciLocation();
+                    if (!xocciLocations.isEmpty()) {
+                        for (String xocciLocation : xocciLocations) {
+                            LOGGER.info("On X-OCCI-Location: "+ xocciLocation);
+                            response = Response.fromResponse(updateMixinTagAssociation(categoryId, xocciLocation)).build();
+                            if (!response.getStatusInfo().equals(Response.Status.OK)) {
+                                return response;
+                            }
+                        }
+                    }
+
+                } else {
+                    LOGGER.info("Update entities collection on category: " + categoryId);
+                    // It is a category collection query.
+                    // This must be a collection on category.
+                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                    response = updateEntityCollection(location, entities, data);
+                }
+                continue;
+            }
+
+            if (pathParser.isCollectionCustomPath()) {
+                // Defined on a path.
+                entities = ConfigurationManager.findAllEntitiesOwner(ConfigurationManager.DEFAULT_OWNER);
+                // Remove entities that have not their location equals to path.
+                Iterator<Entity> it = entities.iterator();
+                while (it.hasNext()) {
+                    Entity entityTmp = it.next();
+                    String locationTmp = ConfigurationManager.getEntityRelativePath(entityTmp.getId());
+                    if (!locationTmp.equals(location)) {
+                        it.remove();
+                    }
+                }
+                response = updateEntityCollection(path, entities, data);
+                continue;
+            }
+
+
+            // Request is undefined.
+            try {
+                response = outputParser.parseResponse("Request is invalid, please check your query", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
             }
 
         }
 
         if (datas.isEmpty()) {
             try {
-                response = outputParser.parseResponse("Request is invalid, no datas attributes, nor resources, please check your query", Response.Status.BAD_REQUEST);
+                response = outputParser.parseResponse("Request is invalid, no datas set, nor resources, please check your query", Response.Status.BAD_REQUEST);
                 return response;
             } catch (ResponseParseException ex) {
                 throw new InternalServerErrorException(ex);
@@ -313,10 +336,11 @@ public class PostQuery extends AbstractPostQuery {
      *
      * @param path
      * @param entity
+     * @param data InputData object, must be never null.
      * @return
      */
     @Override
-    public Response updateEntity(String path, Entity entity) {
+    public Response updateEntity(String path, Entity entity, InputData data) {
         Response response;
 
         if (entity == null) {
@@ -329,15 +353,9 @@ public class PostQuery extends AbstractPostQuery {
             }
         }
 
-        InputData data = inputParser.getInputDataForEntityUUID(entity.getId());
-
-        if (data == null) {
-            // The data is referenced in one shot and have no ids.
-            data = inputParser.getInputDatas().get(0);
-        }
-
         List<String> mixins = data.getMixins();
         if (mixins != null && !mixins.isEmpty()) {
+
             try {
                 ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, false);
             } catch (ConfigurationException ex) {
@@ -366,12 +384,19 @@ public class PostQuery extends AbstractPostQuery {
         return response;
     }
 
+    /**
+     *
+     * @param path
+     * @param entities
+     * @param data
+     * @return
+     */
     @Override
-    public Response updateEntityCollection(String path, List<Entity> entities) {
+    public Response updateEntityCollection(String path, List<Entity> entities, InputData data) {
         Response response = null;
         Response.ResponseBuilder responseBuilder = null;
         for (Entity entity : entities) {
-            responseBuilder = Response.fromResponse(updateEntity(path, entity));
+            responseBuilder = Response.fromResponse(updateEntity(path, entity, data));
         }
         if (responseBuilder != null) {
             response = responseBuilder.build();
@@ -404,11 +429,21 @@ public class PostQuery extends AbstractPostQuery {
 
         String uuid = Utils.getUUIDFromPath(relativeLocationApply, new HashMap<>());
         if (uuid == null) {
-            throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore");
+            try {
+                response = outputParser.parseResponse(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore, exception: " + ex.getMessage());
+            }
         }
         Entity entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
         if (entity == null) {
-            throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore");
+            try {
+                response = outputParser.parseResponse(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore, exception: " + ex.getMessage());
+            }
         }
 
         try {
@@ -435,10 +470,11 @@ public class PostQuery extends AbstractPostQuery {
      *
      * @param actionId
      * @param entity
+     * @param data
      * @return
      */
     @Override
-    public Response executeAction(String actionId, Entity entity) {
+    public Response executeAction(String actionId, Entity entity, InputData data) {
         Response response;
 
         if (entity == null) {
@@ -451,15 +487,6 @@ public class PostQuery extends AbstractPostQuery {
             }
         }
 
-        InputData data = inputParser.getInputDataForEntityUUID(entity.getId());
-        if (data == null) {
-            // This is an action on collections or on a path.
-            List<InputData> datas = inputParser.getInputDatas();
-            for (InputData dataTmp : datas) {
-                data = dataTmp;
-                break;
-            }
-        }
         String[] actionParameters = null;
 
         if (data != null && data.getAttrs() != null) {
@@ -488,9 +515,11 @@ public class PostQuery extends AbstractPostQuery {
             }
         } catch (InvocationTargetException ex) {
             ex.printStackTrace();
+            String message = "The entity " + entity.getTitle() + "  action : " + actionId + " has throw an error : " + ex.getCause().getClass().getName();
+
             LOGGER.error("Action failed to execute : " + ex.getMessage());
             try {
-                response = outputParser.parseResponse("Action failed : " + ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+                response = outputParser.parseResponse("Action failed : " + message, Response.Status.INTERNAL_SERVER_ERROR);
                 return response;
             } catch (ResponseParseException e) {
                 throw new InternalServerErrorException(e);
@@ -506,11 +535,11 @@ public class PostQuery extends AbstractPostQuery {
     }
 
     @Override
-    public Response executeActionsOnEntities(String actionKind, List<Entity> entities) {
+    public Response executeActionsOnEntities(String actionKind, List<Entity> entities, InputData data) {
         Response response = null;
         Response.ResponseBuilder responseBuilder = null;
         for (Entity entity : entities) {
-            responseBuilder = Response.fromResponse(executeAction(actionKind, entity));
+            responseBuilder = Response.fromResponse(executeAction(actionKind, entity, data));
         }
 
         if (responseBuilder != null) {

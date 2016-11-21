@@ -394,7 +394,6 @@ public class JsonOcciParser extends AbstractRequestParser {
         data.setAttrObjects(attrs);
         data.setMixinTag(scheme + term);
         data.setMixinTagTitle(title);
-        data.setMixinTagLocation(location); // TODO : Check if this value is really necessary here. this maybe a doublon of location property.
         data.setLocation(location);
         datas.add(data);
         this.setInputDatas(datas);
@@ -465,13 +464,15 @@ public class JsonOcciParser extends AbstractRequestParser {
                 } else {
                     msgJson.setMessage((String) object);
                 }
-                response = Response.status(status)
-                        .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .header("content", object)
-                        .header("Accept", getAcceptedTypes())
-                        .entity(msgJson.toStringJson())
-                        .type(Constants.MEDIA_TYPE_JSON)
-                        .build();
+                response = renderResponseWithMesssageContent(status, msgJson.toStringJson());
+
+//                response = Response.status(status)
+//                        .header("Server", Constants.OCCI_SERVER_HEADER)
+//                        .header("content", object)
+//                        .header("Accept", getAcceptedTypes())
+//                        .entity(msgJson.toStringJson())
+//                        .type(Constants.MEDIA_TYPE_JSON)
+//                        .build();
             }
 
             if (object instanceof Entity) {
@@ -512,12 +513,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                     LocationsJson locationsJson = new LocationsJson();
                     locationsJson.setLocations(locations);
                     msg = locationsJson.toStringJson();
-                    Response.ResponseBuilder responseBuilder = Response.status(status)
-                            .header("Server", Constants.OCCI_SERVER_HEADER)
-                            .header("Accept", getAcceptedTypes())
-                            .entity(msg)
-                            .type(Constants.MEDIA_TYPE_JSON);
-                    response = responseBuilder.build();
+                    response = renderResponseWithMesssageContent(status, msg);
                 }
                 if (!entities.isEmpty()) {
                     response = renderEntitiesResponse(entities, status);
@@ -529,14 +525,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 MessageJson msgJson = new MessageJson();
                 msgJson.setMessage(msg);
                 msgJson.setStatus(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-
-                response = Response.status(status)
-                        .header("Server", Constants.OCCI_SERVER_HEADER)
-                        .header("Accept", getAcceptedTypes())
-                        .entity(msgJson.toStringJson())
-                        .type(Constants.MEDIA_TYPE_JSON)
-                        .status(Response.Status.INTERNAL_SERVER_ERROR)
-                        .build();
+                response = renderResponseWithMesssageContent(Response.Status.INTERNAL_SERVER_ERROR, msgJson.toStringJson());
             }
 
             return response;
@@ -559,6 +548,17 @@ public class JsonOcciParser extends AbstractRequestParser {
                 throw new ResponseParseException(e.getMessage());
             }
         }
+    }
+
+    private Response renderResponseWithMesssageContent(Response.Status status, String msg) {
+        Response response;
+        response = Response.status(status)
+                .header("Server", Constants.OCCI_SERVER_HEADER)
+                .header("Accept", getAcceptedTypes())
+                .entity(msg)
+                .type(Constants.MEDIA_TYPE_JSON)
+                .build();
+        return response;
     }
 
     private Response renderEntitiesResponse(List<Entity> entities, Response.Status status) throws JsonProcessingException {
@@ -586,12 +586,7 @@ public class JsonOcciParser extends AbstractRequestParser {
             mainJson.setLinks(links);
         }
         String msg = mainJson.toStringJson();
-        response = Response.status(status)
-                .header("Server", Constants.OCCI_SERVER_HEADER)
-                .header("Accept", getAcceptedTypes())
-                .entity(msg)
-                .type(Constants.MEDIA_TYPE_JSON)
-                .build();
+        response = renderResponseWithMesssageContent(status, msg);
 
         return response;
     }
@@ -640,7 +635,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 }
             }
             if (key.equals(Constants.OCCI_CORE_ID)) {
-                if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
+                if (val != null && !val.startsWith(Constants.URN_UUID_PREFIX)) {
                     val = Constants.URN_UUID_PREFIX + val;
                 }
                 attributes.put(key, val);
@@ -844,9 +839,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 sb.append(",");
             }
         }
-        sb = removeLastComma(sb);
-
-        sb.append("]");
+        sb = renderEndOfCategory(sb);
         return sb;
     }
 
@@ -865,30 +858,8 @@ public class JsonOcciParser extends AbstractRequestParser {
         if (actions.isEmpty()) {
             return sb;
         }
-
-        String term;
-        String title;
-        String scheme;
-        List<Attribute> attributes;
         for (Action action : actions) {
-            sb.append("{");
-            // We render first the action attributes interface.
-            attributes = action.getAttributes();
-            if (!attributes.isEmpty()) {
-                sb.append(renderAttributesInterface(action.getAttributes())).append(",");
-            }
-            // We render action scheme, term and title.
-            term = action.getTerm();
-            scheme = action.getScheme();
-            title = action.getTitle();
-            sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
-            sb.append("\"term\":").append("\"").append(term).append("\",");
-            if (title == null) {
-                title = "";
-            }
-            sb.append("\"title\":").append("\"").append(title).append("\"");
-            sb.append("}");
-            sb.append(",");
+            renderActionInterface(sb, action);
         }
 
         sb = removeLastComma(sb);
@@ -911,31 +882,38 @@ public class JsonOcciParser extends AbstractRequestParser {
             return sb;
         }
 
-        String term;
-        String title;
-        String scheme;
-        List<Attribute> attributes;
         for (Action action : actions) {
             if (!action.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
-                sb.append("{");
-                // We render first the action attributes interface.
-                attributes = action.getAttributes();
-                if (!attributes.isEmpty()) {
-                    sb.append(renderAttributesInterface(action.getAttributes())).append(",");
-                }
-                // We render action scheme, term and title.
-                term = action.getTerm();
-                scheme = action.getScheme();
-                title = action.getTitle();
-                sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
-                sb.append("\"term\":").append("\"").append(term).append("\",");
-                sb.append("\"title\":").append("\"").append(title).append("\"");
-                sb.append("}");
-                sb.append(",");
+                renderActionInterface(sb, action);
             }
         }
         sb = removeLastComma(sb);
         return sb;
+    }
+
+    private void renderActionInterface(StringBuilder sb, Action action) {
+        List<Attribute> attributes;
+        String term;
+        String scheme;
+        String title;
+        sb.append("{");
+        // We render first the action attributes interface.
+        attributes = action.getAttributes();
+        if (!attributes.isEmpty()) {
+            sb.append(renderAttributesInterface(action.getAttributes())).append(",");
+        }
+        // We render action scheme, term and title.
+        term = action.getTerm();
+        scheme = action.getScheme();
+        title = action.getTitle();
+        sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
+        sb.append("\"term\":").append("\"").append(term).append("\",");
+        if (title == null) {
+            title = "";
+        }
+        sb.append("\"title\":").append("\"").append(title).append("\"");
+        sb.append("}");
+        sb.append(",");
     }
 
     private StringBuilder renderKindsInterface(final List<Kind> kinds) {
@@ -1005,9 +983,7 @@ public class JsonOcciParser extends AbstractRequestParser {
                 sb.append(",");
             }
         }
-        sb = removeLastComma(sb);
-
-        sb.append("]");
+        sb = renderEndOfCategory(sb);
         return sb;
     }
 
@@ -1116,8 +1092,12 @@ public class JsonOcciParser extends AbstractRequestParser {
                 sb.append(",");
             }
         }
-        sb = removeLastComma(sb);
+        sb = renderEndOfCategory(sb);
+        return sb;
+    }
 
+    private StringBuilder renderEndOfCategory(StringBuilder sb) {
+        sb = removeLastComma(sb);
         sb.append("]");
         return sb;
     }

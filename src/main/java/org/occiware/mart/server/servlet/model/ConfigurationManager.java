@@ -2034,7 +2034,7 @@ public class ConfigurationManager {
     }
 
     private static Object getEMFValueObject(Entity entity, String attrName) {
-        EAttribute eAttr = null;
+        EAttribute eAttr;
         Object result = null;
         String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
         final EStructuralFeature eStructuralFeature = entity.eClass().getEStructuralFeature(eAttributeName);
@@ -2193,24 +2193,10 @@ public class ConfigurationManager {
         // Search for the mixin id.
         Mixin mixin = null;
         Set<String> keys = userMixinLocationMap.keySet();
-        String locationCompare = locationMixin;
-        if (locationCompare.startsWith("/")) {
-            locationCompare = locationCompare.substring(1);
-        }
-        if (locationCompare.endsWith("/")) {
-            locationCompare = locationCompare.substring(0, locationCompare.length() - 1);
-        }
+        String locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationMixin);
 
         for (String key : keys) {
-            String location = userMixinLocationMap.get(key);
-
-            // To be sure we compare the same location, remove the trailing slash.
-            if (location.startsWith("/")) {
-                location = location.substring(1);
-            }
-            if (location.endsWith("/")) {
-                location = location.substring(0, location.length() - 1);
-            }
+            String location = Utils.getPathWithoutPrefixSuffixSlash(userMixinLocationMap.get(key));
 
             if (location.equals(locationCompare)) {
                 // Search the mixin from this scheme+term.
@@ -2221,6 +2207,27 @@ public class ConfigurationManager {
         }
         return mixin;
 
+    }
+
+    public static boolean isCategoryReferencedOnEntity(final String category, final Entity entity) {
+        if (entity == null || category == null) {
+            return false; // must not arrive.
+        }
+
+        Kind kind = entity.getKind();
+        List<Mixin> mixins = entity.getMixins();
+        String kindId = kind.getScheme() + kind.getTerm();
+
+        if (kindId.equals(category)) {
+            return true;
+        }
+        for (Mixin mixin : mixins) {
+            String mixinId = mixin.getScheme() + mixin.getTerm();
+            if (mixinId.equals(category)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

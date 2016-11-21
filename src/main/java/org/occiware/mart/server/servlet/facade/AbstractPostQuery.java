@@ -19,6 +19,7 @@
 package org.occiware.mart.server.servlet.facade;
 
 import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -30,18 +31,18 @@ import java.util.List;
 public abstract class AbstractPostQuery extends AbstractEntryPoint implements IPostQuery {
 
     @Override
-    public abstract Response executeActionsOnEntities(String actionKind, List<Entity> entity);
+    public abstract Response executeActionsOnEntities(String actionKind, List<Entity> entity, InputData data);
 
     @Override
-    public abstract Response executeAction(String action, Entity entity);
+    public abstract Response executeAction(String action, Entity entity, InputData data);
 
     @Override
     public abstract Response updateMixinTagAssociation(String mixinTagKind, String relativeLocationApply);
 
     @Override
-    public abstract Response updateEntityCollection(String path, List<Entity> entities);
+    public abstract Response updateEntityCollection(String path, List<Entity> entities, InputData data);
 
     @Override
-    public abstract Response updateEntity(String path, Entity entity);
+    public abstract Response updateEntity(String path, Entity entity, InputData data);
 
 }
