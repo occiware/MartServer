@@ -153,6 +153,7 @@ public class PostQuery extends AbstractPostQuery {
                         }
                     }
                     response = executeAction(actionId, entity, data);
+                    continue;
                 }
 
                 // path like /compute/
@@ -160,6 +161,7 @@ public class PostQuery extends AbstractPostQuery {
                     LOGGER.info("Collection --> Executing action: " + actionId + " on Category: " + categoryId);
                     entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
                     response = executeActionsOnEntities(actionId, entities, data);
+                    continue;
                 }
 
                 // path like /mycustompath/myentities/
@@ -221,7 +223,7 @@ public class PostQuery extends AbstractPostQuery {
 
                 // Check if location path correspond to entity registered path.
                 String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
-                locationTmp.replace(entityId, "");
+                locationTmp = locationTmp.replace(entityId, "");
                 String locationCompare = location.replace(entityId, "");
                 // Check if location is a category location and not an entity location.
                 if (!locationCompare.equals(locationTmp)) {

@@ -18,7 +18,6 @@
  */
 package org.occiware.mart.server.servlet.impl;
 
-import org.occiware.clouddesigner.occi.Category;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractGetQuery;
@@ -45,7 +44,7 @@ import java.util.Map;
 
 /**
  *
- * @author cgourdin
+ * @author Christophe Gourdin
  */
 @Path("/")
 public class GetQuery extends AbstractGetQuery {
