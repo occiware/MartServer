@@ -620,12 +620,40 @@ public class ConfigurationManager {
         }
         // Remove the mixin.
         if (myMixin != null) {
+            // First we remove its attributes if any.
+            EList<Attribute> attributesToRemove = myMixin.getAttributes();
+            if (!attributesToRemove.isEmpty()) {
+                removeEntityAttributes(entity, attributesToRemove);
+            }
+
             entity.getMixins().remove(myMixin);
             updateVersion(owner, entity.getId());
             result = true;
         }
         return result;
     }
+
+    /**
+     * Remove attributes from entity.
+     *
+     * @param entity
+     * @param attributesToRemove
+     */
+    public static void removeEntityAttributes(Entity entity, EList<Attribute> attributesToRemove) {
+
+        Iterator<AttributeState> entityAttrs = entity.getAttributes().iterator();
+
+        while (entityAttrs.hasNext()) {
+            AttributeState attrState = entityAttrs.next();
+            for (Attribute attribute : attributesToRemove) {
+                if (attribute.getName().equals(attrState.getName())) {
+                    entityAttrs.remove();
+                }
+            }
+        }
+
+    }
+
 
     /**
      * Find a resource for owner and entity Id.
