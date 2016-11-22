@@ -74,7 +74,7 @@ public class GetQuery extends AbstractGetQuery {
                 location = pathParser.getPath();
             }
 
-            String categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
+            String categoryId = pathParser.getCategoryId();
 
 
             // Query interface check, the last case of this check is for query for ex: /compute/-/ where we filter for a category (kind or mixin).

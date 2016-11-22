@@ -733,7 +733,7 @@ public class Utils {
 
             if (pathCompare.equals(pathTmp)) {
                 entitiesUUID.add(uuid);
-            } else if (pathCompare.startsWith(pathTmp) || pathTmp.startsWith(pathCompare)) {
+            } else if ((pathCompare.startsWith(pathTmp) || pathTmp.startsWith(pathCompare)) && !pathTmp.isEmpty()) {
                 entitiesUUID.add(uuid);
             }
         }

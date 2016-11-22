@@ -1,0 +1,7 @@
+{
+  "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+  "attributes":{
+    "occi.compute.memory": 64,
+    "occi.compute.cores": 4
+  }
+}

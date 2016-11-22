@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.servlet.impl;
 
+import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Utils;
@@ -45,11 +46,6 @@ public class PathParser {
      * If set this replace the path when this is not a mixinTag definition request.
      */
     private String location;
-
-    /**
-     * Defines if mixinTag query the values of xOcciLocations.
-     */
-    private List<String> xOcciLocations;
 
     /**
      * Mixin definition request (linked to PUT and GET interface method).
@@ -83,6 +79,8 @@ public class PathParser {
      */
     private boolean actionInvocationQuery;
 
+    private String categoryId;
+
     /**
      *
      * @param data InputData object
@@ -102,6 +100,30 @@ public class PathParser {
      */
     public void updateRoutes() {
 
+        boolean hasLocationSet = false;
+
+        if (location != null && !location.isEmpty()) {
+            hasLocationSet = true;
+            categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
+            if (categoryId == null) {
+                // For mixin tag location for example: /mymixin/mymixintag/
+                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(location, ConfigurationManager.DEFAULT_OWNER);
+                if (mixin != null) {
+                    categoryId = mixin.getScheme() + mixin.getTerm();
+                }
+            }
+
+        } else {
+            categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
+            if (categoryId == null) {
+                // For mixin tag location for example: /mymixin/mymixintag/
+                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
+                if (mixin != null) {
+                    categoryId = mixin.getScheme() + mixin.getTerm();
+                }
+            }
+        }
+
         // Determine if this is an action invocation.
         if (data.getAction() != null && !data.getAction().isEmpty()) {
             actionInvocationQuery = true;
@@ -110,7 +132,7 @@ public class PathParser {
         String pathTmp = "/" + path + "/";
         // Check if interface query.
         if (pathTmp.equals("/.well-known/org/ogf/occi/-/") || pathTmp.endsWith("/-/")) {
-            if (location != null && data.getMixinTag() != null && !data.getMixinTag().isEmpty()) {
+            if (hasLocationSet && data.getMixinTag() != null && !data.getMixinTag().isEmpty()) {
                 mixinTagDefinitionRequest = true;
             } else {
                 interfQuery = true;
@@ -119,7 +141,7 @@ public class PathParser {
 
         // Is the path is an entity path ?
         //  if a location is defined, this replace the given path.
-        if (location != null && !location.isEmpty()) {
+        if (hasLocationSet) {
             // the attributes is used if occi.core.id is defined for the current data to work with.
             entityQuery = Utils.isEntityUUIDProvided(location, data.getAttrs());
         } else {
@@ -129,8 +151,20 @@ public class PathParser {
         if (!entityQuery) {
             entityQuery = data.getEntityUUID() != null;
             if (!entityQuery) {
+                boolean pathHasEntitiesBehind;
+                // Check if location has entities behind.
+                List<String> uuids;
+                if (hasLocationSet) {
+                    uuids = Utils.getEntityUUIDsFromPath(location);
+
+                } else {
+                    uuids = Utils.getEntityUUIDsFromPath(path);
+                }
+
                 // Check if a kind is defined in inputdata, if this is the case, it must be an entity query.
-                entityQuery = data.getKind() != null;
+                if (categoryId == null && data.getKind() != null && !uuids.isEmpty())  {
+                    entityQuery = true;
+                }
             }
         }
 
@@ -139,13 +173,6 @@ public class PathParser {
         }
         if (!entityQuery && !interfQuery && !mixinTagDefinitionRequest) {
             collectionQuery = true;
-            // Check if collection category query ex: compute/
-            String categoryId;
-            if (location != null && !location.isEmpty()) {
-                categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
-            } else {
-                categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
-            }
 
             // Check if custom query (bounded path).
             if (categoryId == null) {
@@ -180,67 +207,36 @@ public class PathParser {
         this.location = location;
     }
 
-    public List<String> getxOcciLocations() {
-        return xOcciLocations;
-    }
-
-    public void setxOcciLocations(List<String> xOcciLocations) {
-        this.xOcciLocations = xOcciLocations;
-    }
-
     public boolean isMixinTagDefinitionRequest() {
         return mixinTagDefinitionRequest;
-    }
-
-    public void setMixinTagDefinitionRequest(boolean mixinTagDefinitionRequest) {
-        this.mixinTagDefinitionRequest = mixinTagDefinitionRequest;
     }
 
     public boolean isEntityQuery() {
         return entityQuery;
     }
 
-    public void setEntityQuery(boolean entityQuery) {
-        this.entityQuery = entityQuery;
-    }
-
     public boolean isCollectionQuery() {
         return collectionQuery;
-    }
-
-    public void setCollectionQuery(boolean collectionQuery) {
-        this.collectionQuery = collectionQuery;
     }
 
     public boolean isCollectionOnCategory() {
         return collectionOnCategory;
     }
 
-    public void setCollectionOnCategory(boolean collectionOnCategory) {
-        this.collectionOnCategory = collectionOnCategory;
-    }
-
     public boolean isCollectionCustomPath() {
         return collectionCustomPath;
-    }
-
-    public void setCollectionCustomPath(boolean collectionCustomPath) {
-        this.collectionCustomPath = collectionCustomPath;
     }
 
     public boolean isInterfQuery() {
         return interfQuery;
     }
 
-    public void setInterfQuery(boolean interfQuery) {
-        this.interfQuery = interfQuery;
-    }
-
     public boolean isActionInvocationQuery() {
         return actionInvocationQuery;
     }
 
-    public void setActionInvocationQuery(boolean actionInvocationQuery) {
-        this.actionInvocationQuery = actionInvocationQuery;
+    public String getCategoryId() {
+        return categoryId;
     }
+
 }

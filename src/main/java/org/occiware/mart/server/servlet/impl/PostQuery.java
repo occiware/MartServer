@@ -89,7 +89,7 @@ public class PostQuery extends AbstractPostQuery {
             Map<String, String> attrs = data.getAttrs();
             List<Entity> entities;
             Entity entity;
-            String categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
+            String categoryId = pathParser.getCategoryId();
 
             if (pathParser.isActionInvocationQuery()) {
                 // Check if action exist on extensions and if the parameter ?action=myaction is set.
@@ -268,48 +268,10 @@ public class PostQuery extends AbstractPostQuery {
                 continue;
             }
 
-
-            if (pathParser.isCollectionOnCategory()) {
-                Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(categoryId, ConfigurationManager.DEFAULT_OWNER);
-                if (mixin != null) {
-                    LOGGER.info("Mixin tag association query...");
-                    List<String> xocciLocations = data.getXocciLocation();
-                    if (!xocciLocations.isEmpty()) {
-                        for (String xocciLocation : xocciLocations) {
-                            LOGGER.info("On X-OCCI-Location: " + xocciLocation);
-                            response = Response.fromResponse(updateMixinTagAssociation(categoryId, xocciLocation)).build();
-                            if (!response.getStatusInfo().equals(Response.Status.OK)) {
-                                return response;
-                            }
-                        }
-                    }
-
-                } else {
-                    LOGGER.info("Update entities collection on category: " + categoryId);
-                    // It is a category collection query.
-                    // This must be a collection on category.
-                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
-                    response = updateEntityCollection(location, entities, data);
-                }
+            if (pathParser.isCollectionQuery()) {
+                response = executeUpdateOnCollection(data, location, pathParser);
                 continue;
             }
-
-            if (pathParser.isCollectionCustomPath()) {
-                // Defined on a path.
-                entities = ConfigurationManager.findAllEntitiesOwner(ConfigurationManager.DEFAULT_OWNER);
-                // Remove entities that have not their location equals to path.
-                Iterator<Entity> it = entities.iterator();
-                while (it.hasNext()) {
-                    Entity entityTmp = it.next();
-                    String locationTmp = ConfigurationManager.getEntityRelativePath(entityTmp.getId());
-                    if (!locationTmp.equals(location)) {
-                        it.remove();
-                    }
-                }
-                response = updateEntityCollection(path, entities, data);
-                continue;
-            }
-
 
             // Request is undefined.
             try {
@@ -381,7 +343,7 @@ public class PostQuery extends AbstractPostQuery {
         // TODO : Another solution is to set "ok" to response and force user to get request for entity attributes updated.
 
         try {
-            response = outputParser.parseResponse(entity);
+            response = outputParser.parseResponse("ok");
         } catch (ResponseParseException ex) {
             throw new InternalServerErrorException(ex);
         }
@@ -531,7 +493,7 @@ public class PostQuery extends AbstractPostQuery {
         }
 
         try {
-            response = outputParser.parseResponse(entity);
+            response = outputParser.parseResponse("ok");
         } catch (ResponseParseException ex) {
             throw new InternalServerErrorException(ex);
         }
@@ -558,6 +520,59 @@ public class PostQuery extends AbstractPostQuery {
             }
         }
 
+        return response;
+
+    }
+
+
+    /**
+     * Execute update (mixin tag asso + request on entities collection).
+     * @param data
+     * @param location
+     * @param pathParser
+     * @return
+     */
+    private Response executeUpdateOnCollection(InputData data, String location, PathParser pathParser) {
+        Response response = null;
+        String categoryId = pathParser.getCategoryId();
+        try {
+            // Define if update on mixin tag association.
+            if (pathParser.isCollectionOnCategory()) {
+                Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(categoryId, ConfigurationManager.DEFAULT_OWNER);
+                if (mixin != null) {
+                    LOGGER.info("Mixin tag association query...");
+                    List<String> xocciLocations = data.getXocciLocation();
+                    if (!xocciLocations.isEmpty()) {
+                        for (String xocciLocation : xocciLocations) {
+                            LOGGER.info("On X-OCCI-Location: " + xocciLocation);
+                            response = Response.fromResponse(updateMixinTagAssociation(categoryId, xocciLocation)).build();
+                            if (!response.getStatusInfo().equals(Response.Status.OK)) {
+                                return response;
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            try {
+                List<Entity> entities = getEntityCollection(location);
+
+                if (!entities.isEmpty()) {
+                    LOGGER.info("Update entities collection on : " + location);
+                    response = updateEntityCollection(location, entities, data);
+                } else {
+                    // No entities to update.
+                    response = outputParser.parseResponse("No entities to update.", Response.Status.NOT_FOUND);
+                }
+
+
+            } catch (ConfigurationException ex) {
+                response = outputParser.parseResponse("error while getting entities collection : " + ex.getMessage());
+            }
+        } catch (ResponseParseException e) {
+            throw new InternalServerErrorException(e);
+        }
         return response;
 
     }
