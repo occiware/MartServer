@@ -30,7 +30,7 @@ public class PathParserTest extends TestCase {
         entityRequestTest("", "urn:uuid:c7d55bf4-7057-5113-85c8-141871bf7636", "mykind#term");
         entityRequestTest("", "c7d55bf4-7057-5113-85c8-141871bf7636", "mykind#term");
         // Check if a kind is on attrs but no id.
-        entityRequestTest("/myres/", null, "mykind#term");
+        // entityRequestTest("/myres/", null, "mykind#term"); // its a collection query on custom path...
 
 
         collectionCategoryTest("compute/");
