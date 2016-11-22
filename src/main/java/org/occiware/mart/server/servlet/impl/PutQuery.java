@@ -133,6 +133,15 @@ public class PutQuery extends AbstractPutQuery {
                 defineMixinTag(data, location);
             }
 
+            if (pathParser.isCollectionQuery()) {
+                // Set as collection query if no entity found on this path like /mypath/myother/.
+                LOGGER.info("PUT resource on path : " + location);
+                if (kind != null) {
+                    response = createEntity(location, null, kind, mixins, data.getAttrs());
+                }
+            }
+
+
         } // End for each inputdatas.
         if (datas.isEmpty()) {
             try {

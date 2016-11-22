@@ -102,22 +102,45 @@ public class PathParser {
 
         boolean hasLocationSet = false;
 
+        String locationWithoutUUID = null;
+        String pathWithoutUUID = null;
+
+        String uuid;
         if (location != null && !location.isEmpty()) {
             hasLocationSet = true;
-            categoryId = Utils.getCategoryFilterSchemeTerm(location, ConfigurationManager.DEFAULT_OWNER);
+            uuid = Utils.getUUIDFromPath(location, data.getAttrs());
+            if (uuid != null) {
+                locationWithoutUUID = location.replace(uuid, "");
+            } else {
+                locationWithoutUUID = location;
+            }
+
+        } else {
+            uuid = Utils.getUUIDFromPath(path, data.getAttrs());
+            if (uuid != null) {
+                pathWithoutUUID = path.replace(uuid, "");
+            } else {
+                pathWithoutUUID = path;
+            }
+        }
+
+        if (hasLocationSet) {
+            categoryId = Utils.getCategoryFilterSchemeTerm(locationWithoutUUID, ConfigurationManager.DEFAULT_OWNER);
             if (categoryId == null) {
                 // For mixin tag location for example: /mymixin/mymixintag/
-                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(location, ConfigurationManager.DEFAULT_OWNER);
+                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(locationWithoutUUID, ConfigurationManager.DEFAULT_OWNER);
                 if (mixin != null) {
                     categoryId = mixin.getScheme() + mixin.getTerm();
                 }
             }
 
+
         } else {
-            categoryId = Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
+
+            categoryId = Utils.getCategoryFilterSchemeTerm(pathWithoutUUID, ConfigurationManager.DEFAULT_OWNER);
             if (categoryId == null) {
                 // For mixin tag location for example: /mymixin/mymixintag/
-                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
+                Mixin mixin = ConfigurationManager.getUserMixinFromLocation(pathWithoutUUID, ConfigurationManager.DEFAULT_OWNER);
                 if (mixin != null) {
                     categoryId = mixin.getScheme() + mixin.getTerm();
                 }
