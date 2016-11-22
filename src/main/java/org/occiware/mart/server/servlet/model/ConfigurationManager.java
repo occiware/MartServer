@@ -1970,6 +1970,12 @@ public class ConfigurationManager {
     }
 
     public static String getLocation(Category category) {
+        if (category instanceof Mixin) {
+            String mixinId = category.getScheme() + category.getTerm();
+            if (userMixinLocationMap.get(mixinId) != null) {
+                return userMixinLocationMap.get(mixinId);
+            }
+        }
         return '/' + category.getTerm() + '/';
     }
 
