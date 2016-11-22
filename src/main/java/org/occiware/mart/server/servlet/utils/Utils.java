@@ -648,7 +648,7 @@ public class Utils {
      *
      * @param mixins
      * @return
-     * @throws MixinNotFoundOnModelException
+     * @throws ConfigurationException
      */
     public static List<Mixin> loadMixinFromSchemeTerm(List<String> mixins) throws ConfigurationException {
         List<Mixin> mixinModel = new LinkedList<>();
@@ -882,8 +882,10 @@ public class Utils {
             pathTmp = pathTmp.substring(1);
         }
         if (path.endsWith("/")) {
-            pathTmp = pathTmp.substring(0, path.length() - 1);
+            pathTmp = pathTmp.substring(0, pathTmp.length() - 1);
         }
+        pathTmp.replaceAll("\\s+", "");
+
         return pathTmp;
     }
 }

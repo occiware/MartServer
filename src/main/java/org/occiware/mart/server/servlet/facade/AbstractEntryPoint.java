@@ -278,8 +278,9 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
             if (mixin == null) {
                 throw new ConfigurationException("The mixin location : " + path + " is not defined");
             }
-            if (categoryFilter != null) {
-                filter.setCategoryFilter(mixin.getScheme() + mixin.getTerm());
+            if (categoryFilter == null) {
+                filter.setCategoryFilter(mixin.getTerm());
+                filter.setFilterOnPath(null);
             }
         }
 

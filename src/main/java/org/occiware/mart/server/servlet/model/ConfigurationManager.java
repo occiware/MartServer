@@ -2196,7 +2196,9 @@ public class ConfigurationManager {
         String locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationMixin);
 
         for (String key : keys) {
-            String location = Utils.getPathWithoutPrefixSuffixSlash(userMixinLocationMap.get(key));
+            String locationTmp = userMixinLocationMap.get(key).trim();
+
+            String location = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
 
             if (location.equals(locationCompare)) {
                 // Search the mixin from this scheme+term.

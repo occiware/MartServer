@@ -90,7 +90,27 @@ public class ServerTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
+
+    /**
+     * Integration test, this test all methods PUT, POST, GET, DELETE.
+     * Before start jetty server and after stop server.
+     */
+    @Test
+    public void testServerRequests() {
+        try {
+            testCreateResourceInputJson();
+            testUpdateResources();
+            testGetResourceLink();
+            testDeleteResources();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw new RuntimeException(ex);
+        }
+
+    }
+
 
     private void testCreateResourceInputJson() throws Exception {
         File resource1 = getResourceInputFile("/testjson/integration/creation/resource1.json");
@@ -149,210 +169,235 @@ public class ServerTest {
 
     }
 
-    @Test
-    public void testGetResourceLink() {
 
-        try {
-            testCreateResourceInputJson(); // Launch create tests resources....
+    private void testGetResourceLink() throws Exception {
 
-            System.out.println("GET Request interface /-/.");
-            ContentResponse response = httpClient.newRequest("http://localhost:9090/-/?category=network")  // uuid: f89486b7-0632-482d-a184-a9195733ddd9
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            int statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
-            String result = response.getContentAsString();
-            assertFalse(result.isEmpty());
+        System.out.println("GET Request interface /-/.");
+        ContentResponse response = httpClient.newRequest("http://localhost:9090/-/?category=network")  // uuid: f89486b7-0632-482d-a184-a9195733ddd9
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        int statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        String result = response.getContentAsString();
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"term\" : \"network\","));
 
+        System.out.println("GET Request on resource location : /testlocation/");
+        // See file: resource_location.json.
+        response = httpClient.newRequest("http://localhost:9090/testlocation/")  // uuid: f89486b7-0632-482d-a184-a9195733ddd9
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertFalse(result.isEmpty());
 
-            System.out.println("GET Request on resource location : /testlocation/" );
-            // See file: resource_location.json.
-            response = httpClient.newRequest("http://localhost:9090/testlocation/")  // uuid: f89486b7-0632-482d-a184-a9195733ddd9
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
-            result = response.getContentAsString();
-            assertFalse(result.isEmpty());
+        // Search on an invalid location path.
+        System.out.println("GET Request on resource location : /otherlocation/other2/");
+        // See file: resource_location.json.
+        response = httpClient.newRequest("http://localhost:9090/otherlocation/other2/")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
 
-            // Search on an invalid location path.
-            System.out.println("GET Request on resource location : /otherlocation/other2/" );
-            // See file: resource_location.json.
-            response = httpClient.newRequest("http://localhost:9090/otherlocation/other2/")
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+        // Search on a relative path location with included key.
+        System.out.println("GET Request on resource location : /testlocation/f89486b7-0632-482d-a184-a9195733ddd9");
+        // See file: resource_location.json.
+        response = httpClient.newRequest("http://localhost:9090//testlocation/f89486b7-0632-482d-a184-a9195733ddd9")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
 
-            // Search on a relative path location with included key.
-            System.out.println("GET Request on resource location : /testlocation/f89486b7-0632-482d-a184-a9195733ddd9");
-            // See file: resource_location.json.
-            response = httpClient.newRequest("http://localhost:9090//testlocation/f89486b7-0632-482d-a184-a9195733ddd9")
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
-
-            // Search on a false relative path but with good keys. This must be not found to avoid path confusion.
-            System.out.println("GET Request on resource location : /otherresources/f89486b7-0632-482d-a184-a9195733ddd9");
-            // See file: resource_location.json.
-            response = httpClient.newRequest("http://localhost:9090//otherresources/f89486b7-0632-482d-a184-a9195733ddd9")
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
-            String content = response.getContentAsString();
-            System.out.println(content);
-            assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+        // Search on a false relative path but with good keys. This must be not found to avoid path confusion.
+        System.out.println("GET Request on resource location : /otherresources/f89486b7-0632-482d-a184-a9195733ddd9");
+        // See file: resource_location.json.
+        response = httpClient.newRequest("http://localhost:9090/otherresources/f89486b7-0632-482d-a184-a9195733ddd9")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        String content = response.getContentAsString();
+        System.out.println(content);
+        assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
 
 
-            // Search on compute kind.
-            System.out.println("GET Request on Compute kind... http://localhost:9090/compute/");
-            response = httpClient.newRequest("http://localhost:9090/compute/")
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        // Search on compute kind.
+        System.out.println("GET Request on Compute kind... http://localhost:9090/compute/");
+        response = httpClient.newRequest("http://localhost:9090/compute/")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
 
-            result = response.getContentAsString();
-            assertNotNull(result);
-            assertFalse(result.isEmpty());
-            System.out.println(result);
+        result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        System.out.println(result);
 
-            // Test network kind.
-            System.out.println("GET Request on Network kind... http://localhost:9090/network/");
-            response = httpClient.newRequest("http://localhost:9090/network/")
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
-            result = response.getContentAsString();
-            assertNotNull(result);
-            assertFalse(result.isEmpty());
-            System.out.println(result);
+        // Test network kind.
+        System.out.println("GET Request on Network kind... http://localhost:9090/network/");
+        response = httpClient.newRequest("http://localhost:9090/network/")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        System.out.println(result);
 
-            // Test network interface link.
-            System.out.println("GET Request on Networkinterface kind... http://localhost:9090/networkinterface/");
-            response = httpClient.newRequest("http://localhost:9090/networkinterface/")
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
-            result = response.getContentAsString();
-            assertNotNull(result);
-            assertFalse(result.isEmpty());
-            System.out.println(result);
+        // Test network interface link.
+        System.out.println("GET Request on Networkinterface kind... http://localhost:9090/networkinterface/");
+        response = httpClient.newRequest("http://localhost:9090/networkinterface/")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        System.out.println(result);
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException(ex);
-        }
+        System.out.println("GET Request on mixin tag my_mixin2 kind... http://localhost:9090/my_mixin2/");
+        response = httpClient.newRequest("http://localhost:9090/my_mixin2/")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("f88486b7-0632-482d-a184-a9195733ddd0"));
+        System.out.println(result);
 
+        System.out.println("GET Request on mixin tag location ... http://localhost:9090/mixins/my_mixin2/");
+        response = httpClient.newRequest("http://localhost:9090/mixins/my_mixin2/")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("f88486b7-0632-482d-a184-a9195733ddd0"));
+        System.out.println(result);
     }
 
 
-    @Test
-    public void testUpdateResources() {
+    private void testUpdateResources() throws Exception {
 
-        try {
-            testCreateResourceInputJson(); // Launch create tests resources....
+        System.out.println("POST Request on resource location : /f88486b7-0632-482d-a184-a9195733ddd0");
 
-            System.out.println("POST Request on resource location : /f88486b7-0632-482d-a184-a9195733ddd0" );
+        File resource1 = getResourceInputFile("/testjson/integration/update/resource1.json");
+        ContentResponse response = httpClient.newRequest("localhost", 9090)
+                .accept("application/json")
+                .method(HttpMethod.POST)
+                .file(resource1.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        int statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
 
-            File resource1 = getResourceInputFile("/testjson/integration/update/resource1.json");
-            ContentResponse response = httpClient.newRequest("localhost", 9090)
-                    .accept("application/json")
-                    .method(HttpMethod.POST)
-                    .file(resource1.toPath(), "application/json")
-                    .agent("martclient")
-                    .send();
-            int statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        // Check GET :
+        System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
 
-            // Check GET :
-            System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
-            response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        String result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
+        System.out.println(result);
 
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
-            String result = response.getContentAsString();
-            assertNotNull(result);
-            assertFalse(result.isEmpty());
-            assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
-            System.out.println(result);
+        // 2 : associate a mixin tag to a resource.
+        File mixintagasso = getResourceInputFile("/testjson/integration/update/mixintag_asso.json");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
+                .accept("application/json")
+                .method(HttpMethod.POST)
+                .file(mixintagasso.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
 
-            // 2 : associate a mixin tag to a resource.
-            File mixintagasso = getResourceInputFile("/testjson/integration/update/mixintag_asso.json");
-            response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
-                    .accept("application/json")
-                    .method(HttpMethod.POST)
-                    .file(mixintagasso.toPath(), "application/json")
-                    .agent("martclient")
-                    .send();
-            statusResponse = response.getStatus();
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
 
-            System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
-            response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
-                    .method(HttpMethod.GET)
-                    .accept("application/json")
-                    .send();
-            statusResponse = response.getStatus();
-
-            assertTrue(statusResponse == Response.Status.OK.getStatusCode());
-            result = response.getContentAsString();
-            assertNotNull(result);
-            assertFalse(result.isEmpty());
-            assertTrue(result.contains("\"http://occiware.org/occi/tags#my_mixin2\""));
-            System.out.println(result);
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"http://occiware.org/occi/tags#my_mixin2\""));
+        System.out.println(result);
 
 
+        // 3 : action invocation.
+        System.out.println("POST Request action stop graceful invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop");
+        File action_invocation = getResourceInputFile("/testjson/integration/update/action_invocation_test.json");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop")
+                .accept("application/json")
+                .method(HttpMethod.POST)
+                .file(action_invocation.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        result = response.getContentAsString();
 
-            // 3 : action invocation.
-            File action_invocation = getResourceInputFile("/testjson/integration/update/action_invocation_test.json");
-            response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop")
-                    .accept("application/json")
-                    .method(HttpMethod.POST)
-                    .file(action_invocation.toPath(), "application/json")
-                    .agent("martclient")
-                    .send();
-            statusResponse = response.getStatus();
-            result = response.getContentAsString();
-
-            // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
-            assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException(ex);
-        }
+        // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
+        assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
 
-    @Test
-    public void testDeleteResources() {
+    private void testDeleteResources() throws Exception {
 
-        try {
-            testCreateResourceInputJson(); // Launch create tests resources....
-
-            System.out.println("DELETE Request on collection resource location : /testlocation/" );
-            // TODO : finish integration test with delete method.
+        System.out.println("DELETE Request, dissociate a mixin http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface on entity link: urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9");
 
 
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new RuntimeException(ex);
-        }
+        System.out.println("DELETE Request, dissociate a mixin tag my_mixin2 from a resource compute: urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0");
+
+
+
+        System.out.println("DELETE Request, remove a mixin tag definition my_mixin.");
+
+
+
+        System.out.println("DELETE Request, remove a mixin tag definition my_mixin2");
+
+
+
+        System.out.println("DELETE Request on entity resource location : /urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8/");
+
+
+
+        System.out.println("DELETE Request on collection resource (custom) location : /testlocation/");
+
+
+
+        System.out.println("DELETE Request on collection resource (kind compute) location : /compute/");
+
+
+
+
+
     }
 
 
