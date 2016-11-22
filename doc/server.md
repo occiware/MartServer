@@ -97,7 +97,7 @@ java -cp ./target/MartServer-1.0-SNAPSHOT.jar:/home/youruser/.m2/repository/Clou
 </code>
 </pre>
 
-The best way to build your application is to updated the pom.xml file (dependencies section and maven-install-plugin section) and set dependencies directly in lib/ if these are not referenced in maven central (or other repos).
+The best way to build your application is to update the pom.xml file (dependencies section and maven-install-plugin section) and set dependencies directly in lib/ if these are not referenced in maven central (or other repos).
 
 ## Stop server
 Simply kill the java main thread (pkill -9 java) or ctrl+c in current server terminal.

@@ -14,26 +14,6 @@ Development Status values :
     <th>comment (and related issues)</th>
     <th>progress status</th>
     <tr>
-        <td align="center">Associate a mixin (extension) on collection</td>
-        <td align="center">Mixin support, <a href="https://github.com/cgourdin/MartServer/issues/11">feature #11</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Update mixin (extension) association</td>
-        <td align="center">Update mixin association, <a href="https://github.com/cgourdin/MartServer/issues/36">feature #36</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Remove a mixin (extension) from configuration</td>
-        <td align="center">Mixin support, <a href="https://github.com/cgourdin/MartServer/issues/26">feature #26</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Delete a collection</td>
-        <td align="center">Delete a collection (ex: delete all the compute of the configuration), <a href="https://github.com/cgourdin/MartServer/issues/19">feature #19</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
-    </tr>
-    <tr>
         <td align="center">Add junit tests suite</td>
         <td align="center">Test suite for each functional methods, <a href="https://github.com/cgourdin/MartServer/issues/21">feature #21</a></td>
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
@@ -191,6 +171,26 @@ Development Status values :
     <tr>
         <td align="center">application/json media type parser (Content-Type and accept)</td>
         <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/30">feature #30</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Associate a mixin (extension) on collection</td>
+        <td align="center">Mixin support, <a href="https://github.com/cgourdin/MartServer/issues/11">feature #11</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Update mixin (extension) association</td>
+        <td align="center">Update mixin association, <a href="https://github.com/cgourdin/MartServer/issues/36">feature #36</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Remove a mixin (extension) from configuration</td>
+        <td align="center">Mixin support, <a href="https://github.com/cgourdin/MartServer/issues/26">feature #26</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
+    </tr>
+    <tr>
+        <td align="center">Delete a collection</td>
+        <td align="center">Delete a collection (ex: delete all the compute of the configuration), <a href="https://github.com/cgourdin/MartServer/issues/19">feature #19</a></td>
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
 </table>
