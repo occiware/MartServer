@@ -50,8 +50,8 @@ Development Status values :
     </tr>
     <tr>
         <td align="center">Add external properties file to configure the server</td>
-        <td align="center">Property file to manager the server configuration<a href="https://github.com/cgourdin/MartServer/issues/27">feature #27</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center">Property file to manager the server configuration<a href="https://github.com/cgourdin/MartServer/issues/29">feature #29</a></td>
+        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Add https support with certificate</td>
