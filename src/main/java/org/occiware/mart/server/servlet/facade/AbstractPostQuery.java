@@ -25,7 +25,6 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 
 /**
- *
  * @author Christophe Gourdin
  */
 public abstract class AbstractPostQuery extends AbstractEntryPoint implements IPostQuery {

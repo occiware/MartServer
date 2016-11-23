@@ -26,7 +26,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 /**
- *
  * @author cgourdin
  */
 public abstract class AbstractGetQuery extends AbstractEntryPoint implements IGetQuery {

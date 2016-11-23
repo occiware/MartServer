@@ -21,7 +21,6 @@ package org.occiware.mart.server.servlet.impl.parser.json.render;
 import java.util.Map;
 
 /**
- *
  * @author Christophe Gourdin
  */
 public class ActionJson {

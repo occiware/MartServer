@@ -1,4 +1,4 @@
 {
-	"$ref": "OCCI-schema.json#definitions/model"
+  "$ref": "OCCI-schema.json#definitions/model"
 }
 

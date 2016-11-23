@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
  * @author Christophe Gourdin
  */
 public abstract class AbstractPutQuery extends AbstractEntryPoint implements IPutQuery {

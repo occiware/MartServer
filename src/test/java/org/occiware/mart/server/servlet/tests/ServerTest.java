@@ -499,31 +499,22 @@ public class ServerTest {
         System.out.println("DELETE Request, dissociate a mixin http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface on entity link: urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9");
 
 
-
         System.out.println("DELETE Request, dissociate a mixin tag my_mixin2 from a resource compute: urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0");
-
 
 
         System.out.println("DELETE Request, remove a mixin tag definition my_mixin.");
 
 
-
         System.out.println("DELETE Request, remove a mixin tag definition my_mixin2");
-
 
 
         System.out.println("DELETE Request on entity resource location : /urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8/");
 
 
-
         System.out.println("DELETE Request on collection resource (custom) location : /testlocation/");
 
 
-
         System.out.println("DELETE Request on collection resource (kind compute) location : /compute/");
-
-
-
 
 
     }

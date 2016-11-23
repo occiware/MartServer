@@ -19,7 +19,6 @@
 package org.occiware.mart.server.servlet.impl.parser.json.render;
 
 /**
- *
  * @author Christophe Gourdin
  */
 public class LinkJson extends ResourceJson {

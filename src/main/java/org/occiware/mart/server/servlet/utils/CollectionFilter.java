@@ -128,19 +128,19 @@ public class CollectionFilter {
         this.filterOnPath = filterOnPath;
     }
 
-    public void setNumberOfItemsPerPage(int numberOfItemsPerPage) {
-        this.numberOfItemsPerPage = numberOfItemsPerPage;
-    }
-
     public int getNumberOfItemsPerPage() {
         return this.numberOfItemsPerPage;
     }
 
-    public void setCurrentPage(int currentPage) {
-        this.currentPage = currentPage;
+    public void setNumberOfItemsPerPage(int numberOfItemsPerPage) {
+        this.numberOfItemsPerPage = numberOfItemsPerPage;
     }
 
     public int getCurrentPage() {
         return currentPage;
+    }
+
+    public void setCurrentPage(int currentPage) {
+        this.currentPage = currentPage;
     }
 }

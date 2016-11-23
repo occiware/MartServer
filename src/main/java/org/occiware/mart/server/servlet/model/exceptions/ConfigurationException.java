@@ -19,7 +19,6 @@
 package org.occiware.mart.server.servlet.model.exceptions;
 
 /**
- *
  * @author christophe
  */
 public class ConfigurationException extends Exception {

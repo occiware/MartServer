@@ -24,8 +24,7 @@ import javax.ws.rs.core.Response;
 import java.util.Map;
 
 /**
- *
- * @author cgourdin
+ * @author Christophe Gourdin
  */
 public abstract class AbstractDeleteQuery extends AbstractEntryPoint implements IDeleteQuery {
 

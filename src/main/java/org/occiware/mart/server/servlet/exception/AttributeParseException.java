@@ -19,7 +19,6 @@
 package org.occiware.mart.server.servlet.exception;
 
 /**
- *
  * @author cgourdin
  */
 public class AttributeParseException extends Exception {

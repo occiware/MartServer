@@ -23,7 +23,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 /**
- *
  * @author Christophe Gourdin
  */
 interface IGetQuery extends IEntryPoint {

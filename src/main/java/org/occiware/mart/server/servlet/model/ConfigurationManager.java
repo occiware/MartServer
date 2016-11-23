@@ -1747,7 +1747,7 @@ public class ConfigurationManager {
         // JP: start index starts with 1
 
         int startIndex = filter.getCurrentPage();
-        int number= filter.getNumberOfItemsPerPage();
+        int number = filter.getNumberOfItemsPerPage();
         if (startIndex > 1 && !sources.isEmpty()) {
             int currentIndex = 0;
             it = sources.iterator();

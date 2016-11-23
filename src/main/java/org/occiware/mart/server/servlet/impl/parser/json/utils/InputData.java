@@ -106,8 +106,6 @@ public class InputData {
     }
 
 
-
-
     public String getAction() {
         return action;
     }

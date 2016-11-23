@@ -1,4 +1,4 @@
 {
-	"$ref": "OCCI-schema.json#definitions/attributes"
+  "$ref": "OCCI-schema.json#definitions/attributes"
 }
 

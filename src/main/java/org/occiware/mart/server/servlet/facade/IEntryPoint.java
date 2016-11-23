@@ -51,6 +51,7 @@ interface IEntryPoint {
 
     /**
      * Get a list of entities from a category request or inbound path request.
+     *
      * @param path
      * @return
      * @throws ConfigurationException

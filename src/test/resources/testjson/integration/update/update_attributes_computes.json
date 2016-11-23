@@ -1,6 +1,6 @@
 {
   "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
-  "attributes":{
+  "attributes": {
     "occi.compute.memory": 8.0,
     "occi.compute.cores": 4
   }

@@ -1,4 +1,4 @@
 {
-	"$ref": "OCCI-schema.json#definitions/resource_collection"
+  "$ref": "OCCI-schema.json#definitions/resource_collection"
 }
 

@@ -527,6 +527,7 @@ public class PostQuery extends AbstractPostQuery {
 
     /**
      * Execute update (mixin tag asso + request on entities collection).
+     *
      * @param data
      * @param location
      * @param pathParser

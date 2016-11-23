@@ -46,8 +46,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- *
- * @author cgourdin
+ * @author Christophe Gourdin
  */
 public abstract class AbstractEntryPoint implements IEntryPoint {
 

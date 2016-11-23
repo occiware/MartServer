@@ -36,7 +36,6 @@ import java.net.URI;
 import java.util.*;
 
 /**
- *
  * @author Christophe Gourdin
  */
 public abstract class AbstractRequestParser implements IRequestParser {

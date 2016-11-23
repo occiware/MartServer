@@ -24,7 +24,6 @@ import javax.ws.rs.core.Response;
 import java.util.Map;
 
 /**
- *
  * @author Christophe Gourdin
  */
 interface IDeleteQuery extends IEntryPoint {
@@ -48,6 +47,7 @@ interface IDeleteQuery extends IEntryPoint {
 
     /**
      * Remove mixin association and if mixin is a user tag, remove it from configuration.
+     *
      * @param mixinId
      * @param owner
      * @param isMixinTag

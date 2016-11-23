@@ -10,12 +10,12 @@
         </layout>
     </appender>
 
-<!--     <appender name="console2" class="org.apache.log4j.ConsoleAppender">
-        <param name="Target" value="System.out"/>
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%-5p %c{1} - %m%n"/>
-        </layout>
-    </appender>-->
+    <!--     <appender name="console2" class="org.apache.log4j.ConsoleAppender">
+            <param name="Target" value="System.out"/>
+            <layout class="org.apache.log4j.PatternLayout">
+                <param name="ConversionPattern" value="%-5p %c{1} - %m%n"/>
+            </layout>
+        </appender>-->
     <!--    <appender name="BLOBSTOREFILE" class="org.apache.log4j.DailyRollingFileAppender">
      <param name="File" value="logs/jclouds-blobstore.log" />
      <param name="Append" value="true" />
@@ -41,7 +41,7 @@
         <level value="DEBUG"/>
     </logger>
     <logger name="org.quartz">
-        <level value="INFO" />
+        <level value="INFO"/>
     </logger>
     <!--    <category name="jclouds.blobstore">
         <priority value="TRACE" />
@@ -52,8 +52,8 @@
         <appender-ref ref="console2"/>
     </logger>-->
     <root>
-        <priority value ="INFO" />  <!-- WARN for production -->
-        <appender-ref ref="console" />
+        <priority value="INFO"/>  <!-- WARN for production -->
+        <appender-ref ref="console"/>
     </root>
 
 </log4j:configuration>

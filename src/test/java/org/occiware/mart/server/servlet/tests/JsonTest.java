@@ -44,7 +44,6 @@ import java.util.logging.Logger;
 import static org.junit.Assert.*;
 
 /**
- *
  * @author Christophe Gourdin
  */
 public class JsonTest {

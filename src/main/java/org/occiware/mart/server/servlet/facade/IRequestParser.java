@@ -47,8 +47,7 @@ public interface IRequestParser {
      * @param headers
      * @param request
      * @throws org.occiware.mart.server.servlet.exception.CategoryParseException
-     * @throws
-     * org.occiware.mart.server.servlet.exception.AttributeParseException
+     * @throws org.occiware.mart.server.servlet.exception.AttributeParseException
      */
     void parseInputQuery(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException, AttributeParseException;
 
@@ -85,9 +84,9 @@ public interface IRequestParser {
      * Parse the Object to a valid response with accept media type output.
      *
      * @param object, if object is instance of Response, this must be not
-     * parsed.
+     *                parsed.
      * @param status, Response.Status code representation, useful if object
-     * parameter is a Response object or if there was a String object.
+     *                parameter is a Response object or if there was a String object.
      * @return a response object to return to client.
      * @throws ResponseParseException
      */
@@ -99,7 +98,7 @@ public interface IRequestParser {
      * From /-/ or .wellknown, return a String on interface object.
      *
      * @param categoryFilter if path contains a category, interface is filtered
-     * for this category.
+     *                       for this category.
      * @param user
      * @return a response object to return to client.
      */

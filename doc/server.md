@@ -54,15 +54,8 @@ You may have a result like this one :
 
 <pre>
 <code>
-[INFO] Scanning for projects...
-[INFO] 
-[INFO] ------------------------------------------------------------------------
-[INFO] Building MartServer 1.0-SNAPSHOT
-[INFO] ------------------------------------------------------------------------
-[INFO] 
-[INFO] --- exec-maven-plugin:1.5.0:java (default-cli) @ MartServer ---
-INFO  log - Logging initialized @1696ms
-WARN  ContextHandler - o.e.j.s.ServletContextHandler@4f60df4f{/,null,null} contextPath ends with /*
+INFO  log - Logging initialized @372ms
+WARN  ContextHandler - o.e.j.s.ServletContextHandler@58651fd0{/,null,null} contextPath ends with /*
 WARN  ContextHandler - Empty contextPath
 INFO  MART - OCCIware MART initializing...
 INFO  MART -   Scanning all plugin.xml found in the classpath...
@@ -74,16 +67,20 @@ INFO  MART -     - EMF package org.occiware.clouddesigner.occi.infrastructure.In
 INFO  MART -     - Ecore factory org.occiware.clouddesigner.occi.util.OCCIResourceFactoryImpl for file extension .infrastructure registered.
 INFO  MART -     - OCCI extension http://schemas.ogf.org/occi/infrastructure# contained in model/Infrastructure.occie registered.
 INFO  MART - OCCIware MART initialized.
-INFO  ConfigurationManager - Configuration for user anonymous created
 INFO  ConfigurationManager - Collection: [http://schemas.ogf.org/occi/infrastructure#, http://schemas.ogf.org/occi/core#]
 INFO  ConfigurationManager - Loading model extension : http://schemas.ogf.org/occi/infrastructure#
 INFO  ConfigurationManager - Loading model extension : http://schemas.ogf.org/occi/core#
 INFO  ConfigurationManager - Extension : core added to user configuration.
 INFO  ConfigurationManager - Extension : infrastructure added to user configuration.
-INFO  Server - jetty-9.3.9.v20160517
-INFO  ContextHandler - Started o.e.j.s.ServletContextHandler@4f60df4f{/,null,AVAILABLE}
-INFO  AbstractConnector - Started ServerConnector@671f100a{HTTP/1.1,[http/1.1]}{0.0.0.0:9090}
-INFO  Server - Started @2695ms
+Mart server will log in path : /Users/myuser/workspace/MartServer/logs/mart_server_debug.log
+Mart server will log in path : /Users/myuser/workspace/MartServer/logs/mart_server_info.log
+Mart server will log in path : /Users/myuser/workspace/MartServer/logs/mart_server_warn.log
+Mart server will log in path : /Users/myuser/workspace/MartServer/logs/mart_server_error.log
+Mart server will log in path : /Users/myuser/workspace/MartServer/logs/mart_server_fatal.log
+2016-11-23 08:40:26.764 INFO  jetty-9.3.9.v20160517
+2016-11-23 08:40:27.250 INFO  Started o.e.j.s.ServletContextHandler@58651fd0{/,null,AVAILABLE}
+2016-11-23 08:40:27.275 INFO  Started ServerConnector@2262b621{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
+2016-11-23 08:40:27.276 INFO  Started @1574ms
 </code>
 </pre>
 
@@ -106,12 +103,37 @@ Note that there is no persistence for now, if you stop the server, you will loos
 This is plan to make it persistent in a near future to allow the defined resources to be loaded in the same state when you have stopped the server.
 
 ## Accessing the server.
-The server by default is on port 8080. 
-In a near future, you may edit a property file to define the port, and other things. This documentation will be updated accordingly.
+The server port is by default on 8080. 
+
+By default the server accept configuration file with name martserver.config located in home directory (so you don't have to add a parameter in comand line when launching the server).
+
+/user_home_directory/martserver.config
+
+For now there is 3 parameters :
+ 
+ - server.port=8080
+ Where the port is between 1 and 9999 a good pratice to set the port is to assume that all port before 1000 are not ok. So you can choose a port like 1001.
+ 
+ - server.log.directory=/logging/application/logs
+ The directory where are located the application logs.
+ 
+ - server.protocol=http
+ The protocol, for now, only http works. https support will be plan in a near future.
+
+
+You can add a property file with the name as you want, and located in a directory of your choice.
+You could create for example a file server.config and set it to my_folder_config.
+You can also launch the server with this command line :
+<pre>
+<code>
+mvn exec:java -Dexec.args="/my_folder_config/server.config"
+</code>
+</pre>
+
 If you have launch the server in localhost, you can check that the server is started correctly with this curl command:
 <pre>
 <code>
-curl -v -X GET http://localhost:9090/.well-known/org/ogf/occi/-/ -H "accept: application/json"
+curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/ -H "accept: application/json"
 </code>
 </pre>
 
@@ -120,9 +142,9 @@ Like this:
 <pre>
 <code>
 *   Trying ::1...
-* Connected to localhost (::1) port 9090 (#0)
+* Connected to localhost (::1) port 8080 (#0)
 > GET /.well-known/org/ogf/occi/-/ HTTP/1.1
-> Host: localhost:9090
+> Host: localhost:8080
 > User-Agent: curl/7.43.0
 > accept: application/json
 > 
@@ -169,16 +191,16 @@ Like this:
 ## Logs output
 There is two output :
 
-- standard output will log all logs with level info in console output.
+- standard output will log all logs with level INFO in console output.
 - file log output, contains all application / dependencies logged per level.
 
-The subdirectory logs/log/ contains all output logs level (rolling mode with a maximum of 2 Mo size) :
+The subdirectory logs/ contains all output logs level (rolling mode with a maximum of 2 Mo size) :
 
-- debug.log (debug level)
-- info.log (information level)
-- warn.log (warn level)
-- error.log (error level)
-- fatal.log (fatal level)
+- mart_server_debug.log (DEBUG level)
+- mart_server_info.log (INFO level)
+- mart_server_warn.log (WARN level)
+- mart_server_error.log (ERROR level)
+- mart_server_fatal.log (FATAL level)
 
 
 ## Issues

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
  * @author Christophe Gourdin
  */
 public class ResourceJson {

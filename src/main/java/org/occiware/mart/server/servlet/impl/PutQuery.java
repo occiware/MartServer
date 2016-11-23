@@ -54,7 +54,7 @@ public class PutQuery extends AbstractPutQuery {
      * Create or replace input point, this method is for creating entity with a
      * relative path like '/foo/bar/uuid'.
      *
-     * @param path object location path.
+     * @param path    object location path.
      * @param headers http headers
      * @param request http request object
      * @return

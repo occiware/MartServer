@@ -27,7 +27,7 @@ import java.util.List;
 
 /**
  * This class is a pojo that defines the query types and give the route to treat the datas.
- *
+ * <p>
  * Created by Christophe Gourdin on 19/11/2016.
  */
 public class PathParser {
@@ -82,7 +82,6 @@ public class PathParser {
     private String categoryId;
 
     /**
-     *
      * @param data InputData object
      * @param path the query relative path
      */
@@ -185,7 +184,7 @@ public class PathParser {
                 }
 
                 // Check if a kind is defined in inputdata, if this is the case, it must be an entity query.
-                if (categoryId == null && data.getKind() != null && !uuids.isEmpty())  {
+                if (categoryId == null && data.getKind() != null && !uuids.isEmpty()) {
                     entityQuery = true;
                 }
             }

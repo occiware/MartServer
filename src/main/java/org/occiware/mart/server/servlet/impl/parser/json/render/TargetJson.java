@@ -19,7 +19,6 @@
 package org.occiware.mart.server.servlet.impl.parser.json.render;
 
 /**
- *
  * @author christophe
  */
 public class TargetJson {

@@ -1,17 +1,17 @@
 {
-    "resources": [
-        {
-            "id": "urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0",
-            "title": "compute1",
-            "summary": "My compute",
-            "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
-            "attributes": {
-                "occi.compute.speed": 2.0,
-                "occi.compute.memory": 4.5,
-                "occi.compute.cores": 2,
-                "occi.compute.architecture" : "x64",
-                "occi.compute.state" : "active"
-            }
-        }
-    ]
+  "resources": [
+    {
+      "id": "urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0",
+      "title": "compute1",
+      "summary": "My compute",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+      "attributes": {
+        "occi.compute.speed": 2.0,
+        "occi.compute.memory": 4.5,
+        "occi.compute.cores": 2,
+        "occi.compute.architecture": "x64",
+        "occi.compute.state": "active"
+      }
+    }
+  ]
 }

@@ -1,4 +1,4 @@
 {
-	"$ref": "OCCI-schema.json#definitions/mixin"
+  "$ref": "OCCI-schema.json#definitions/mixin"
 }
 

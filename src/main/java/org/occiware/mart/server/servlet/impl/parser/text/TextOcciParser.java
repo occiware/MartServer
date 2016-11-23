@@ -18,8 +18,6 @@
  */
 package org.occiware.mart.server.servlet.impl.parser.text;
 
-import org.eclipse.emf.ecore.EDataType;
-import org.eclipse.emf.ecore.EEnum;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
@@ -134,8 +132,7 @@ public class TextOcciParser extends AbstractRequestParser {
      *
      * @param headers
      * @param request
-     * @throws
-     * org.occiware.mart.server.servlet.exception.AttributeParseException
+     * @throws org.occiware.mart.server.servlet.exception.AttributeParseException
      */
     @Override
     public void parseOcciAttributes(HttpHeaders headers, HttpServletRequest request) throws AttributeParseException {

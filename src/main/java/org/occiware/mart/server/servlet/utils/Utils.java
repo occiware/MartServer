@@ -170,7 +170,6 @@ public class Utils {
      * @return a String representation of copied bytes, null if outputstream is
      * not a ByteArrayOutputStream.
      * @throws IOException
-     *
      */
     public static String copyStream(InputStream in, OutputStream os) throws IOException {
         byte[] buf = new byte[1024];
@@ -309,7 +308,7 @@ public class Utils {
      * @param id
      * @param owner
      * @param version (version number, will increment with each update on this
-     * object).
+     *                object).
      * @return
      */
     public static Long createEtagNumber(final String id, final String owner, final int version) {
@@ -337,7 +336,7 @@ public class Utils {
     /**
      * Check if an UUID is provided on a String or attribute occi.core.id.
      *
-     * @param id, an uuid or a path like foo/bar/myuuid
+     * @param id,  an uuid or a path like foo/bar/myuuid
      * @param attr
      * @return true if provided or false if not provided
      */
@@ -624,7 +623,6 @@ public class Utils {
     }
 
     /**
-     *
      * @param mixins
      * @param kind
      * @return true if all mixins applied.
@@ -872,7 +870,6 @@ public class Utils {
     }
 
     /**
-     *
      * @param path
      * @return
      */
