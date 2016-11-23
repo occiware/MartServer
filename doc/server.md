@@ -167,8 +167,18 @@ Like this:
 </pre>
 
 ## Logs output
-The output for now is directly done on standard output console, but you can redirect output to a file.
-In a near future, the logs will appear in a log file. This documentation will be updated accordingly.
+There is two output :
+
+- standard output will log all logs with level info in console output.
+- file log output, contains all application / dependencies logged per level.
+
+The subdirectory logs/log/ contains all output logs level (rolling mode with a maximum of 2 Mo size) :
+
+- debug.log (debug level)
+- info.log (information level)
+- warn.log (warn level)
+- error.log (error level)
+- fatal.log (fatal level)
 
 
 ## Issues
