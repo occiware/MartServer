@@ -1,7 +1,11 @@
 package org.occiware.mart.server.utils.tests;
 import org.junit.Test;
 import org.occiware.mart.server.servlet.utils.Utils;
+import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +48,8 @@ public class UtilsTest {
 
         uuidResult = Utils.getUUIDFromPath(path, attr);
         assertNull(uuidResult);
-
     }
+
 
 
 }

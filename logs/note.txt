@@ -1,0 +1,2 @@
+This directory is reserved for logs output.
+The subdirectory log contains all the application logs output file.

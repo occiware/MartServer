@@ -24,6 +24,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
+import org.occiware.mart.server.servlet.utils.LoggerConfig;
 
 
 /**
@@ -44,6 +45,9 @@ class MartServer {
 
         ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
         ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
+
+        // Initialize logger appenders.
+        LoggerConfig.initAppenders();
 
         try {
             server.start();
