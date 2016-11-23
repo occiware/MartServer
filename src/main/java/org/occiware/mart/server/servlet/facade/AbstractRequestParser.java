@@ -125,6 +125,25 @@ public abstract class AbstractRequestParser implements IRequestParser {
     @Override
     public abstract Response parseResponse(Object object, Response.Status status) throws ResponseParseException;
 
+    @Override
+    public abstract Response parseEmptyResponse(final Response.Status status);
+
+    /**
+     *
+     * @param status
+     * @param mediaType
+     * @return
+     */
+    public Response parseEmptyResponse(final Response.Status status, final String mediaType) {
+        Response response = Response.status(status)
+                .header("Server", Constants.OCCI_SERVER_HEADER)
+                .header("Accept", getAcceptedTypes())
+                .type(mediaType)
+                .build();
+        return response;
+    }
+
+
     /**
      * Be warned that categoryFilter is the term only.
      *

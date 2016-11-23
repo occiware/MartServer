@@ -684,4 +684,9 @@ public class TextOcciParser extends AbstractRequestParser {
         return sb.toString();
     }
 
+    @Override
+    public Response parseEmptyResponse(final Response.Status status) {
+        return super.parseEmptyResponse(status, Constants.MEDIA_TYPE_TEXT_OCCI);
+    }
+
 }

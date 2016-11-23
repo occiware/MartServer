@@ -497,18 +497,130 @@ public class ServerTest {
     private void testDeleteResources() throws Exception {
 
         System.out.println("DELETE Request, dissociate a mixin http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface on entity link: urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9");
+        File dissociateMixin = getResourceInputFile("/testjson/integration/delete/dissociate_mixin.json");
+
+        ContentResponse response = httpClient.newRequest("http://localhost:9090/")
+                .accept("application/json")
+                .method(HttpMethod.DELETE)
+                .file(dissociateMixin.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        int statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        String result = response.getContentAsString();
+        System.out.println(result);
+
+
+        System.out.println("GET Request http://localhost:9090/networkinterface/b2fe83ae-a20f-54fc-b436-cec85c94c5e9");
+        response = httpClient.newRequest("http://localhost:9090/networkinterface/b2fe83ae-a20f-54fc-b436-cec85c94c5e9")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertFalse(result.contains("http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"));
+        System.out.println(result);
+
 
 
         System.out.println("DELETE Request, dissociate a mixin tag my_mixin2 from a resource compute: urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0");
+        File dissociateMixinTag = getResourceInputFile("/testjson/integration/delete/dissociate_mixin_tag.json");
+
+        response = httpClient.newRequest("http://localhost:9090/")
+                .accept("application/json")
+                .method(HttpMethod.DELETE)
+                .file(dissociateMixinTag.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
+
+        System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin2"));
+        System.out.println(result);
 
 
         System.out.println("DELETE Request, remove a mixin tag definition my_mixin.");
+        File removeMixinTag = getResourceInputFile("/testjson/integration/delete/remove_mixin_tag_definition.json");
+
+        response = httpClient.newRequest("http://localhost:9090/-/")
+                .accept("application/json")
+                .method(HttpMethod.DELETE)
+                .file(removeMixinTag.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
+
+        System.out.println("GET Request http://localhost:9090/-/?category=my_mixin");
+        response = httpClient.newRequest("http://localhost:9090/-/?category=my_mixin")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin"));
+        System.out.println(result);
 
 
         System.out.println("DELETE Request, remove a mixin tag definition my_mixin2");
+        File removeMixinTag2 = getResourceInputFile("/testjson/integration/delete/remove_mixin_tag_definition_mixin2.json");
+
+        response = httpClient.newRequest("http://localhost:9090/-/")
+                .accept("application/json")
+                .method(HttpMethod.DELETE)
+                .file(removeMixinTag2.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
+
+        System.out.println("GET Request http://localhost:9090/-/?category=my_mixin2");
+        response = httpClient.newRequest("http://localhost:9090/-/?category=my_mixin2")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        result = response.getContentAsString();
+        assertFalse(result.contains("my_mixin2"));
+        System.out.println(result);
 
 
-        System.out.println("DELETE Request on entity resource location : /urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8/");
+        System.out.println("DELETE Request on entity resource location : /a1cf3896-500e-48d8-a3f5-a8b3601bcdd8");
+        response = httpClient.newRequest("http://localhost:9090/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8")
+                .accept("application/json")
+                .method(HttpMethod.DELETE)
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        System.out.println(result);
+
+        System.out.println("GET Request http://localhost:9090/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8");
+        response = httpClient.newRequest("http://localhost:9090/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
 
 
         System.out.println("DELETE Request on collection resource (custom) location : /testlocation/");

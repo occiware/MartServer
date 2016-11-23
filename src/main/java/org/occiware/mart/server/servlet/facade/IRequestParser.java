@@ -94,6 +94,8 @@ public interface IRequestParser {
 
     Response parseResponse(Object object) throws ResponseParseException;
 
+    Response parseEmptyResponse(final Response.Status status);
+
     /**
      * From /-/ or .wellknown, return a String on interface object.
      *

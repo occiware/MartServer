@@ -109,6 +109,14 @@ public class GetQuery extends AbstractGetQuery {
 
                 } else {
                     entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+                    if (entity == null) {
+                        try {
+                            response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+                            return response;
+                        } catch (ResponseParseException ex) {
+                            throw new InternalServerErrorException(ex);
+                        }
+                    }
                     String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
                     locationTmp = locationTmp.replace(entityId, "");
                     locationTmp = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);

@@ -642,15 +642,34 @@ public class ConfigurationManager {
     public static void removeEntityAttributes(Entity entity, EList<Attribute> attributesToRemove) {
 
         Iterator<AttributeState> entityAttrs = entity.getAttributes().iterator();
-
+        boolean isKindAttribute;
         while (entityAttrs.hasNext()) {
             AttributeState attrState = entityAttrs.next();
             for (Attribute attribute : attributesToRemove) {
-                if (attribute.getName().equals(attrState.getName())) {
+                isKindAttribute = isKindAttribute(entity.getKind(), attribute.getName());
+                if (attribute.getName().equals(attrState.getName()) && !isKindAttribute) {
                     entityAttrs.remove();
                 }
             }
         }
+
+    }
+
+    /**
+     * Check if an attribute is a kind attribute.
+     * @param kind
+     * @param attributeName
+     */
+    public static boolean isKindAttribute(final Kind kind, String attributeName) {
+        boolean result = false;
+        EList<Attribute> attrs = kind.getAttributes();
+        for (Attribute attr : attrs) {
+            if (attr.getName().equals(attributeName)) {
+                result = true;
+                break;
+            }
+        }
+        return result;
 
     }
 

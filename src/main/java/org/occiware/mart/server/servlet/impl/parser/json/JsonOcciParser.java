@@ -1206,4 +1206,10 @@ public class JsonOcciParser extends AbstractRequestParser {
         return sbToReturn;
     }
 
+
+    @Override
+    public Response parseEmptyResponse(final Response.Status status) {
+        return super.parseEmptyResponse(status, Constants.MEDIA_TYPE_JSON);
+    }
+
 }

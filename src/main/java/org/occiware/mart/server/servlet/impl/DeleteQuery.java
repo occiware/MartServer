@@ -176,12 +176,8 @@ public class DeleteQuery extends AbstractDeleteQuery {
             ConfigurationManager.dissociateMixinFromEntity(owner, mixinId, entity);
         }
 
-        try {
-            response = outputParser.parseResponse("ok");
-            return response;
-        } catch (ResponseParseException ex) {
-            throw new InternalServerErrorException();
-        }
+        response = outputParser.parseEmptyResponse(Response.Status.OK);
+        return response;
     }
 
 
@@ -221,11 +217,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
             }
         }
         if (!hasError && response == null) {
-            try {
-                response = outputParser.parseResponse("ok");
-            } catch (ResponseParseException ex) {
-                throw new InternalServerErrorException();
-            }
+            response = outputParser.parseEmptyResponse(Response.Status.OK);
         }
         return response;
     }
@@ -266,7 +258,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
                     entityInf.occiDelete();
                     ConfigurationManager.removeOrDissociateFromConfiguration(ConfigurationManager.DEFAULT_OWNER, entityInf.getId());
                 }
-                response = outputParser.parseResponse("ok");
+                response = outputParser.parseEmptyResponse(Response.Status.OK);
             }
 
         } catch (ResponseParseException ex) {
@@ -307,13 +299,10 @@ public class DeleteQuery extends AbstractDeleteQuery {
         title = entity.getTitle();
         entity.occiDelete();
         ConfigurationManager.removeOrDissociateFromConfiguration(ConfigurationManager.DEFAULT_OWNER, entityId);
-        try {
-            LOGGER.info("Remove entity: " + title + " --> " + entityId);
-            response = outputParser.parseResponse("Entity removed from path : " + path);
-            return response;
-        } catch (ResponseParseException ex) {
-            throw new InternalServerErrorException(ex);
-        }
+        LOGGER.info("Remove entity: " + title + " --> " + entityId);
+        response = outputParser.parseEmptyResponse(Response.Status.OK);
+        return response;
+
     }
 
 }
