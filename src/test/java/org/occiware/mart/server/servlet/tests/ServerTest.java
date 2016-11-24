@@ -624,10 +624,45 @@ public class ServerTest {
 
 
         System.out.println("DELETE Request on collection resource (custom) location : /testlocation/");
+        response = httpClient.newRequest("http://localhost:9090/testlocation/")
+                .accept("application/json")
+                .method(HttpMethod.DELETE)
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        System.out.println(result);
+
+        System.out.println("GET Request http://localhost:9090/testlocation/");
+        response = httpClient.newRequest("http://localhost:9090/testlocation/")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
 
 
         System.out.println("DELETE Request on collection resource (kind compute) location : /compute/");
+        response = httpClient.newRequest("http://localhost:9090/compute/")
+                .accept("application/json")
+                .method(HttpMethod.DELETE)
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        System.out.println(result);
 
+        System.out.println("GET Request http://localhost:9090/compute/");
+        response = httpClient.newRequest("http://localhost:9090/compute/")
+                .method(HttpMethod.GET)
+                .accept("application/json")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
 
     }
 
