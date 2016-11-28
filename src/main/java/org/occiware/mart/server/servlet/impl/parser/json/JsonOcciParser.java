@@ -566,18 +566,22 @@ public class JsonOcciParser extends AbstractRequestParser {
         Response response;
         OcciMainJson mainJson = new OcciMainJson();
         List<ResourceJson> resources = new LinkedList<>();
+        ResourceJson currentResource = null;
+        LinkJson currentLink = null;
         List<LinkJson> links = new LinkedList<>();
         for (Entity entity : entities) {
             if (entity instanceof Link) {
                 LinkJson linkJson = buildLinkJsonFromEntity(entity);
+                currentLink = linkJson;
                 links.add(linkJson);
 
             } else {
                 ResourceJson resJson = buildResourceJsonFromEntity(entity);
+                currentResource = resJson;
                 resources.add(resJson);
             }
-
         }
+        String msg;
 
         if (!resources.isEmpty()) {
             mainJson.setResources(resources);
@@ -585,7 +589,17 @@ public class JsonOcciParser extends AbstractRequestParser {
         if (!links.isEmpty()) {
             mainJson.setLinks(links);
         }
-        String msg = mainJson.toStringJson();
+        msg = mainJson.toStringJson();
+
+        if (entities.size() == 1 && !resources.isEmpty() && resources.size() == 1 && currentResource != null) {
+            // One entity to render.
+            LOGGER.info("One entity resource to render.");
+            msg = currentResource.toStringJson();
+        }
+        if (entities.size() == 1 && resources.isEmpty() && !links.isEmpty() && links.size() == 1 && currentLink != null) {
+            LOGGER.info("One entity link to render.");
+            msg = currentLink.toStringJson();
+        }
         response = renderResponseWithMesssageContent(status, msg);
 
         return response;
