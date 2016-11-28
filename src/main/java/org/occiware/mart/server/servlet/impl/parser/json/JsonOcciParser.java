@@ -101,68 +101,77 @@ public class JsonOcciParser extends AbstractRequestParser {
         boolean isActionInvocation = false;
         String messages = "";
 
-        // Try on occi main json (for multiple resources/links/mixins).
-        try {
-            occiMain = mapper.readValue(contentJson, OcciMainJson.class);
-            parseMainInput(occiMain);
-            isCollectionRes = true;
-        } catch (IOException ex) {
-            messages += ex.getMessage();
-            isCollectionRes = false;
-        }
-
-        // for one resource, if this is not a collection (resources,links etc..).
-        // it goes to try to get a single resource.
-        if (!isCollectionRes) {
+        if (!contentJson.isEmpty()) {
+            // Try on occi main json (for multiple resources/links/mixins).
             try {
-                ResourceJson resJson = mapper.readValue(contentJson, ResourceJson.class);
-                parseResourceJsonInput(resJson);
-                isResourceSingle = true;
+                occiMain = mapper.readValue(contentJson, OcciMainJson.class);
+                parseMainInput(occiMain);
+                isCollectionRes = true;
             } catch (IOException ex) {
-                messages += " " + ex.getMessage();
-                isResourceSingle = false;
+                messages += ex.getMessage();
+                isCollectionRes = false;
             }
 
-            if (!isResourceSingle) {
+            // for one resource, if this is not a collection (resources,links etc..).
+            // it goes to try to get a single resource.
+            if (!isCollectionRes) {
                 try {
-                    LinkJson linkJson = mapper.readValue(contentJson, LinkJson.class);
-                    parseLinkJsonInput(linkJson);
-                    isLinkSingle = true;
+                    ResourceJson resJson = mapper.readValue(contentJson, ResourceJson.class);
+                    parseResourceJsonInput(resJson);
+                    isResourceSingle = true;
                 } catch (IOException ex) {
                     messages += " " + ex.getMessage();
-                    isLinkSingle = false;
+                    isResourceSingle = false;
                 }
-            }
 
-            // Try to parse single mixin tag.
-            if (!isResourceSingle && !isLinkSingle) {
-                try {
-                    MixinJson mixinJson = mapper.readValue(contentJson, MixinJson.class);
-                    parseMixinJsonTagInput(mixinJson);
-                    isMixinTagSingle = true;
-                } catch (IOException ex) {
-                    messages += " " + ex.getMessage();
-                    isMixinTagSingle = false;
+                if (!isResourceSingle) {
+                    try {
+                        LinkJson linkJson = mapper.readValue(contentJson, LinkJson.class);
+                        parseLinkJsonInput(linkJson);
+                        isLinkSingle = true;
+                    } catch (IOException ex) {
+                        messages += " " + ex.getMessage();
+                        isLinkSingle = false;
+                    }
                 }
-            }
-            // Try to read action json invocation.
-            if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle) {
-                try {
-                    ActionJson actionJson = mapper.readValue(contentJson, ActionJson.class);
-                    parseActionJsonInvocationInput(actionJson);
-                    isActionInvocation = true;
-                } catch (IOException ex) {
-                    messages += " " + ex.getMessage();
-                    isActionInvocation = false;
-                }
-            }
 
-            // If all tries are failed throw an exception with otherall exception messages.
-            if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle && !isActionInvocation) {
-                LOGGER.error("Unknown json input file, please check your file input. " + messages);
-                throw new CategoryParseException("Unknown json input file, please check your file. " + messages);
+                // Try to parse single mixin tag.
+                if (!isResourceSingle && !isLinkSingle) {
+                    try {
+                        MixinJson mixinJson = mapper.readValue(contentJson, MixinJson.class);
+                        parseMixinJsonTagInput(mixinJson);
+                        isMixinTagSingle = true;
+                    } catch (IOException ex) {
+                        messages += " " + ex.getMessage();
+                        isMixinTagSingle = false;
+                    }
+                }
+                // Try to read action json invocation.
+                if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle) {
+                    try {
+                        ActionJson actionJson = mapper.readValue(contentJson, ActionJson.class);
+                        parseActionJsonInvocationInput(actionJson);
+                        isActionInvocation = true;
+                    } catch (IOException ex) {
+                        messages += " " + ex.getMessage();
+                        isActionInvocation = false;
+                    }
+                }
+
+                // If all tries are failed throw an exception with otherall exception messages.
+                if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle && !isActionInvocation) {
+                    LOGGER.error("Unknown json input file, please check your file input. " + messages);
+                    throw new CategoryParseException("Unknown json input file, please check your file. " + messages);
+                }
             }
+        } else {
+            // We parse here only the path.
+            List<InputData> datas = getInputDatas();
+            InputData data = new InputData();
+            datas.add(data);
+            this.setInputDatas(datas);
         }
+
     }
 
     /**

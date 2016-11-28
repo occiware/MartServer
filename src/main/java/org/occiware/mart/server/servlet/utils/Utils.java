@@ -858,9 +858,10 @@ public class Utils {
             for (String line : lines) {
                 content.append(line);
             }
-            if (content.toString().isEmpty()) {
-                throw new IOException("No input text file defined.");
-            }
+//            if (content.toString().isEmpty()) {
+//                return content.toString();
+//                // throw new IOException("No input text file defined.");
+//            }
         } catch (IOException ex) {
             LOGGER.error("This stream is not a text stream.");
             throw new IOException("The input file is not a text file or has unknown characters.");
