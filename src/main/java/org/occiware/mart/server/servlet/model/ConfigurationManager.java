@@ -1602,6 +1602,33 @@ public class ConfigurationManager {
 
         return extRet;
     }
+    /**
+     * Get used extension with this kind.
+     *
+     * @param owner owner of the configuration
+     * @param mixin (represent a Mixin Scheme+term)
+     * @return
+     */
+    public static Extension getExtensionForMixin(String owner, String mixin) {
+        Extension extRet = null;
+        Configuration configuration = getConfigurationForOwner(owner);
+        EList<Extension> exts = configuration.getUse();
+        EList<Mixin> mixins;
+        for (Extension ext : exts) {
+            mixins = ext.getMixins();
+            for (Mixin mixinObj : mixins) {
+                if ((mixinObj.getScheme() + mixinObj.getTerm()).equals(mixin)) {
+                    extRet = ext;
+                    break;
+                }
+            }
+            if (extRet != null) {
+                break;
+            }
+        }
+
+        return extRet;
+    }
 
     /**
      * Find extension used with this entity.
@@ -2283,6 +2310,13 @@ public class ConfigurationManager {
             }
         }
         return false;
+    }
+
+    public static List<Extension> getUsedExtensions(final String owner) {
+        List<Extension> ext;
+        Configuration conf = getConfigurationForOwner(owner);
+        ext = conf.getUse();
+        return ext;
     }
 
 }

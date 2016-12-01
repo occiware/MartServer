@@ -21,6 +21,7 @@ package org.occiware.mart.server.servlet.impl.parser.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
 import org.occiware.clouddesigner.occi.*;
@@ -29,9 +30,11 @@ import org.occiware.mart.server.servlet.exception.CategoryParseException;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractRequestParser;
 import org.occiware.mart.server.servlet.impl.parser.json.render.*;
+import org.occiware.mart.server.servlet.impl.parser.json.render.queryinterface.*;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.ValidatorUtils;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
+import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.Constants;
 import org.occiware.mart.server.servlet.utils.Utils;
 import org.slf4j.Logger;
@@ -42,6 +45,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -770,16 +777,42 @@ public class JsonOcciParser extends AbstractRequestParser {
     @Override
     public Response getInterface(String categoryFilter, String user) {
         super.getInterface(categoryFilter, user);
+        StringBuilder sb;
         Response response;
         List<Kind> kinds = getKindsConf();
         List<Mixin> mixins = getMixinsConf();
-        StringBuilder sb;
+
+        if (kinds.isEmpty() && mixins.isEmpty()) {
+            LOGGER.warn("No kinds and no mixin to render on interface /-/, if you use a filter this may be not found on the current configuration.");
+            response = Response.noContent().build();
+            return response;
+        }
+
+        sb = new StringBuilder();
+        List<Mixin> extUserTagMixins = new LinkedList<>();
+        List<ModelInterfaceJson> models = new LinkedList<>();
+
+
+        // Build the list of mixins user tags.
+        for (Mixin mixin : mixins) {
+            if (ConfigurationManager.isMixinTags(user, mixin.getScheme() + mixin.getTerm())) {
+                extUserTagMixins.add(mixin);
+            }
+        }
 
         try {
-            sb = buildJsonInterface(kinds, mixins);
-        } catch (IOException ex) {
+            buildKindsModelsJsonInterface(kinds, models, user);
+            buildMixinsModelsJsonInterface(mixins, extUserTagMixins, models, user);
+
+            GlobalModelInterfaceJson globalModelInterfaceJson = new GlobalModelInterfaceJson();
+            globalModelInterfaceJson.setModel(models);
+            sb.append(globalModelInterfaceJson.toStringJson());
+
+        } catch (JsonProcessingException | ConfigurationException ex) {
+            LOGGER.error("Exception thrown when rendering json interface : " + ex.getClass().getName() + " : " + ex.getMessage());
             sb = new StringBuilder();
         }
+
         String msg = sb.toString();
         if (!msg.isEmpty()) {
             response = Response.ok().entity(msg)
@@ -796,355 +829,214 @@ public class JsonOcciParser extends AbstractRequestParser {
     }
 
     /**
-     * Build a full json interface on stringbuilder object, to return in content
-     * object response.
+     *
+     * @param mixins
+     * @param extUserTagMixins
+     * @param models
+     * @throws ConfigurationException
+     */
+    private void buildMixinsModelsJsonInterface(List<Mixin> mixins, List<Mixin> extUserTagMixins, List<ModelInterfaceJson> models, final String user) throws ConfigurationException {
+        if (mixins.isEmpty()) {
+            return;
+        }
+        boolean found;
+        List<ActionInterfaceJson> actionsDefinitionJson;
+        List<String> actions;
+
+        for (Mixin mixin : mixins) {
+            actionsDefinitionJson = new LinkedList<>();
+            actions = new LinkedList<>();
+            MixinInterfacejson mixinInterfaceJson = new MixinInterfacejson();
+            mixinInterfaceJson.setLocation(ConfigurationManager.getLocation(mixin));
+            mixinInterfaceJson.setScheme(mixin.getScheme());
+            mixinInterfaceJson.setTerm(mixin.getTerm());
+            mixinInterfaceJson.setTitle(mixin.getTitle());
+            mixinInterfaceJson.setAttributes(buildAttributesInterface(mixin.getAttributes()));
+
+            // Array of string actions.
+            if (mixin.getActions() != null && !mixin.getActions().isEmpty()) {
+                for (Action action : mixin.getActions()) {
+                    actions.add(action.getScheme() + action.getTerm());
+                    // Build action definition.
+                    ActionInterfaceJson actionInterfaceJson = new ActionInterfaceJson();
+                    actionInterfaceJson.setTitle(action.getTitle());
+                    actionInterfaceJson.setScheme(action.getScheme());
+                    actionInterfaceJson.setTerm(action.getTerm());
+                    actionInterfaceJson.setAttributes(buildAttributesInterface(action.getAttributes()));
+                    actionsDefinitionJson.add(actionInterfaceJson);
+                }
+            }
+            mixinInterfaceJson.setActions(actions);
+
+            ModelInterfaceJson modelJson = null;
+            if (extUserTagMixins.contains(mixin)) {
+                if (models.isEmpty()) {
+                    modelJson = new ModelInterfaceJson();
+                    modelJson.setId(mixin.getScheme());
+                    models.add(modelJson);
+                }
+                for (ModelInterfaceJson model : models) {
+                    if (model.getId() != null && !model.getId().isEmpty()
+                            && model.getId().equals(mixin.getScheme())) {
+                        modelJson = model;
+                    }
+                }
+                if (modelJson == null) {
+                    modelJson = new ModelInterfaceJson();
+                    modelJson.setId(mixin.getScheme());
+                    models.add(modelJson);
+                }
+            } else {
+                Extension ext = ConfigurationManager.getExtensionForMixin(user, mixin.getScheme() + mixin.getTerm());
+                if (models.isEmpty()) {
+                    modelJson = new ModelInterfaceJson();
+                    modelJson.setId(ext.getScheme());
+                    models.add(modelJson);
+                } else {
+                    for (ModelInterfaceJson model : models) {
+                        if (model.getId() != null && !model.getId().isEmpty()
+                                && model.getId().equals(ext.getScheme())) {
+                            modelJson = model;
+                            break;
+                        }
+                    }
+                    if (modelJson == null) {
+                        modelJson = new ModelInterfaceJson();
+                        modelJson.setId(ext.getScheme());
+                        models.add(modelJson);
+                    }
+
+                }
+            }
+
+            modelJson.getMixins().add(mixinInterfaceJson);
+
+            for (ActionInterfaceJson action : actionsDefinitionJson) {
+                List<ActionInterfaceJson> actionsDef = modelJson.getActions();
+                found = false;
+                for (ActionInterfaceJson actionDef : actionsDef) {
+                    if ((actionDef.getScheme() + actionDef.getTerm()).equals(action.getScheme() + action.getTerm())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    modelJson.getActions().add(action);
+                }
+            }
+
+
+        }
+
+    }
+
+    /**
      *
      * @param kinds
-     * @param mixins
-     * @return
-     * @throws IOException thrown if json output is not correct.
+     * @param models
+     * @param user
+     * @throws ConfigurationException
      */
-    private StringBuilder buildJsonInterface(final List<Kind> kinds, final List<Mixin> mixins) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{");
-        sb.append(renderActionsInterface(kinds, mixins));
-        if (!kinds.isEmpty() || !mixins.isEmpty()) {
-            sb.append(",");
+    private void buildKindsModelsJsonInterface(final List<Kind> kinds, List<ModelInterfaceJson> models, final String user) throws ConfigurationException {
+        if (kinds.isEmpty()) {
+            return;
         }
-
-        // Render kinds.
-        sb.append(renderKindsInterface(kinds));
-        if (!sb.toString().endsWith(",") && !mixins.isEmpty()) {
-            sb.append(",");
-        }
-//         Render mixins.
-        sb.append(renderMixinsInterface(mixins));
-
-        sb.append("}");
-
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        Object json = mapper.readValue(sb.toString(), Object.class);
-        sb = new StringBuilder().append(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json));
-
-        return sb;
-    }
-
-    private StringBuilder renderActionsInterface(List<Kind> kinds, List<Mixin> mixins) {
-        StringBuilder sb = new StringBuilder();
-
-        if (kinds.isEmpty() && mixins.isEmpty()) {
-            return sb;
-        }
-        sb.append("\"actions\": [");
-        // Render actions kinds with pattern definition.
+        List<ActionInterfaceJson> actionsDefinitionJson;
+        List<String> actions;
+        boolean found;
         for (Kind kind : kinds) {
-            sb.append(renderActionKindInterface(kind));
-            if (!kind.getActions().isEmpty()) {
-                sb.append(",");
+            actionsDefinitionJson = new LinkedList<>();
+            actions = new LinkedList<>();
+            KindInterfaceJson kindInterfaceJson = new KindInterfaceJson();
+            kindInterfaceJson.setLocation(ConfigurationManager.getLocation(kind));
+            if (kind.getParent() != null) {
+                kindInterfaceJson.setParent(kind.getParent().getScheme() + kind.getParent().getTerm());
             }
-        }
-        sb = removeLastComma(sb);
+            kindInterfaceJson.setScheme(kind.getScheme());
+            kindInterfaceJson.setTerm(kind.getTerm());
+            kindInterfaceJson.setTitle(kind.getTitle());
 
-        // Render actions mixins with pattern definition.
-        for (Mixin mixin : mixins) {
-            sb.append(renderActionMixinInterface(mixin));
-            if (!mixin.getActions().isEmpty()) {
-                sb.append(",");
-            }
-        }
-        sb = renderEndOfCategory(sb);
-        return sb;
-    }
+            kindInterfaceJson.setAttributes(buildAttributesInterface(kind.getAttributes()));
 
-    /**
-     * Render action part kind for query interface.
-     *
-     * @param kind
-     * @return
-     */
-    private StringBuilder renderActionKindInterface(final Kind kind) {
-        StringBuilder sb = new StringBuilder();
-        if (kind == null) {
-            return sb;
-        }
-        List<Action> actions = kind.getActions();
-        if (actions.isEmpty()) {
-            return sb;
-        }
-        for (Action action : actions) {
-            renderActionInterface(sb, action);
-        }
-
-        sb = removeLastComma(sb);
-        return sb;
-    }
-
-    /**
-     * Render action part for mixin for query interface.
-     *
-     * @param mixin
-     * @return
-     */
-    private StringBuilder renderActionMixinInterface(final Mixin mixin) {
-        StringBuilder sb = new StringBuilder();
-        if (mixin == null) {
-            return sb;
-        }
-        List<Action> actions = mixin.getActions();
-        if (actions.isEmpty()) {
-            return sb;
-        }
-
-        for (Action action : actions) {
-            if (!action.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
-                renderActionInterface(sb, action);
-            }
-        }
-        sb = removeLastComma(sb);
-        return sb;
-    }
-
-    private void renderActionInterface(StringBuilder sb, Action action) {
-        List<Attribute> attributes;
-        String term;
-        String scheme;
-        String title;
-        sb.append("{");
-        // We render first the action attributes interface.
-        attributes = action.getAttributes();
-        if (!attributes.isEmpty()) {
-            sb.append(renderAttributesInterface(action.getAttributes())).append(",");
-        }
-        // We render action scheme, term and title.
-        term = action.getTerm();
-        scheme = action.getScheme();
-        title = action.getTitle();
-        sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
-        sb.append("\"term\":").append("\"").append(term).append("\",");
-        if (title == null) {
-            title = "";
-        }
-        sb.append("\"title\":").append("\"").append(title).append("\"");
-        sb.append("}");
-        sb.append(",");
-    }
-
-    private StringBuilder renderKindsInterface(final List<Kind> kinds) {
-        StringBuilder sb = new StringBuilder();
-        if (kinds == null || kinds.isEmpty()) {
-            return sb;
-        }
-        sb.append("\"kinds\": [");
-        // Render kinds with pattern definition.
-        String location;
-        String term;
-        String parentScheme;
-        String title;
-        String scheme;
-        List<Action> actions;
-        StringBuilder sbAct = new StringBuilder();
-        String actionsStr;
-        for (Kind kind : kinds) {
-            if (!kind.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
-                sb.append("{");
-
-                // Define the actions (array of strings).
-                actions = kind.getActions();
-                if (!actions.isEmpty()) {
-                    sbAct.append("\"actions\": [");
-                }
-
+            // Array of string actions.
+            if (kind.getActions() != null && !kind.getActions().isEmpty()) {
                 for (Action action : kind.getActions()) {
-                    sbAct.append("\"").append(action.getScheme()).append(action.getTerm()).append("\"").append(",");
+                    actions.add(action.getScheme() + action.getTerm());
+                    // Build action definition.
+                    ActionInterfaceJson actionInterfaceJson = new ActionInterfaceJson();
+                    actionInterfaceJson.setTitle(action.getTitle());
+                    actionInterfaceJson.setScheme(action.getScheme());
+                    actionInterfaceJson.setTerm(action.getTerm());
+                    actionInterfaceJson.setAttributes(buildAttributesInterface(action.getAttributes()));
+                    actionsDefinitionJson.add(actionInterfaceJson);
                 }
-                actionsStr = sbAct.toString();
-                if (actionsStr.endsWith(",")) {
-                    // remove the last comma.
-                    actionsStr = actionsStr.substring(0, actionsStr.length() - 1);
-                    sbAct = new StringBuilder(actionsStr);
-                }
-                if (!actions.isEmpty()) {
-                    sbAct.append("],");
-                    sb.append(sbAct);
-                }
-
-                // Define kinds attributes.
-                if (!kind.getAttributes().isEmpty()) {
-                    sb.append(renderAttributesInterface(kind.getAttributes()));
-                    sb.append(",");
-                }
-                // Define title, location, scheme etc.
-                title = kind.getTitle();
-                if (title == null) {
-                    title = "";
-                }
-                term = kind.getTerm();
-                parentScheme = "";
-                if (kind.getParent() != null) {
-                    parentScheme = kind.getParent().getScheme() + kind.getParent().getTerm();
-                }
-                scheme = kind.getScheme();
-                location = ConfigurationManager.getLocation(kind);
-
-                sb.append("\"location\":").append("\"").append(location).append("\",");
-                sb.append("\"parent\":").append("\"").append(parentScheme).append("\",");
-                sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
-                sb.append("\"term\":").append("\"").append(term).append("\",");
-                sb.append("\"title\":").append("\"").append(title).append("\"");
-
-                sb.append("}");
-                sb.append(",");
             }
-        }
-        sb = renderEndOfCategory(sb);
-        return sb;
-    }
+            kindInterfaceJson.setActions(actions);
+            ModelInterfaceJson modelJson = null;
+            Extension ext = ConfigurationManager.getExtensionForKind(user, kind.getScheme() + kind.getTerm());
 
-    private StringBuilder renderMixinsInterface(final List<Mixin> mixins) {
-        StringBuilder sb = new StringBuilder();
-        if (mixins == null || mixins.isEmpty()) {
-            return sb;
-        }
-
-        sb.append("\"mixins\": [");
-        // Render kinds with pattern definition.
-        String location;
-        String term;
-        String title;
-        String scheme;
-        List<Action> actions;
-        List<Kind> applies;
-        List<Mixin> depends;
-
-        StringBuilder sbAct = new StringBuilder();
-        StringBuilder sbDep = new StringBuilder();
-        StringBuilder sbApp = new StringBuilder();
-        String tmp;
-        for (Mixin mixin : mixins) {
-            if (!mixin.getScheme().equals(Constants.OCCI_CORE_SCHEME)) {
-                sb.append("{");
-
-                // Define the actions (array of strings).
-                actions = mixin.getActions();
-                if (!actions.isEmpty()) {
-                    sbAct.append("\"actions\": [");
-                }
-
-                for (Action action : mixin.getActions()) {
-                    sbAct.append("\"").append(action.getScheme()).append(action.getTerm()).append("\"").append(",");
-                }
-                tmp = sbAct.toString();
-                if (tmp.endsWith(",")) {
-                    // remove the last comma.
-                    tmp = tmp.substring(0, tmp.length() - 1);
-                    sbAct = new StringBuilder(tmp);
-                }
-                if (!actions.isEmpty()) {
-                    sbAct.append("],");
-                    sb.append(sbAct);
-                }
-
-                // Define kinds attributes.
-                if (!mixin.getAttributes().isEmpty()) {
-                    sb.append(renderAttributesInterface(mixin.getAttributes()));
-                    sb.append(",");
-                }
-
-                applies = mixin.getApplies();
-
-                depends = mixin.getDepends();
-                sbApp.append("\"applies\": [");
-                if (!applies.isEmpty()) {
-
-
-                    for (Kind apply : applies) {
-                        sbApp.append("\"").append(apply.getScheme()).append(apply.getTerm()).append("\"").append(",");
-                    }
-                    tmp = sbApp.toString();
-                    if (tmp.endsWith(",")) {
-                        // remove the last comma.
-                        tmp = tmp.substring(0, tmp.length() - 1);
-                        sbApp = new StringBuilder(tmp);
+            if (models.isEmpty()) {
+                modelJson = new ModelInterfaceJson();
+                modelJson.setId(ext.getScheme());
+                models.add(modelJson);
+            } else {
+                for (ModelInterfaceJson model : models) {
+                    if (model.getId() != null && !model.getId().isEmpty()
+                            && model.getId().equals(ext.getScheme())) {
+                        modelJson = model;
                     }
                 }
-                sbApp.append("],");
-                sb.append(sbApp);
-
-                sbDep.append("\"depends\": [");
-                if (!depends.isEmpty()) {
-
-                    for (Mixin depend : depends) {
-                        sbDep.append("\"").append(depend.getScheme()).append(depend.getTerm()).append("\"").append(",");
-                    }
-                    tmp = sbDep.toString();
-                    if (tmp.endsWith(",")) {
-                        // remove the last comma.
-                        tmp = tmp.substring(0, tmp.length() - 1);
-                        sbDep = new StringBuilder(tmp);
-                    }
-
+                if (modelJson == null) {
+                    modelJson = new ModelInterfaceJson();
+                    modelJson.setId(ext.getScheme());
+                    models.add(modelJson);
                 }
-                sbDep.append("],");
-                sb.append(sbDep);
-
-                // Define title, location, scheme etc.
-                title = mixin.getTitle();
-                if (title == null) {
-                    title = "";
-                }
-                term = mixin.getTerm();
-                scheme = mixin.getScheme();
-                location = ConfigurationManager.getLocation(mixin);
-
-                sb.append("\"location\":").append("\"").append(location).append("\",");
-                sb.append("\"scheme\":").append("\"").append(scheme).append("\",");
-                sb.append("\"term\":").append("\"").append(term).append("\",");
-                sb.append("\"title\":").append("\"").append(title).append("\"");
-
-                sb.append("}");
-                sb.append(",");
             }
-        }
-        sb = renderEndOfCategory(sb);
-        return sb;
-    }
+            modelJson.getKinds().add(kindInterfaceJson);
+            for (ActionInterfaceJson action : actionsDefinitionJson) {
+                List<ActionInterfaceJson> actionsDef = modelJson.getActions();
+                found = false;
+                for (ActionInterfaceJson actionDef : actionsDef) {
+                    if ((actionDef.getScheme() + actionDef.getTerm()).equals(action.getScheme() + action.getTerm())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    modelJson.getActions().add(action);
+                }
+            }
 
-    private StringBuilder renderEndOfCategory(StringBuilder sb) {
-        sb = removeLastComma(sb);
-        sb.append("]");
-        return sb;
+
+        }
+
+
+
     }
 
     /**
-     * Render attributes for query interface.
-     *
+     * Build a collection of attributes json rendering interface.
      * @param attributes
      * @return
      */
-    private StringBuilder renderAttributesInterface(final List<Attribute> attributes) {
-        StringBuilder sb = new StringBuilder();
-        if (attributes.isEmpty()) {
-            return sb;
-        }
+    private Map<String,AttributeInterfaceJson> buildAttributesInterface(EList<Attribute> attributes) {
 
-        sb.append("\"attributes\": {");
+        Map<String, AttributeInterfaceJson> attributesToReturn = new HashMap<>();
         String attrName;
         boolean mutable;
         boolean required;
         String type;
+        String description;
+        Object defaultObj;
+        String defaultStr;
+        String typeName;
         for (Attribute attribute : attributes) {
             mutable = attribute.isMutable();
             required = attribute.isRequired();
-
             attrName = attribute.getName();
-
-            // Attribute name.
-            sb.append("\"").append(attrName).append("\"").append(": {");
-            // mutable or not.
-            sb.append("\"").append("mutable").append("\":").append(mutable).append(",");
-            // required or not.
-            sb.append("\"").append("required").append("\":").append(required).append(",");
+            description = attribute.getDescription();
+            defaultObj = attribute.getDefault();
+            defaultStr = attribute.getDefault();
 
             // pattern value.
             EDataType dataType = attribute.getType();
@@ -1153,24 +1045,44 @@ public class JsonOcciParser extends AbstractRequestParser {
 
                 if (type == null) {
                     type = convertTypeToSchemaType(attribute.getType().getName());
+                    typeName = attribute.getType().getName();
                 } else {
+                    typeName = type;
                     type = convertTypeToSchemaType(type);
                 }
             } else {
                 type = convertTypeToSchemaType(null);
+                typeName = type;
             }
-
-            sb.append("\"").append("pattern").append("\": {")
-                    .append("\"$schema\": \"").append(ValidatorUtils.JSON_V4_SCHEMA_IDENTIFIER).append("\",")
-                    .append("\"type\": \"").append(type).append("\"").append("},");
-            // type value.
-            sb.append("\"").append("type").append("\":\"").append(type).append("\"");
-            sb.append("}");
-            sb.append(",");
+            AttributeInterfaceJson attrJson = new AttributeInterfaceJson();
+            attrJson.setType(type);
+            attrJson.setMutable(mutable);
+            attrJson.setRequired(required);
+            attrJson.setDescription(description);
+            if (!type.equals("string") && defaultObj != null) {
+                if (type.equals("number")) {
+                    try {
+                        defaultObj = convertStringToNumber(defaultStr, typeName);
+                    } catch (NumberFormatException ex) {
+                        LOGGER.error("Number conversion error : " + ex.getMessage() + " default value to convert: " + defaultStr + " for type: " + typeName);
+                    }
+                }
+                if (type.equals("boolean")) {
+                    defaultObj = Boolean.valueOf(defaultStr);
+                }
+                attrJson.setDefaultObj(defaultObj);
+            } else {
+                attrJson.setDefaultObj(defaultObj);
+            }
+            // Build pattern property.
+            if (!type.equals("string")) {
+                attrJson.setPatternType(type);
+                attrJson.setPatternPattern("");
+            }
+            attributesToReturn.put(attrName, attrJson);
         }
-        sb = removeLastComma(sb);
-        sb.append("}");
-        return sb;
+
+        return attributesToReturn;
     }
 
     /**
@@ -1210,6 +1122,43 @@ public class JsonOcciParser extends AbstractRequestParser {
                 type = "string";
         }
         return type;
+    }
+
+    /**
+     * Usage with render json interface, for default value rendering.
+     * @param value
+     * @param typeName
+     * @return
+     */
+    private Number convertStringToNumber(final String value, final String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        Number number = null;
+        try {
+            switch (typeName.toLowerCase()) {
+                case "integer":
+                case "int":
+                    number = Integer.valueOf(value);
+                    break;
+
+                case "float":
+                case "double":
+                    number = Double.valueOf(value);
+                    break;
+                case "long":
+                    number = Long.valueOf(value);
+                    break;
+                case "bigdecimal":
+                    number = new BigDecimal(value);
+                    break;
+            }
+            return number;
+        } catch (NumberFormatException ex) {
+            LOGGER.error("Cant convert the string: " + value + " to a valid number.");
+            throw ex;
+        }
+
     }
 
     /**
