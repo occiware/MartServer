@@ -570,7 +570,7 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        assertTrue(statusResponse == Response.Status.NO_CONTENT.getStatusCode());
         result = response.getContentAsString();
         assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin"));
         System.out.println(result);
@@ -596,7 +596,7 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        assertTrue(statusResponse == Response.Status.NO_CONTENT.getStatusCode());
         result = response.getContentAsString();
         assertFalse(result.contains("my_mixin2"));
         System.out.println(result);
