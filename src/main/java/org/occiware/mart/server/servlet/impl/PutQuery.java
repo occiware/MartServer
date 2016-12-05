@@ -89,14 +89,14 @@ public class PutQuery extends AbstractPutQuery {
                 location = pathParser.getPath();
             }
 
-            if (pathParser.isActionInvocationQuery()) {
-                try {
-                    response = outputParser.parseResponse("you cannot use an action with PUT method", Response.Status.BAD_REQUEST);
-                    return response;
-                } catch (ResponseParseException ex) {
-                    throw new InternalServerErrorException(ex);
-                }
-            }
+//            if (pathParser.isActionInvocationQuery()) {
+//                try {
+//                    response = outputParser.parseResponse("you cannot use an action with PUT method", Response.Status.BAD_REQUEST);
+//                    return response;
+//                } catch (ResponseParseException ex) {
+//                    throw new InternalServerErrorException(ex);
+//                }
+//            }
 
             String kind = data.getKind();
             List<String> mixins = data.getMixins();
@@ -196,7 +196,7 @@ public class PutQuery extends AbstractPutQuery {
             }
         }
 
-        if (hasCreatedUUID) {
+        if (!Utils.isEntityUUIDProvided(path, new HashMap<>())) {
             if (xabsoluteLocation.endsWith("/")) {
                 xabsoluteLocation += entityId;
             } else {
@@ -292,22 +292,24 @@ public class PutQuery extends AbstractPutQuery {
         }
 
         try {
+            response = outputParser.parseResponse(entity, Response.Status.CREATED);
+            response.getHeaders().add("Location", new URI(xabsoluteLocation));
 
-            response = Response.created(new URI(xabsoluteLocation))
-                    .header("Server", Constants.OCCI_SERVER_HEADER)
-                    .type(getContentType())
-                    .header("Accept", getAcceptType())
-                    .build();
-
-        } catch (URISyntaxException ex) {
-            response = Response.created(getUri().getAbsolutePath())
-                    .header("Server", Constants.OCCI_SERVER_HEADER)
-                    .type(getContentType())
-                    .header("Accept", getAcceptType())
-                    .build();
+        } catch (URISyntaxException | ResponseParseException ex) {
+            String message = "Exception thrown when parsing uri location or parsing response : " + ex.getClass().getName() + " --> Message: " + ex.getMessage();
+            LOGGER.error(message);
+            try {
+                response = outputParser.parseResponse("Exception thrown when parsing uri location or parsing response : " + ex.getClass().getName() + " --> Message: " + ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+            } catch (ResponseParseException e) {
+                response = Response
+                        .serverError()
+                        .header("Server", Constants.OCCI_SERVER_HEADER)
+                        .type(getContentType())
+                        .header("Accept", getAcceptType())
+                        .build();
+            }
         }
         return response;
-
     }
 
     @Override

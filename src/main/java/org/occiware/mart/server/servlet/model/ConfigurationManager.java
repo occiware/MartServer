@@ -1941,6 +1941,7 @@ public class ConfigurationManager {
      * @return
      */
     public static String getEntityRelativePath(String uuid) {
+        // May cause null pointer in callers methods, must throw a configuration exception if entitiesRelativePath is null or if get() call is null.
         return entitiesRelativePath.get(uuid);
     }
 
