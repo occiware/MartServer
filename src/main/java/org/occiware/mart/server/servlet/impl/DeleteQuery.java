@@ -66,7 +66,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
         for (InputData data : datas) {
             response = null;
 
-            PathParser pathParser = new PathParser(data, path);
+            PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
 
             String location = pathParser.getLocation();
             if (location == null || location.trim().isEmpty()) {

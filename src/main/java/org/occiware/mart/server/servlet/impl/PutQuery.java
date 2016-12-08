@@ -57,7 +57,7 @@ public class PutQuery extends AbstractPutQuery {
      * @param path    object location path.
      * @param headers http headers
      * @param request http request object
-     * @return
+     * @return a Response object.
      */
     @Override
     @Path("{path:.*}")
@@ -73,7 +73,7 @@ public class PutQuery extends AbstractPutQuery {
 
         for (InputData data : datas) {
 
-            PathParser pathParser = new PathParser(data, path);
+            PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
 
             if (pathParser.isInterfQuery()) {
                 try {
@@ -88,15 +88,6 @@ public class PutQuery extends AbstractPutQuery {
             if (location == null || location.trim().isEmpty()) {
                 location = pathParser.getPath();
             }
-
-//            if (pathParser.isActionInvocationQuery()) {
-//                try {
-//                    response = outputParser.parseResponse("you cannot use an action with PUT method", Response.Status.BAD_REQUEST);
-//                    return response;
-//                } catch (ResponseParseException ex) {
-//                    throw new InternalServerErrorException(ex);
-//                }
-//            }
 
             String kind = data.getKind();
             List<String> mixins = data.getMixins();
@@ -156,20 +147,20 @@ public class PutQuery extends AbstractPutQuery {
     }
 
     /**
-     * Create a new resource or link.
+     * Create a new resource or link. Overwrite entity if entity already exist in domain (and call update).
      *
      * @param path
      * @param entityId
      * @param kind
      * @param mixins
      * @param attributes
-     * @return
+     * @return a Response object.
      */
     @Override
     public Response createEntity(final String path, String entityId, final String kind, final List<String> mixins, final Map<String, String> attributes) {
 
         LOGGER.info("--> Call method createEntity on path: " + path);
-
+        boolean overwrite = false;
         Response response;
 
         // Later, owner / group will be implemented, for now owner "anonymous" is the default.
@@ -178,12 +169,10 @@ public class PutQuery extends AbstractPutQuery {
         String xabsoluteLocation;
         // Link or resource ?
         boolean isResource;
-        boolean hasCreatedUUID = false;
         // Check if entityId is null or there is a uuid on path, if this is not the case, generate the uuid and add it to location.
         if (entityId == null || entityId.trim().isEmpty()) {
             // Create a new uuid.
             entityId = Utils.createUUID();
-            hasCreatedUUID = true;
         }
 
         isResource = ConfigurationManager.checkIfEntityIsResourceOrLinkFromAttributes(attributes);
@@ -230,7 +219,7 @@ public class PutQuery extends AbstractPutQuery {
                     }
                 }
             }
-
+            overwrite = true;
             LOGGER.info("Overwriting entity : " + xabsoluteLocation);
         } else {
             LOGGER.info("Creating entity : " + xabsoluteLocation);
@@ -279,9 +268,16 @@ public class PutQuery extends AbstractPutQuery {
         // Get the entity to be sure that it was inserted on configuration object.
         Entity entity = ConfigurationManager.findEntity(owner, entityId);
         if (entity != null) {
-            entity.occiCreate();
-            LOGGER.info("Create entity done returning location : " + path);
+            if (overwrite) {
+                entity.occiUpdate();
+                LOGGER.info("Update entity done returning location : " + path);
+            } else {
+                entity.occiCreate();
+                LOGGER.info("Create entity done returning location : " + path);
+            }
+
         } else {
+            // TODO : update here to enable more explaining message. use try catch...
             LOGGER.error("Error, entity was not created on object model, please check your query.");
             try {
                 response = outputParser.parseResponse("Error, entity was not created on object model, please check your query", Response.Status.BAD_REQUEST);
@@ -292,7 +288,11 @@ public class PutQuery extends AbstractPutQuery {
         }
 
         try {
-            response = outputParser.parseResponse(entity, Response.Status.CREATED);
+            if (overwrite) {
+                response = outputParser.parseResponse(entity, Response.Status.OK);
+            } else {
+                response = outputParser.parseResponse(entity, Response.Status.CREATED);
+            }
             response.getHeaders().add("Location", new URI(xabsoluteLocation));
 
         } catch (URISyntaxException | ResponseParseException ex) {
@@ -312,6 +312,12 @@ public class PutQuery extends AbstractPutQuery {
         return response;
     }
 
+    /**
+     * Define a new mixin tag.
+     * @param data
+     * @param path
+     * @return
+     */
     @Override
     public Response defineMixinTag(final InputData data, final String path) {
 
@@ -365,7 +371,6 @@ public class PutQuery extends AbstractPutQuery {
                 if (!entities.isEmpty()) {
                     ConfigurationManager.saveMixinForEntities(categoryId, entities, true, ConfigurationManager.DEFAULT_OWNER);
                 }
-                // ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, true);
             }
         } catch (ConfigurationException ex) {
             try {

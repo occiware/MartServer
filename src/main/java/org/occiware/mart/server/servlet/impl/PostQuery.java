@@ -69,7 +69,7 @@ public class PostQuery extends AbstractPostQuery {
 
         for (InputData data : datas) {
 
-            PathParser pathParser = new PathParser(data, path);
+            PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
 
             if (pathParser.isInterfQuery()) {
                 try {
@@ -92,8 +92,9 @@ public class PostQuery extends AbstractPostQuery {
             String categoryId = pathParser.getCategoryId();
 
             if (pathParser.isActionInvocationQuery()) {
+                String actionTerm = inputParser.getParameter("action");
                 // Check if action exist on extensions and if the parameter ?action=myaction is set.
-                if (inputParser.getParameter("action") == null) {
+                if (actionTerm == null) {
                     try {
                         response = outputParser.parseResponse("you forgot the parameter ?action=action term", Response.Status.BAD_REQUEST);
                         return response;
@@ -101,13 +102,11 @@ public class PostQuery extends AbstractPostQuery {
                         throw new InternalServerErrorException(ex);
                     }
                 }
+
+                // Is action is scheme + term or only a term parameter.
                 if (ConfigurationManager.getExtensionForAction(ConfigurationManager.DEFAULT_OWNER, actionId) == null) {
-                    try {
-                        response = outputParser.parseResponse("Action : " + actionId + " not found on used extension.", Response.Status.BAD_REQUEST);
-                        return response;
-                    } catch (ResponseParseException ex) {
-                        throw new InternalServerErrorException(ex);
-                    }
+                    // This is maybe an action term only.
+                    actionId = actionTerm;
                 }
 
                 // action invocation may be invoke on an entity or a collection.
@@ -119,7 +118,7 @@ public class PostQuery extends AbstractPostQuery {
 
                     entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
 
-                    if (entity == null) {
+                    if (entity == null || entityId == null) {
                         try {
                             response = outputParser.parseResponse("The entity : " + entityId + " doesn't exist on path : " + location, Response.Status.NOT_FOUND);
                             return response;
@@ -459,20 +458,31 @@ public class PostQuery extends AbstractPostQuery {
             actionParameters = Utils.getActionParametersArray(data.getAttrs());
         }
 
-        String entityKind = entity.getKind().getScheme() + entity.getKind().getTerm();
-        Extension ext = ConfigurationManager.getExtensionForKind(ConfigurationManager.DEFAULT_OWNER, entityKind);
+        Action actionKind = null;
 
-        Action actionKind = ConfigurationManager.getActionKindFromExtension(ext, actionId);
+        try {
+            actionKind = ConfigurationManager.getActionFromEntityWithActionId(entity, actionId);
+        } catch (ConfigurationException ex) {
+            LOGGER.warn(ex.getMessage());
+        }
+
         if (actionKind == null) {
-            LOGGER.error("Action : " + actionId + " doesnt exist on extension : " + ext.getName());
+
+            // Search for this action with the term only on the entity Kind and Mixins.
             try {
-                response = outputParser.parseResponse("Action : " + actionId + " doesnt exist on extension : " + ext.getName(), Response.Status.BAD_REQUEST);
-                return response;
-            } catch (ResponseParseException e) {
-                throw new InternalServerErrorException(e);
+                actionKind = ConfigurationManager.getActionFromEntityWithActionTerm(entity, actionId);
+            } catch (ConfigurationException ex) {
+                LOGGER.error(ex.getMessage());
+                try {
+                    response = outputParser.parseResponse(ex.getMessage(), Response.Status.BAD_REQUEST);
+                    return response;
+                } catch (ResponseParseException e) {
+                    throw new InternalServerErrorException(e);
+                }
             }
         }
 
+        // TODO : Optimize here the try catch element.
         try {
             if (actionParameters == null) {
                 OcciHelper.executeAction(entity, actionKind.getTerm());
@@ -480,10 +490,27 @@ public class PostQuery extends AbstractPostQuery {
                 OcciHelper.executeAction(entity, actionKind.getTerm(), actionParameters);
             }
         } catch (InvocationTargetException ex) {
-            ex.printStackTrace();
-            String message = "The entity " + entity.getTitle() + "  action : " + actionId + " has throw an error : " + ex.getCause().getClass().getName();
 
-            LOGGER.error("Action failed to execute : " + ex.getMessage());
+            String message = "The entity " + entity.getTitle() + "  action : " + actionId + " has throw an exception : " + ex.getCause().getClass().getName();
+            if (ex.getMessage() != null) {
+                message += " , Message: "+ ex.getMessage();
+            } else {
+                message += ", Message: probably missing connector implementation.";
+            }
+            LOGGER.error("Action failed to execute : " + message);
+            try {
+                response = outputParser.parseResponse("Action failed : " + message, Response.Status.INTERNAL_SERVER_ERROR);
+                return response;
+            } catch (ResponseParseException e) {
+                throw new InternalServerErrorException(e);
+            }
+        } catch (UnsupportedOperationException ex) {
+            String message = "The entity " + entity.getTitle() + "  action : " + actionId + " has throw an exception : " + ex.getClass().getName();
+            if (ex.getMessage() != null) {
+                message += "\n Message: "+ ex.getMessage();
+            } else {
+                message += "\n Message: probably missing connector implementation.";
+            }
             try {
                 response = outputParser.parseResponse("Action failed : " + message, Response.Status.INTERNAL_SERVER_ERROR);
                 return response;

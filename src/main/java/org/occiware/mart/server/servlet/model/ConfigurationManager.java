@@ -2320,4 +2320,102 @@ public class ConfigurationManager {
         return ext;
     }
 
+    /**
+     * Find an action object from entity definition kind and associated mixins.
+     * @param entity Entity object model.
+     * @param actionTerm the action term like start.
+     * @return an action object must never return null.
+     * @throws ConfigurationException If no action is found or no entity defined throw this exception.
+     */
+    public static Action getActionFromEntityWithActionTerm(final Entity entity, String actionTerm) throws ConfigurationException {
+        Action action = null;
+        boolean found = false;
+        if (entity == null) {
+            throw new ConfigurationException("No entity defined for this action : " + actionTerm);
+        }
+        Kind kind = entity.getKind();
+        List<Action> actions = kind.getActions();
+
+        // Search the action on kind first.
+        for (Action actionKind : actions) {
+            if (actionKind.getTerm().equals(actionTerm)) {
+                action = actionKind;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            // Search on mixins.
+            List<Mixin> mixins = entity.getMixins();
+            for (Mixin mixin : mixins) {
+                actions = mixin.getActions();
+                for (Action actionMixin : actions) {
+                    if (actionMixin.getTerm().equals(actionTerm)) {
+                        action = actionMixin;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            throw new ConfigurationException("Action " + actionTerm + " not found on entity : " + entity.getId());
+        }
+
+        return action;
+    }
+
+    /**
+     * Find an action object from entity definition kind and associated mixins.
+     * @param entity Entity object model.
+     * @param actionId the action scheme + action term.
+     * @return an action object must never return null.
+     * @throws ConfigurationException If no action is found or no entity defined throw this exception.
+     */
+    public static Action getActionFromEntityWithActionId(final Entity entity, final String actionId) throws ConfigurationException {
+        Action action = null;
+        boolean found = false;
+        if (entity == null) {
+            throw new ConfigurationException("No entity defined for this action : " + actionId);
+        }
+        Kind kind = entity.getKind();
+        List<Action> actions = kind.getActions();
+
+        // Search the action on kind first.
+        for (Action actionKind : actions) {
+            if ((actionKind.getScheme() + actionKind.getTerm()).equals(actionId)) {
+                action = actionKind;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            // Search on mixins.
+            List<Mixin> mixins = entity.getMixins();
+            for (Mixin mixin : mixins) {
+                actions = mixin.getActions();
+                for (Action actionMixin : actions) {
+                    if ((actionMixin.getScheme() + actionMixin.getTerm()).equals(actionId)) {
+                        action = actionMixin;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    break;
+                }
+            }
+        }
+
+        if (!found) {
+            throw new ConfigurationException("Action " + actionId + " not found on entity : " + entity.getId());
+        }
+
+        return action;
+    }
 }

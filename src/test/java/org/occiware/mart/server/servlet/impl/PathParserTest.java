@@ -67,8 +67,9 @@ public class PathParserTest extends TestCase {
 
     private void collectionCategoryTest(String path) {
         InputData data = new InputData();
-        PathParser pathParser = new PathParser(data, path);
-        pathParser.updateRoutes();
+        Map<String, String> requestParameters = new HashMap<>();
+        PathParser pathParser = new PathParser(data, path, requestParameters);
+        pathParser.updateRoutes(requestParameters);
         assertFalse(pathParser.isActionInvocationQuery());
         assertFalse(pathParser.isEntityQuery());
         assertTrue(pathParser.isCollectionQuery());
@@ -80,8 +81,9 @@ public class PathParserTest extends TestCase {
 
     private void collectionCustomTest(String path) {
         InputData data = new InputData();
-        PathParser pathParser = new PathParser(data, path);
-        pathParser.updateRoutes();
+        Map<String, String> requestParameters = new HashMap<>();
+        PathParser pathParser = new PathParser(data, path, requestParameters);
+        pathParser.updateRoutes(requestParameters);
         assertFalse(pathParser.isActionInvocationQuery());
         assertFalse(pathParser.isEntityQuery());
         assertTrue(pathParser.isCollectionQuery());
@@ -104,9 +106,9 @@ public class PathParserTest extends TestCase {
         if (kind != null) {
             data.setKind(kind);
         }
-
-        PathParser pathParser = new PathParser(data, path);
-        pathParser.updateRoutes();
+        Map<String, String> requestParameters = new HashMap<>();
+        PathParser pathParser = new PathParser(data, path, requestParameters);
+        pathParser.updateRoutes(requestParameters);
         assertFalse(pathParser.isActionInvocationQuery());
         assertTrue(pathParser.isEntityQuery());
         assertFalse(pathParser.isCollectionQuery());
@@ -120,8 +122,9 @@ public class PathParserTest extends TestCase {
         InputData data = new InputData();
         data.setAction("myactionscheme#term");
         String path = "";
-        PathParser pathParser = new PathParser(data, path);
-        pathParser.updateRoutes();
+        Map<String, String> requestParameters = new HashMap<>();
+        PathParser pathParser = new PathParser(data, path, requestParameters);
+        pathParser.updateRoutes(requestParameters);
         boolean actionInvocation = pathParser.isActionInvocationQuery();
         assertTrue(actionInvocation);
 
@@ -133,8 +136,9 @@ public class PathParserTest extends TestCase {
         data.setLocation("/mymixin/mymixin2/");
         data.setMixinTag("myMixinTagScheme#mymixin");
         data.setMixinTagTitle("mymixin title");
-        PathParser pathParser = new PathParser(data, path);
-        pathParser.updateRoutes();
+        Map<String, String> requestParameters = new HashMap<>();
+        PathParser pathParser = new PathParser(data, path, requestParameters);
+        pathParser.updateRoutes(requestParameters);
         boolean mixinTagRes = pathParser.isMixinTagDefinitionRequest();
         assertTrue(mixinTagRes);
         assertFalse(pathParser.isInterfQuery());

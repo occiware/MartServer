@@ -24,6 +24,7 @@ import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Utils;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class is a pojo that defines the query types and give the route to treat the datas.
@@ -85,19 +86,20 @@ public class PathParser {
      * @param data InputData object
      * @param path the query relative path
      */
-    public PathParser(InputData data, String path) {
+    public PathParser(InputData data, String path, Map<String, String> requestParameters) {
         this.data = data;
         if (data.getLocation() != null) {
             this.location = Utils.getPathWithoutPrefixSuffixSlash(data.getLocation());
         }
         this.path = Utils.getPathWithoutPrefixSuffixSlash(path);
-        updateRoutes();
+        updateRoutes(requestParameters);
     }
 
     /**
      * Check if the path with/without datas is a query interface, a mixin tag definition, a resource query etc.
+     * @param requestParameters
      */
-    public void updateRoutes() {
+    public void updateRoutes(Map<String, String> requestParameters) {
 
         boolean hasLocationSet = false;
 
@@ -147,7 +149,7 @@ public class PathParser {
         }
 
         // Determine if this is an action invocation.
-        if (data.getAction() != null && !data.getAction().isEmpty()) {
+        if (data.getAction() != null && !data.getAction().isEmpty() || (requestParameters != null && requestParameters.get("action") != null)) {
             actionInvocationQuery = true;
         }
 

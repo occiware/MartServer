@@ -60,6 +60,8 @@ public class JsonOcciParser extends AbstractRequestParser {
 
     @Override
     public void parseInputQuery(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException, AttributeParseException {
+        // Parse request parameters (for filtering, for pagination or for action.
+        parseRequestParameters(request);
         // If we are here, a json file has been uploaded.
         // We dont call the super method because the behavior is not the same. It may here have multiple entity to operate.
         // The json file may contains :
@@ -70,8 +72,7 @@ public class JsonOcciParser extends AbstractRequestParser {
         // A mixin tag.
         // A collection of resources ==> to create or to update (with or without links).
         parseInputQueryToDatas(request);
-        // Parse request parameters (for filtering, for pagination or for action.
-        parseRequestParameters(request);
+
     }
 
     /**

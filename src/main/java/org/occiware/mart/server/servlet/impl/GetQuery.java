@@ -66,7 +66,7 @@ public class GetQuery extends AbstractGetQuery {
 
         for (InputData data : datas) {
 
-            PathParser pathParser = new PathParser(data, path);
+            PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
 
             String location = pathParser.getLocation();
             if (location == null || location.trim().isEmpty()) {

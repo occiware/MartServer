@@ -1,0 +1,6 @@
+{
+  "action": "http://schemas.ogf.org/occi/infrastructure/mycompute/myaction#titi",
+  "attributes": {
+    "method": "graceful"
+  }
+}

@@ -128,6 +128,22 @@ public class ServerTest {
         // Must return "created" status. 
         assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
 
+        // Check Create a bad resource (with a kind definition does not exist on extension / configuration).
+        File badResource = getResourceInputFile("/testjson/integration/creation/bad_resource.json");
+        response = httpClient.newRequest("localhost", 9090)
+                .accept("application/json")
+                .method(HttpMethod.PUT)
+                .file(badResource.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.BAD_REQUEST.getStatusCode());
+        String result = response.getContentAsString();
+        System.out.println(result);
+
+
+
+
         // Create the second resource with mixins.
         File resource2 = getResourceInputFile("/testjson/integration/creation/resource2.json");
         response = httpClient.newRequest("localhost", 9090)
@@ -356,7 +372,7 @@ public class ServerTest {
         assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
         System.out.println(result);
 
-        // 2 : associate a mixin tag to a resource.
+        // associate a mixin tag to a resource.
         File mixintagasso = getResourceInputFile("/testjson/integration/update/mixintag_asso.json");
         response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
                 .accept("application/json")
@@ -382,7 +398,7 @@ public class ServerTest {
         System.out.println(result);
 
 
-        // 3 : action invocation.
+        // action invocation.
         System.out.println("POST Request action stop graceful invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop");
         File action_invocation = getResourceInputFile("/testjson/integration/update/action_invocation_test.json");
         response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop")
@@ -396,6 +412,72 @@ public class ServerTest {
         assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         result = response.getContentAsString();
         System.out.println(result);
+
+        // Action invocation without attributes field.
+        System.out.println("POST Request action stop graceful invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
+        File action_invocation2 = getResourceInputFile("/testjson/integration/update/action_invocation_test2.json");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=start")
+                .accept("application/json")
+                .method(HttpMethod.POST)
+                .file(action_invocation2.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
+        assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
+
+
+        // action invocation with direct term without the action kind definition.
+        System.out.println("POST Request action start invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=start")
+                .header("Content-Type", "application/json")
+                .accept("application/json")
+                .method(HttpMethod.POST)
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+
+        // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
+        assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
+
+
+
+
+        // bad action invocation the action doesnt exist on entity.
+        System.out.println("POST Request action start invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=test")
+                .header("Content-Type", "application/json")
+                .accept("application/json")
+                .method(HttpMethod.POST)
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.BAD_REQUEST.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
+
+
+        // 5 : bad action invocation the action scheme+term doesnt exist on entity.
+        System.out.println("POST Request bad action invocation with scheme+term on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=titi");
+        File bad_action_invocation = getResourceInputFile("/testjson/integration/update/bad_action_invocation.json");
+        response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=titi")
+                .accept("application/json")
+                .method(HttpMethod.POST)
+                .file(bad_action_invocation.toPath(), "application/json")
+                .agent("martclient")
+                .send();
+        statusResponse = response.getStatus();
+        assertTrue(statusResponse == Response.Status.BAD_REQUEST.getStatusCode());
+        result = response.getContentAsString();
+        System.out.println(result);
+
+
+
+
 
         System.out.println("POST Request on collection category /compute/");
         File computesUpdate = getResourceInputFile("/testjson/integration/update/update_attributes_computes.json");

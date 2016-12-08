@@ -94,94 +94,50 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         try {
             inputParser.parseInputQuery(headers, request);
 
-            // Get the datas.
             List<InputData> datas = inputParser.getInputDatas();
-            if (!datas.isEmpty()) {
-                String error = "";
-                boolean hasError = false;
-                for (InputData data : datas) {
-                    // Check if attributes are in configuration model for kind, mixins and actions.
-                    if (!data.getAttrs().isEmpty()) {
-                        // if there are attributes so there is a kind / mixins.
-                        // Check on configuration and used extension.
+            String kind;
+            List<String> mixins;
+            List<String> messages = new ArrayList<>();
+            for (InputData data : datas) {
+                kind = data.getKind();
+                mixins = data.getMixins();
 
-                        String kindId = data.getKind();
-                        String action = data.getAction();
-                        List<String> mixins = data.getMixins();
-                        Kind kindModel = null;
-                        Action actionModel = null;
-                        List<Mixin> mixinsModel = new LinkedList<>();
-
-                        // Search for the kind if an action is set.
-                        if (kindId == null && action != null) {
-                            // TODO : Export this to configurationManager with a method : getKindFromAction.
-                            List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(ConfigurationManager.DEFAULT_OWNER);
-                            List<Action> actions;
-                            for (Kind kind : kinds) {
-                                actions = kind.getActions();
-                                for (Action actionTmp : actions) {
-                                    if (action.equals(actionTmp.getScheme() + actionTmp.getTerm())) {
-                                        actionModel = actionTmp;
-                                        kindModel = kind;
-                                        kindId = kind.getScheme() + kind.getTerm();
-                                        data.setKind(kindId);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        // Actions based on mixins ?
-                        if (kindModel == null && mixins == null && action != null) {
-                            // TODO : Export this below to configurationManager with a method : getMixinFromAction.
-                            List<Mixin> mixinsTmp = ConfigurationManager.getAllConfigurationMixins(ConfigurationManager.DEFAULT_OWNER);
-                            List<Action> actions;
-                            List<String> mixinsStr = new ArrayList<>();
-                            for (Mixin mixin : mixinsTmp) {
-                                actions = mixin.getActions();
-                                for (Action actionTmp : actions) {
-                                    if (action.equals(actionTmp.getScheme() + actionTmp.getTerm())) {
-                                        actionModel = actionTmp;
-                                        mixinsModel.add(mixin);
-                                        mixinsStr.add(mixin.getScheme() + mixin.getTerm());
-                                        // mixins = mixinsStr;
-                                        data.setMixins(mixinsStr);
-                                    }
-                                }
-                            }
-                        }
-
-                        if (kindModel == null) {
-                            kindModel = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, kindId);
-                            if (kindModel == null) {
-                                error += "The kind : " + data.getKind() + " doesnt exist on referenced extensions";
-                                hasError = true;
-                            }
-                        }
-
-                        if (mixinsModel.isEmpty()) {
-
-                            try {
-                                mixinsModel = Utils.loadMixinFromSchemeTerm(data.getMixins());
-                            } catch (ConfigurationException ex) {
-                                error += " \n ";
-                                error += "Mixin model error cause : " + ex.getMessage();
-                                hasError = true;
-                            }
-                        }
-                    }
+                // Check if kind exist on extension.
+                if (kind != null
+                        && ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, kind) == null) {
+                    messages.add (" Kind : " + kind + " doesnt exist on used extensions.");
                 }
-                if (hasError) {
-                    LOGGER.error(error);
-                    throw new BadRequestException("Error while parsing input query, some attributes doesnt exist on used extensions. --< " + error);
+
+
+
+            }
+            if (!messages.isEmpty()) {
+                String msgRender = "";
+                for (String message : messages) {
+                    LOGGER.error(message);
+                    msgRender += message + " ; ";
                 }
+                try {
+                    response = outputParser.parseResponse(msgRender, Response.Status.BAD_REQUEST);
+                } catch (ResponseParseException e) {
+                    throw new BadRequestException(e);
+                }
+
             }
 
+
         } catch (AttributeParseException | CategoryParseException ex) {
-            LOGGER.error(ex.getMessage());
+            String message = ex.getClass().getName() + " --> " + ex.getMessage();
+            if (ex.getMessage() == null) {
+                message = "Error while parsing input query, exception: " + ex.getClass().getName();
+                LOGGER.error(message);
+            }
+            LOGGER.error(message);
+
             try {
-                response = outputParser.parseResponse("Error while parsing input query", Response.Status.BAD_REQUEST);
+                response = outputParser.parseResponse(message, Response.Status.BAD_REQUEST);
             } catch (ResponseParseException e) {
-                throw new BadRequestException();
+                throw new BadRequestException(e);
             }
         }
 
