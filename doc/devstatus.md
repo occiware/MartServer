@@ -39,16 +39,6 @@ Development Status values :
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
     </tr>
     <tr>
-        <td align="center">application/xml media type parser (Content-Type and accept)</td>
-        <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/cgourdin/MartServer/issues/24">feature #24</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
-    </tr>
-    <tr>
-        <td align="center">Add integration tests suite for application/xml media type parser (Content-Type and accept)</td>
-        <td align="center">Integration test launch the server and test input and output validation, <a href="https://github.com/cgourdin/MartServer/issues/22">feature #22</a></td>
-        <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
-    </tr>
-    <tr>
         <td align="center">Add external properties file to configure the server</td>
         <td align="center">Property file to manager the server configuration<a href="https://github.com/cgourdin/MartServer/issues/29">feature #29</a></td>
         <td align="center"><img src="https://raw.github.com/cgourdin/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
