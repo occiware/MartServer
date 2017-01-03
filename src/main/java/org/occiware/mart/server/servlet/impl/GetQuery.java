@@ -117,13 +117,24 @@ public class GetQuery extends AbstractGetQuery {
                             throw new InternalServerErrorException(ex);
                         }
                     }
-                    String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
-                    locationTmp = locationTmp.replace(entityId, "");
+
+                    String locationTmp;
+                    try {
+                        locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
+                        locationTmp = locationTmp.replace(entityId, "");
+                    } catch (ConfigurationException ex) {
+                        try {
+                            response = outputParser.parseResponse(ex.getMessage(), Response.Status.NOT_FOUND);
+                            return response;
+                        } catch (ResponseParseException e) {
+                            throw new InternalServerErrorException();
+                        }
+                    }
                     locationTmp = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
                     String locationCompare = location.replace(entityId, "");
                     locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationCompare);
 
-                    if (entity != null && !locationCompare.equals(locationTmp) && !ConfigurationManager.isCategoryReferencedOnEntity(categoryId, entity)) {
+                    if (!locationCompare.equals(locationTmp) && !ConfigurationManager.isCategoryReferencedOnEntity(categoryId, entity)) {
                         try {
                             response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + locationTmp, Response.Status.NOT_FOUND);
                             return response;

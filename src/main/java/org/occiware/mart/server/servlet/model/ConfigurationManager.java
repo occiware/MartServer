@@ -1838,8 +1838,14 @@ public class ConfigurationManager {
             return true;
         }
 
-        String relativeLocation = getEntityRelativePath(entity.getId());
-        relativeLocation = relativeLocation.replaceAll("\\s+", "");
+        String relativeLocation;
+        try {
+            relativeLocation = getEntityRelativePath(entity.getId());
+            relativeLocation = relativeLocation.replaceAll("\\s+", "");
+        } catch (ConfigurationException ex) {
+            relativeLocation = null;
+        }
+
         filterPath = filterOnPath.replaceAll("\\s+", "");
 
         if (relativeLocation == null || relativeLocation.isEmpty()) {
@@ -1938,11 +1944,17 @@ public class ConfigurationManager {
      * Get the relative path from entity registered, null else.
      *
      * @param uuid
-     * @return
+     * @return a location for uuid provided.
      */
-    public static String getEntityRelativePath(String uuid) {
-        // May cause null pointer in callers methods, must throw a configuration exception if entitiesRelativePath is null or if get() call is null.
-        return entitiesRelativePath.get(uuid);
+    public static String getEntityRelativePath(String uuid) throws ConfigurationException {
+        if (uuid == null) {
+            throw new ConfigurationException("No uuid provided to find location.");
+        }
+        String result = getEntitiesRelativePath().get(uuid);
+        if (result == null) {
+            throw new ConfigurationException("No location found for uuid : " + uuid);
+        }
+        return result;
     }
 
     // TODO : rebuild etag number method...
@@ -2016,9 +2028,21 @@ public class ConfigurationManager {
         }
     }
 
+    /**
+     * Get the location of a category, this is used too with user mixin tag.
+     * @param category
+     * @return a location for a category like this : /categoryTerm/
+     *  Must never return null value.
+     */
     public static String getLocation(Category category) {
+        if (category == null) {
+            return "";
+        }
         if (category instanceof Mixin) {
             String mixinId = category.getScheme() + category.getTerm();
+            if (userMixinLocationMap == null) {
+                userMixinLocationMap = new ConcurrentHashMap<>();
+            }
             if (userMixinLocationMap.get(mixinId) != null) {
                 return userMixinLocationMap.get(mixinId);
             }
@@ -2026,11 +2050,27 @@ public class ConfigurationManager {
         return '/' + category.getTerm() + '/';
     }
 
+    /**
+     * Get the location of an entity, use of a map to attach path to entity uuid.
+     * @param entity
+     * @return a location for an entity, if this entity has no location, the location will be "/" (root).
+     *  Must never return null value.
+     */
     public static String getLocation(Entity entity) {
         if (entity == null || entitiesRelativePath == null) {
-            return null;
+            if (entity == null) {
+                return "";
+            }
+            entitiesRelativePath = new ConcurrentHashMap<>();
         }
+        // TODO : Check if in future we have location defined in connectors.
         String location = entitiesRelativePath.get(entity.getId());
+
+        if (location == null) {
+            location = "/"; // On root path by default.
+            // To ensure that the path exist on entities path map.
+            entitiesRelativePath.put(entity.getId(), location);
+        }
 
         // we have maybe no leading slash.
         if (!location.equals("/") && !location.endsWith("/")) {
@@ -2038,6 +2078,7 @@ public class ConfigurationManager {
         }
 
         location += entity.getId(); // add the uuid to get a full location.
+
         // return getLocation(entity.getKind()) + entity.getId();
         return location;
     }
@@ -2223,7 +2264,7 @@ public class ConfigurationManager {
 
     public static Map<String, String> getEntitiesRelativePath() {
         if (entitiesRelativePath == null) {
-            entitiesRelativePath = new HashMap<>();
+            entitiesRelativePath = new ConcurrentHashMap<>();
         }
         return entitiesRelativePath;
     }
