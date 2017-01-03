@@ -876,6 +876,11 @@ public class Utils {
      */
     public static String getPathWithoutPrefixSuffixSlash(final String path) {
         String pathTmp = path;
+
+        if (path == null || path.isEmpty() || path.equals("/")) {
+            return "";
+        }
+
         if (path.startsWith("/")) {
             pathTmp = pathTmp.substring(1);
         }
