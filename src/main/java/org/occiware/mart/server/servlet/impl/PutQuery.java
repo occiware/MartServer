@@ -181,7 +181,11 @@ public class PutQuery extends AbstractPutQuery {
             xabsoluteLocation += path;
         } else {
             if (!path.isEmpty()) {
-                xabsoluteLocation += "/" + path;
+                if (xabsoluteLocation.endsWith("/")) {
+                    xabsoluteLocation += path;
+                } else {
+                    xabsoluteLocation += "/" + path;
+                }
             }
         }
 

@@ -128,8 +128,18 @@ public class PostQuery extends AbstractPostQuery {
                     }
 
                     // Check if location path correspond to entity registered path.
-                    String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
-                    locationTmp = locationTmp.replace(entityId, "");
+                    String locationTmp;
+                    try {
+                        locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
+                        locationTmp = locationTmp.replace(entityId, "");
+                    } catch (ConfigurationException ex) {
+                        try {
+                            response = outputParser.parseResponse(ex.getMessage(), Response.Status.NOT_FOUND);
+                            return response;
+                        } catch (ResponseParseException e) {
+                            throw new InternalServerErrorException();
+                        }
+                    }
                     String locationCompare = location.replace(entityId, "");
                     // Check if location is a category location and not an entity location.
                     if (!locationCompare.equals(locationTmp)) {
@@ -171,8 +181,20 @@ public class PostQuery extends AbstractPostQuery {
                     Iterator<Entity> it = entities.iterator();
                     while (it.hasNext()) {
                         Entity entityTmp = it.next();
+                        String entityLocation;
+                        try {
+                            entityLocation = ConfigurationManager.getEntityRelativePath(entityTmp.getId());
 
-                        String locationTmp = Utils.getPathWithoutPrefixSuffixSlash(ConfigurationManager.getEntityRelativePath(entityTmp.getId()));
+                        } catch (ConfigurationException ex) {
+                            try {
+                                response = outputParser.parseResponse(ex.getMessage(), Response.Status.NOT_FOUND);
+                                return response;
+                            } catch (ResponseParseException e) {
+                                throw new InternalServerErrorException();
+                            }
+                        }
+
+                        String locationTmp = Utils.getPathWithoutPrefixSuffixSlash(entityLocation);
                         if (!location.equals(locationTmp)) {
                             it.remove();
                         }
@@ -221,8 +243,19 @@ public class PostQuery extends AbstractPostQuery {
 
 
                 // Check if location path correspond to entity registered path.
-                String locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
-                locationTmp = locationTmp.replace(entityId, "");
+                String locationTmp;
+                try {
+                    locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
+                    locationTmp = locationTmp.replace(entityId, "");
+                } catch (ConfigurationException ex) {
+                    try {
+                        response = outputParser.parseResponse(ex.getMessage(), Response.Status.NOT_FOUND);
+                        return response;
+                    } catch (ResponseParseException e) {
+                        throw new InternalServerErrorException();
+                    }
+                }
+
                 String locationCompare = location.replace(entityId, "");
                 // Check if location is a category location and not an entity location.
                 if (!locationCompare.equals(locationTmp)) {
