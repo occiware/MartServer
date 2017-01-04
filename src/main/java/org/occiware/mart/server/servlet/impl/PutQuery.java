@@ -207,7 +207,16 @@ public class PutQuery extends AbstractPutQuery {
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
             LOGGER.info(entry.getKey() + " ---> " + entry.getValue());
         }
-
+        // Check if entity uuid is valid.
+        if (!Utils.isUUIDValid(entityId)) {
+            String message = "Entity uuid is not valid : " + entityId + ", check the entity identifier, it must be set to a uuid v4 format, like -> f88486b7-0632-482d-a184-a9195733ddd0 ";
+            try {
+                response = outputParser.parseResponse(message, Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
+            }
+        }
         if (ConfigurationManager.isEntityExist(owner, entityId)) {
             // Check if occi.core.id reference another id.
             if (attributes.containsKey(Constants.OCCI_CORE_ID)) {

@@ -414,6 +414,18 @@ public class Utils {
     }
 
     /**
+     * Check if the uuid is a valid one.
+     * @param uuid
+     * @return true if the uuid provided is valid false elsewhere.
+     */
+    public static boolean isUUIDValid(final String uuid) {
+        if (uuid == null || uuid.trim().isEmpty()) {
+            return false;
+        }
+        return uuid.matches(REGEX_CONTROL_UUID);
+    }
+
+    /**
      * Helper for converting action attributes parameters in array.
      *
      * @param actionAttributes
