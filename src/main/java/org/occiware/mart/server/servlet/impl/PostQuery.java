@@ -247,6 +247,7 @@ public class PostQuery extends AbstractPostQuery {
                 try {
                     locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
                     locationTmp = locationTmp.replace(entityId, "");
+                    locationTmp = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
                 } catch (ConfigurationException ex) {
                     try {
                         response = outputParser.parseResponse(ex.getMessage(), Response.Status.NOT_FOUND);
@@ -257,6 +258,8 @@ public class PostQuery extends AbstractPostQuery {
                 }
 
                 String locationCompare = location.replace(entityId, "");
+                locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationCompare);
+
                 // Check if location is a category location and not an entity location.
                 if (!locationCompare.equals(locationTmp)) {
                     Category cat = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);

@@ -174,6 +174,7 @@ public class ConfigurationManager {
 
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + id);
+                LOGGER.error("Exception class : " + ex.getClass().getName());
                 if (ex instanceof ConfigurationException) {
                     throw ex;
                 }
