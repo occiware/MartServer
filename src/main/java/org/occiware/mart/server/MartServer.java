@@ -42,7 +42,7 @@ import java.util.Properties;
 /**
  * @author Christophe Gourdin
  */
-class MartServer {
+public class MartServer {
 
     private static final String KEY_PORT = "server.port";
     private static final String KEY_PROTOCOL = "server.protocol";

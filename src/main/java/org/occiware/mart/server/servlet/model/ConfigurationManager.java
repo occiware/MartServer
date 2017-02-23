@@ -95,565 +95,140 @@ public class ConfigurationManager {
         return configurations.get(owner);
     }
 
-    /**
-     * Create a new configuration (empty ==> without any resources and link and
-     * extension) for a user.
-     *
-     * @param owner
-     */
-    private static void createConfiguration(final String owner) {
-        Configuration configuration = occiFactory.createConfiguration();
-        configurations.put(owner, configuration);
-        LOGGER.debug("Configuration for user " + owner + " created");
-    }
 
     /**
-     * Remove a configuration from the configuration's map.
-     *
-     * @param owner
+     * Assign used extensions to configuration object.
+     * @param owner the current user.
      */
-    private static void removeConfiguration(final String owner) {
-        configurations.remove(owner);
-    }
-
-    /**
-     * Add a new resource entity to a configuration and update the
-     * configuration's map accordingly.
-     *
-     * @param id           (entity id : "term/title")
-     * @param kind         (scheme#term)
-     * @param mixins       (ex:
-     *                     mixins=[http://schemas.ogf.org/occi/infrastructure/network# ipnetwork])
-     * @param attributes   (ex: attributes={occi.network.vlan=12,
-     *                     occi.network.label=private, occi.network.address=10.1.0.0/16,
-     *                     occi.network.gateway=10.1.255.254})
-     * @param owner
-     * @param relativePath (ex: compute/myuuid
-     * @throws ConfigurationException
-     */
-    public static void addResourceToConfiguration(String id, String kind, List<String> mixins,
-                                                  Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
-
-        if (owner == null || owner.isEmpty()) {
-            // Assume if owner is not used to a default user uuid "anonymous".
-            owner = DEFAULT_OWNER;
-        }
-
-        Configuration configuration = getConfigurationForOwner(owner);
-
-        // Assign a new resource to configuration, if configuration has resource
-        // existed, inform by logger but overwrite existing one.
-        boolean resourceOverwrite;
-        Resource resource = findResource(owner, id);
-        if (resource == null) {
-            resourceOverwrite = false;
-
-            Kind occiKind;
-
-            // Check if kind already exist in realm (on extension model).
-            occiKind = findKindFromExtension(owner, kind);
-
-            if (occiKind == null) {
-                // Kind not found on extension, searching on entities.
-                occiKind = findKindFromEntities(owner, kind);
-            }
-            try {
-                // Create an OCCI resource with good resource type (via extension model).
-                resource = (Resource) OcciHelper.createEntity(occiKind);
-
-                resource.setId(id);
-
-                // Add a new kind to resource (title, scheme, term).
-                // if occiKind is null, this will give a default kind parent.
-                resource.setKind(occiKind);
-
-                addMixinsToEntity(resource, mixins, owner, false);
-
-                // Add the attributes...
-                updateAttributesToEntity(resource, attributes);
-
-            } catch (Throwable ex) {
-                LOGGER.error("Exception thrown while creating an entity. " + id);
-                LOGGER.error("Exception class : " + ex.getClass().getName());
-                if (ex instanceof ConfigurationException) {
-                    throw ex;
-                }
-                throw new ConfigurationException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
-            }
-        } else {
-            LOGGER.info("resource already exist, overwriting...");
-            resourceOverwrite = true;
-
-            // Add the mixins if any.
-            addMixinsToEntity(resource, mixins, owner, true);
-
-            updateAttributesToEntity(resource, attributes);
-
-        }
-
-        // Add resource to configuration.
-        if (resourceOverwrite) {
-            LOGGER.info("resource updated " + resource.getId() + " on OCCI configuration");
-        } else {
-            configuration.getResources().add(resource);
-            LOGGER.info("Added Resource " + resource.getId() + " to configuration object.");
-        }
-        updateVersion(owner, id);
-        // Add the entity to relative path map.
-        entitiesRelativePath.put(id, relativePath);
-
-    }
-
-    /**
-     * Add a new link entity to a configuration and update the configuration's
-     * map accordingly.
-     *
-     * @param id
-     * @param kind
-     * @param mixins
-     * @param src
-     * @param target
-     * @param attributes
-     * @param owner
-     * @param relativePath
-     * @throws ConfigurationException
-     */
-    public static void addLinkToConfiguration(String id, String kind, java.util.List<String> mixins, String src,
-                                              String target, Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
-
-        if (owner == null || owner.isEmpty()) {
-            // Assume if owner is not used to a default user uuid "anonymous".
-            owner = DEFAULT_OWNER;
-        }
-
-        boolean overwrite = false;
-        Resource resourceSrc = findResource(owner, src);
-        Resource resourceDest = findResource(owner, target);
-
-        if (resourceSrc == null) {
-            throw new ConfigurationException("Cannot find the source of the link: " + id);
-        }
-        if (resourceDest == null) {
-            throw new ConfigurationException("Cannot find the target of the link: " + id);
-        }
-
-        Link link = findLink(owner, id);
-        if (link == null) {
-
-            Kind occiKind;
-            // Check if kind already exist in realm (on extension model).
-            occiKind = findKindFromExtension(owner, kind);
-
-            if (occiKind == null) {
-                // Kind not found on extension, searching on entities.
-                occiKind = findKindFromEntities(owner, kind);
-            }
-            try {
-                // Link doesnt exist on configuration, we create it.
-                link = (Link) OcciHelper.createEntity(occiKind);
-                link.setId(id);
-
-                // Add a new kind to resource (title, scheme, term).
-                link.setKind(occiKind);
-
-                addMixinsToEntity(link, mixins, owner, false);
-
-                updateAttributesToEntity(link, attributes);
-
-            } catch (Throwable ex) {
-                LOGGER.error("Exception thrown while creating an entity. " + id);
-                if (ex instanceof ConfigurationException) {
-                    throw ex;
-                }
-
-                throw new ConfigurationException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
-            }
-        } else {
-            // Link exist upon our configuration, we update it.
-
-            overwrite = true;
-
-            addMixinsToEntity(link, mixins, owner, true);
-
-            updateAttributesToEntity(link, attributes);
-        }
-
-
-        link.setSource(resourceSrc);
-        link.setTarget(resourceDest);
-
-        // Assign link to resource source.
-        resourceSrc.getLinks().add(link);
-
-        updateVersion(owner, id);
-
-        if (overwrite) {
-            LOGGER.info("Link " + id + " updated ! Version: " + versionObjectMap.get(owner + id));
-        } else {
-            LOGGER.info("link " + id + " added to configuration !");
-        }
-        entitiesRelativePath.put(id, relativePath);
-
-    }
-
-    /**
-     * Get all the attributes of an Entity instance.
-     *
-     * @param entity the given Entity instance.
-     * @return all the attributes of the given instance.
-     */
-    private static Collection<Attribute> getAllAttributes(final Entity entity) {
-        List<Attribute> attributes = new ArrayList<>();
-        Kind entityKind = entity.getKind();
-        if (entityKind != null) {
-            addAllAttributes(attributes, entityKind);
-        }
-        for (Mixin mixin : entity.getMixins()) {
-            addAllAttributes(attributes, mixin);
-        }
-        return attributes;
-    }
-
-    /**
-     * Add all the attributes of a given Kind instance and all its parent kinds.
-     *
-     * @param attributes the collection where attributes will be added.
-     * @param kind       the given Kind instance.
-     */
-    private static void addAllAttributes(final Collection<Attribute> attributes, final Kind kind) {
-        Kind kindParent = kind.getParent();
-        if (kindParent != null) {
-            addAllAttributes(attributes, kindParent);
-        }
-        attributes.addAll(kind.getAttributes());
-    }
-
-    /**
-     * Add all the attributes of a given Mixin instance and all its depend
-     * mixins.
-     *
-     * @param attributes the collection where attributes will be added.
-     * @param mixin      the given Mixin instance.
-     */
-    private static void addAllAttributes(final Collection<Attribute> attributes, final Mixin mixin) {
-        boolean found;
-        for (Mixin md : mixin.getDepends()) {
-            addAllAttributes(attributes, md);
-        }
-        // Compare with attributes on entity.
-        List<Attribute> mixinAttrs = mixin.getAttributes();
-        if (!attributes.isEmpty()) {
-
-            for (Attribute attrMixin : mixinAttrs) {
-                found = false;
-                // Check if we can add it. avoid doublon. cf CRTP : mixin medium :> resource_tpl. for example.
-                for (Attribute attrKind : attributes) {
-                    if (attrKind.getName().equals(attrMixin.getName())) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    // Add the mixin attribute.
-                    attributes.add(attrMixin);
-                }
-            }
-        } else {
-            attributes.addAll(mixin.getAttributes());
-        }
-
-    }
-
-    /**
-     * Update / add attributes to entity.
-     *
-     * @param entity
-     * @param attributes
-     * @return Updated entity object.
-     */
-    public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes) {
-        if (attributes == null || attributes.isEmpty()) {
-            // TODO : Check if concrete object attributes are deleted, or update MART with a remove attributes method.
-            entity.getAttributes().clear();
-            return entity;
-        }
-        String attrName;
-        String attrValue;
-
-        // Ensure that all attributes are in the entity AttributeState list object.
-        addAllAttributes(entity);
-
-        for (Map.Entry<String, String> entry : attributes.entrySet()) {
-            attrName = entry.getKey();
-            attrValue = entry.getValue();
-            if (!attrName.isEmpty()
-                    && !attrName.equals("occi.core.id") && !attrName.equals("occi.core.target") && !attrName.equals("occi.core.source")) {
-                LOGGER.info("Attribute set value : " + attrValue);
-
-                OcciHelper.setAttribute(entity, attrName, attrValue);
-
-                AttributeState attrState = getAttributeStateObject(entity, attrName);
-                if (attrState != null) {
-                    String attrStateValue = attrState.getValue();
-                    if (attrStateValue != null && !attrStateValue.equals(attrValue)) {
-                        // update the attribute value.
-                        attrState.setValue(attrValue);
-
-                    } else if (attrValue != null) {
-                        attrState.setValue(attrValue);
-                    }
-
-                    LOGGER.info("Attribute : " + attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
-                }
-            }
-        }
-
-        // Check attributes.
-        // LOGGER.info("Entity :--> ");
-        // Utils.printEntity(entity);
-
-        return entity;
-    }
-
-    /**
-     * Add all attributes not already present.
-     *
-     * @param entity
-     */
-    private static void addAllAttributes(Entity entity) {
-        // Compute already present attribute names.
-        List<AttributeState> attributeStates = entity.getAttributes();
-        HashSet<String> attributeNames = new HashSet<>();
-        // Iterate over all attribute state instances.
-        for (AttributeState attributeState : attributeStates) {
-            attributeNames.add(attributeState.getName());
-        }
-        Collection<Attribute> attribs = getAllAttributes(entity);
-        // Iterate over all attributes.
-        for (Attribute attribute : attribs) {
-            String attributeName = attribute.getName();
-            if (!attributeNames.contains(attributeName)) {
-                // If not already present create it.
-                AttributeState attributeState = OCCIFactory.eINSTANCE.createAttributeState();
-                attributeState.setName(attributeName);
-                String attributeDefault = attribute.getDefault();
-                if (attributeDefault != null) {
-                    // if default set then set value.
-                    attributeState.setValue(attributeDefault);
-                }
-                // Add it to attribute states of this entity.
-                attributeStates.add(attributeState);
-            }
-        }
-    }
-
-    /**
-     * Remove an entity (resource or link) from the owner's configuration or
-     * delete all entities from given kind id or disassociate entities from
-     * given mixin id.
-     *
-     * @param owner
-     * @param id    (kind id or mixin id or entity Id!)
-     */
-    public static void removeOrDissociateFromConfiguration(final String owner, final String id) {
-        boolean found = false;
-        boolean resourceToDelete = false;
-        boolean kindEntitiesToDelete = false;
-        boolean linkToDelete = false;
-        boolean mixinToDissociate = false;
-
-        Kind kind = null;
-        Resource resource;
-        Link link = null;
-        Mixin mixin = null;
-
-        // searching in resources.
-        resource = findResource(owner, id);
-        if (resource != null) {
-            found = true;
-            resourceToDelete = true;
-        }
-        if (!found) {
-            link = findLink(owner, id);
-            if (link != null) {
-                found = true;
-                linkToDelete = true;
-            }
-        }
-        if (!found) {
-            // check if this is a kind id.
-            kind = findKindFromEntities(owner, id);
-            if (kind != null) {
-                kindEntitiesToDelete = true;
-                found = true;
-            }
-        }
-        if (!found) {
-            mixin = findMixinOnEntities(owner, id);
-            if (mixin != null) {
-                mixinToDissociate = true;
-            }
-        }
-
-        if (resourceToDelete) {
-            removeResource(owner, resource);
-        }
-        if (linkToDelete) {
-            removeLink(owner, link);
-        }
-        if (kindEntitiesToDelete) {
-            removeEntitiesForKind(owner, kind);
-        }
-        if (mixinToDissociate) {
-            dissociateMixinFromEntities(owner, mixin);
-        }
-    }
-
-    /**
-     * Remove a resource from owner's configuration.
-     *
-     * @param owner
-     * @param resource
-     */
-    private static void removeResource(final String owner, final Resource resource) {
+    public static void useAllExtensionForConfigurationInClasspath(String owner) {
         Configuration config = getConfigurationForOwner(owner);
-
-        Iterator<Link> it = resource.getLinks().iterator();
-        while (it.hasNext()) {
-            Link link = it.next();
-            Resource src = link.getSource();
-            if (!src.equals(resource)) {
-                src.getLinks().remove(link);
-                entitiesRelativePath.remove(link.getId());
-            }
-            Resource target = link.getTarget();
-            if (!target.equals(resource)) {
-                target.getLinks().remove(link);
-                entitiesRelativePath.remove(link.getId());
-            }
-        }
-
-        resource.getLinks().clear();
-        config.getResources().remove(resource);
-        entitiesRelativePath.remove(resource.getId());
-    }
-
-    /**
-     * Remove a link from owner's configuration.
-     *
-     * @param owner
-     * @param link
-     */
-    private static void removeLink(final String owner, final Link link) {
-        Resource resourceSrc = link.getSource();
-        Resource resourceTarget = link.getTarget();
-        resourceSrc.getLinks().remove(link);
-        resourceTarget.getLinks().remove(link);
-        entitiesRelativePath.remove(link.getId());
-
-    }
-
-    /**
-     * Remove all entities for this kind.
-     *
-     * @param owner
-     * @param kind
-     */
-    private static void removeEntitiesForKind(final String owner, final Kind kind) {
-        if (kind == null) {
-            return;
-        }
-        List<Entity> entities = findAllEntitiesForKind(owner, kind.getScheme() + kind.getTerm());
-
-        for (Entity entity : entities) {
-            if (entity instanceof Resource) {
-                removeResource(owner, (Resource) entity);
-            } else if (entity instanceof Link) {
-                removeLink(owner, (Link) entity);
+        Extension ext;
+        List<Extension> extensions = new LinkedList<>();
+        Collection<String> extReg = OCCIRegistry.getInstance().getRegisteredExtensions();
+        LOGGER.info("Collection: " + extReg);
+        boolean coreAdded = false;
+        for (String extScheme : extReg) {
+            // Load the extension and register, include the core as well...
+            LOGGER.info("Loading model extension : " + extScheme);
+            ext = OcciHelper.loadExtension(extScheme);
+            if (ext.getName().equals("core")) {
+                extensions.add(0, ext); // Add on first infrastructure extension.
+                coreAdded = true;
+            } else if (ext.getName().equals("infrastructure")) {
+                if (coreAdded && extensions.size() > 1) {
+                    extensions.add(1, ext);
+                } else {
+                    extensions.add(0, ext);
+                }
+            } else {
+                extensions.add(ext);
             }
         }
-        entities.clear();
+
+        for (Extension extension : extensions) {
+            LOGGER.info("Extension : " + extension.getName() + " added to user configuration.");
+            config.getUse().add(extension);
+        }
     }
 
-    /**
-     * Dissociate entities from this mixin.
-     *
-     * @param owner
-     * @param mixin
-     */
-    private static void dissociateMixinFromEntities(final String owner, final Mixin mixin) {
-        if (mixin == null) {
-            return;
-        }
-        List<Entity> entities = findAllEntitiesForMixin(owner, mixin.getScheme() + mixin.getTerm());
-        for (Entity entity : entities) {
-            entity.getMixins().remove(mixin);
-            updateVersion(owner, entity.getId());
-        }
-        entities.clear();
 
-    }
+
+
+    // Find/Get entity / config section
 
     /**
-     * Dissociate a mixin from an entity.
+     * Get a mixin from configuration object.
      *
-     * @param owner
      * @param mixinId
-     * @param entity
+     * @param owner
      * @return
      */
-    public static boolean dissociateMixinFromEntity(final String owner, final String mixinId, Entity entity) {
-        boolean result = false;
-        if (mixinId == null) {
-            return false;
-        }
-        // Load the mixin object.
-        List<Mixin> mixins = entity.getMixins();
-        if (mixins.isEmpty()) {
-            return true;
-        }
-        Mixin myMixin = null;
+    public static Mixin findUserMixinOnConfiguration(final String mixinId, final String owner) {
+        Mixin mixinToReturn = null;
+        Configuration config;
+        EList<Mixin> mixins;
+        config = getConfigurationForOwner(owner);
+        mixins = config.getMixins();
         for (Mixin mixin : mixins) {
             if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
-                myMixin = mixin;
+                mixinToReturn = mixin;
                 break;
             }
         }
-        // Remove the mixin.
-        if (myMixin != null) {
-            // First we remove its attributes if any.
-            EList<Attribute> attributesToRemove = myMixin.getAttributes();
-            if (!attributesToRemove.isEmpty()) {
-                removeEntityAttributes(entity, attributesToRemove);
+        return mixinToReturn;
+    }
+    /**
+     * Search mixin on owner's configuration.
+     *
+     * @param owner
+     * @param mixinId
+     * @return a mixin found or null if not found
+     */
+    private static Mixin findMixinOnEntities(final String owner, final String mixinId) {
+        Configuration configuration = getConfigurationForOwner(owner);
+        Mixin mixinToReturn = null;
+        boolean mixinOk;
+
+        for (Resource res : configuration.getResources()) {
+            mixinOk = false;
+            for (Mixin mixin : res.getMixins()) {
+                if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
+                    mixinToReturn = mixin;
+                    mixinOk = true;
+                    break;
+                }
             }
 
-            entity.getMixins().remove(myMixin);
-            updateVersion(owner, entity.getId());
-            result = true;
+            if (mixinOk) {
+                break;
+            } else {
+                // Recherche dans les links.
+                for (Link link : res.getLinks()) {
+                    for (Mixin mixin : link.getMixins()) {
+                        if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
+                            mixinToReturn = mixin;
+                            mixinOk = true;
+                            break;
+                        }
+                    }
+                    if (mixinOk) {
+                        break;
+                    }
+                }
+            }
+            if (mixinOk) {
+                break;
+            }
+
         }
-        return result;
+
+        return mixinToReturn;
     }
 
     /**
-     * Remove attributes from entity.
+     * Find a mixin on loaded extension on configuration.
      *
-     * @param entity
-     * @param attributesToRemove
+     * @param owner
+     * @param mixinId
+     * @return
      */
-    public static void removeEntityAttributes(Entity entity, EList<Attribute> attributesToRemove) {
-
-        Iterator<AttributeState> entityAttrs = entity.getAttributes().iterator();
-        boolean isKindAttribute;
-        while (entityAttrs.hasNext()) {
-            AttributeState attrState = entityAttrs.next();
-            for (Attribute attribute : attributesToRemove) {
-                isKindAttribute = isKindAttribute(entity.getKind(), attribute.getName());
-                if (attribute.getName().equals(attrState.getName()) && !isKindAttribute) {
-                    entityAttrs.remove();
+    public static Mixin findMixinOnExtension(final String owner, final String mixinId) {
+        Configuration config = getConfigurationForOwner(owner);
+        Mixin mixinToReturn = null;
+        for (Extension ext : config.getUse()) {
+            for (Mixin mixin : ext.getMixins()) {
+                if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
+                    mixinToReturn = mixin;
+                    break;
                 }
+
+            }
+            if (mixinToReturn != null) {
+                break;
             }
         }
 
+        return mixinToReturn;
     }
 
     /**
@@ -919,39 +494,6 @@ public class ConfigurationManager {
      * Find entities for a categoryId (kind or Mixin or actions). actions has no
      * entity list and it's not used here.
      *
-     * @param categoryId
-     * @return an hmap (key: owner, value : List of entities).
-     */
-    public static Map<String, List<Entity>> findAllEntitiesForCategoryId(final String categoryId) {
-        Map<String, List<Entity>> entitiesMap = new HashMap<>();
-        if (configurations.isEmpty()) {
-            return entitiesMap;
-        }
-        Set<String> owners = configurations.keySet();
-        List<Entity> entities = new ArrayList<>();
-
-        for (String owner : owners) {
-            entities.clear();
-
-            entities.addAll(findAllEntitiesForKind(owner, categoryId));
-            entities.addAll(findAllEntitiesForMixin(owner, categoryId));
-            entities.addAll(findAllEntitiesForCategory(owner, categoryId));
-
-            if (!entities.isEmpty()) {
-                entitiesMap.put(owner, entities);
-            } else {
-                entities = new ArrayList<>();
-                entitiesMap.put(owner, entities);
-            }
-
-        }
-        return entitiesMap;
-    }
-
-    /**
-     * Find entities for a categoryId (kind or Mixin or actions). actions has no
-     * entity list and it's not used here.
-     *
      * @param owner
      * @param filter
      * @return a list of entities (key: owner, value : List of entities).
@@ -991,62 +533,6 @@ public class ConfigurationManager {
         }
 
         return entities;
-    }
-
-    /**
-     * Search for an action with entityId and a full category scheme.
-     *
-     * @param relativePath (like "compute/vm1")
-     * @param actionId     (like
-     *                     "http://schemas.ogf.org/occi/infrastructure/compute/action#start")
-     * @return an entity map (key=owner, value=Entity) with this relative path
-     * and has this actionId, may return empty map if action not found on entity
-     * object, or if entity not found.
-     */
-    public static Map<String, Entity> findEntityAction(final String relativePath, final String actionId) {
-
-        Map<String, Entity> entities = findEntitiesOnAllOwner(relativePath);
-
-        Map<String, Entity> entitiesFound = new HashMap<>();
-        if (entities.isEmpty()) {
-            return entities;
-        }
-
-        Map<String, List<Entity>> entitiesAction = findAllEntitiesForCategoryId(actionId);
-
-        List<Entity> entitiesToCompare;
-        // Search relative path entity.
-        String owner;
-        for (Map.Entry<String, List<Entity>> entry : entitiesAction.entrySet()) {
-            owner = entry.getKey();
-            entitiesToCompare = entry.getValue();
-            for (Entity ent : entitiesToCompare) {
-                if (entities.get(owner) != null && entities.get(owner).equals(ent)) {
-                    // Entity is found for this action.
-                    entitiesFound.put(owner, ent);
-                }
-            }
-        }
-        return entitiesFound;
-
-    }
-
-    /**
-     * Find a list of entity with his relative path.
-     *
-     * @param entityId
-     * @return entities
-     */
-    private static Map<String, Entity> findEntitiesOnAllOwner(final String entityId) {
-        Entity entity;
-        Map<String, Entity> entitiesMap = new HashMap<>();
-        for (String owner : configurations.keySet()) {
-            entity = findEntity(owner, entityId);
-            if (entity != null) {
-                entitiesMap.put(owner, entity);
-            }
-        }
-        return entitiesMap;
     }
 
     /**
@@ -1156,361 +642,23 @@ public class ConfigurationManager {
     }
 
 
-    /**
-     * Add mixins to an existing entity (resources or links). Ex of mixin string
-     * format : http://schemas.ogf.org/occi/infrastructure/network#ipnetwork
-     *
-     * @param entity     (OCCI Entity).
-     * @param mixins     (List of mixins).
-     * @param owner
-     * @param updateMode (if updateMode is true, reset existing and replace with
-     *                   new ones)
-     * @throws ConfigurationException
-     */
-    public static void addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) throws ConfigurationException {
-        if (updateMode) {
-            entity.getMixins().clear();
-        }
-        if (mixins != null && !mixins.isEmpty()) {
-
-            for (String mixinStr : mixins) {
-                // Check if this mixin exist in realm extensions.
-                Mixin mixin = findMixinOnExtension(owner, mixinStr);
-
-                if (mixin == null) {
-                    LOGGER.info("Mixin not found on extensions, searching on referenced entities: --> Term : " + mixinStr);
-                    // Search the mixin on entities.
-                    mixin = findMixinOnEntities(owner, mixinStr);
-
-                    if (mixin == null) {
-                        // Search on the mixin tag.
-                        mixin = findUserMixinOnConfiguration(mixinStr, owner);
-                        if (mixin == null) {
-                            throw new ConfigurationException("Mixin " + mixinStr + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
-                        }
-                    }
-                    LOGGER.info("Mixin found on configuration : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-
-                } else {
-                    LOGGER.info("Mixin found on used extensions : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-                }
-
-                LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-                LOGGER.info("Mixin attributes : ");
-
-                Collection<Attribute> attrs = mixin.getAttributes();
-                if (attrs != null && !attrs.isEmpty()) {
-                    LOGGER.info("Attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-                    for (Attribute attr : attrs) {
-                        LOGGER.info("Attribute : " + attr.getName() + " --> " + attr.getDescription());
-                    }
-                } else {
-                    LOGGER.warn("No attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-                }
-
-                entity.getMixins().add(mixin);
-            }
-        }
-    }
 
     /**
-     * Increment a version of an object (resource or link << entity)
+     * Get all the attributes of an Entity instance.
      *
-     * @param owner
-     * @param id
+     * @param entity the given Entity instance.
+     * @return all the attributes of the given instance.
      */
-    public static void updateVersion(final String owner, final String id) {
-        String key = owner + id;
-        Integer version = versionObjectMap.get(key);
-        if (version == null) {
-            version = 1;
+    private static Collection<Attribute> getAllAttributes(final Entity entity) {
+        List<Attribute> attributes = new ArrayList<>();
+        Kind entityKind = entity.getKind();
+        if (entityKind != null) {
+            addAllAttributes(attributes, entityKind);
         }
-        version++;
-        versionObjectMap.put(key, version);
-
-    }
-
-    /**
-     * Search mixin on owner's configuration.
-     *
-     * @param owner
-     * @param mixinId
-     * @return a mixin found or null if not found
-     */
-    private static Mixin findMixinOnEntities(final String owner, final String mixinId) {
-        Configuration configuration = getConfigurationForOwner(owner);
-        Mixin mixinToReturn = null;
-        boolean mixinOk;
-
-        for (Resource res : configuration.getResources()) {
-            mixinOk = false;
-            for (Mixin mixin : res.getMixins()) {
-                if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
-                    mixinToReturn = mixin;
-                    mixinOk = true;
-                    break;
-                }
-            }
-
-            if (mixinOk) {
-                break;
-            } else {
-                // Recherche dans les links.
-                for (Link link : res.getLinks()) {
-                    for (Mixin mixin : link.getMixins()) {
-                        if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
-                            mixinToReturn = mixin;
-                            mixinOk = true;
-                            break;
-                        }
-                    }
-                    if (mixinOk) {
-                        break;
-                    }
-                }
-            }
-            if (mixinOk) {
-                break;
-            }
-
+        for (Mixin mixin : entity.getMixins()) {
+            addAllAttributes(attributes, mixin);
         }
-
-        return mixinToReturn;
-    }
-
-    /**
-     * Find a mixin on loaded extension on configuration.
-     *
-     * @param owner
-     * @param mixinId
-     * @return
-     */
-    public static Mixin findMixinOnExtension(final String owner, final String mixinId) {
-        Configuration config = getConfigurationForOwner(owner);
-        Mixin mixinToReturn = null;
-        for (Extension ext : config.getUse()) {
-            for (Mixin mixin : ext.getMixins()) {
-                if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
-                    mixinToReturn = mixin;
-                    break;
-                }
-
-            }
-            if (mixinToReturn != null) {
-                break;
-            }
-        }
-
-        return mixinToReturn;
-    }
-
-    /**
-     * Associate a list of entities with a mixin, replacing existing list if
-     * any. if mixin doest exist, this will throw a new exception.
-     *
-     * @param owner
-     * @param mixinId
-     * @param entityIds
-     * @param updateMode
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
-     */
-    public static void saveMixinForEntities(final String mixinId, final List<String> entityIds,
-                                            final boolean updateMode, final String owner) throws ConfigurationException {
-
-        // searching for the mixin to register.
-        Mixin mixin = findMixinOnExtension(owner, mixinId);
-
-        if (mixin == null) {
-            mixin = findMixinOnEntities(owner, mixinId);
-            if (mixin == null) {
-                // Search on the mixin tag.
-                mixin = findUserMixinOnConfiguration(mixinId, owner);
-                if (mixin == null) {
-                    throw new ConfigurationException("Mixin " + mixinId + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
-                }
-            }
-        }
-        LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-        List<Entity> entities = new ArrayList<>();
-        for (String entityId : entityIds) {
-            Entity entity = findEntity(owner, entityId);
-
-            if (entity != null && !entity.getMixins().contains(mixin)) {
-                entity.getMixins().add(mixin);
-                updateVersion(owner, entityId);
-            }
-            if (entity != null) {
-                entities.add(entity);
-            }
-        }
-
-        if (!updateMode) {
-            boolean found;
-            // Remove entities those are not in the list.
-            Iterator<Entity> it = entities.iterator();
-            while (it.hasNext()) {
-                found = false;
-                Entity entityMixin = it.next();
-                for (String entityId : entityIds) {
-                    if (entityMixin.getId().equals(entityId)) {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    // Remove reference mixin of the entity.
-                    entityMixin.getMixins().remove(mixin);
-
-                    // Remove the entity from mixin.
-                    // it.remove();
-                }
-
-            }
-        }
-
-    }
-
-    /**
-     * Add a user mixin to configuration's Object (user tag).
-     *
-     * @param id
-     * @param title
-     * @param location
-     * @param owner
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
-     */
-    public static void addUserMixinOnConfiguration(final String id, final String title, final String location, final String owner) throws ConfigurationException {
-        if (owner == null || id == null || location == null) {
-            return;
-        }
-
-        Configuration configuration = getConfigurationForOwner(owner);
-
-        // Check if this mixin already exist on configuration, if this is the case, overwrite mixin definition.
-        Mixin mixin = findUserMixinOnConfiguration(id, owner);
-        if (mixin == null) {
-            mixin = createMixin(id);
-            mixin.setTitle(title);
-        } else {
-            // Check if this mixin is a mixin extension..
-            if (!isMixinTags(owner, id)) {
-                throw new ConfigurationException("This mixin : " + id + " is not a mixin tag, but it exist on referenced extension and configuration.");
-            }
-            LOGGER.info("Overwriting mixin on configuration : " + id);
-            configuration.getMixins().remove(mixin);
-        }
-        LOGGER.info("Adding mixin on configuration : " + id);
-        // We add the mixin location to the userMixin map.
-        userMixinLocationMap.put(id, location);
-
-        configuration.getMixins().add(mixin);
-
-    }
-
-    /**
-     * Search for a user mixin tag on all configurations.
-     *
-     * @param mixinId (scheme + term)
-     * @return null if not found on configurations.
-     */
-    private static Mixin findUserMixinOnConfigurations(final String mixinId) {
-        Mixin mixinToReturn = null;
-        Set<String> owners = configurations.keySet();
-        Configuration config;
-        EList<Mixin> mixins;
-        for (String owner : owners) {
-            config = getConfigurationForOwner(owner);
-            mixins = config.getMixins();
-            for (Mixin mixin : mixins) {
-                if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
-                    mixinToReturn = mixin;
-                    break;
-                }
-            }
-
-            if (mixinToReturn != null) {
-                break;
-            }
-        }
-
-        return mixinToReturn;
-    }
-
-    /**
-     * Get a mixin from configuration object.
-     *
-     * @param mixinId
-     * @param owner
-     * @return
-     */
-    public static Mixin findUserMixinOnConfiguration(final String mixinId, final String owner) {
-        Mixin mixinToReturn = null;
-        Configuration config;
-        EList<Mixin> mixins;
-        config = getConfigurationForOwner(owner);
-        mixins = config.getMixins();
-        for (Mixin mixin : mixins) {
-            if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
-                mixinToReturn = mixin;
-                break;
-            }
-        }
-        return mixinToReturn;
-    }
-
-    /**
-     * Delete a user mixin from configuration's Object (user tag).
-     *
-     * @param mixinId
-     * @param owner
-     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
-     */
-    public static void removeUserMixinFromConfiguration(final String mixinId, final String owner) throws ConfigurationException {
-        if (mixinId == null) {
-            return;
-        }
-
-        // Search for userMixin.
-        Mixin mixin = findUserMixinOnConfigurations(mixinId);
-
-        if (mixin == null) {
-            LOGGER.info("mixin not found on configurations.");
-            throw new ConfigurationException("mixin : " + mixinId + " not found on configuration.");
-
-        }
-
-        // We remove the mixin location from the userMixin map.
-        userMixinLocationMap.remove(mixinId);
-
-        // Delete from configuration.
-        Configuration config = getConfigurationForOwner(owner);
-        config.getMixins().remove(mixin);
-    }
-
-    /**
-     * Create a new mixin without any association.
-     *
-     * @param mixinId
-     * @return
-     */
-    private static Mixin createMixin(final String mixinId) {
-        Mixin mixin = occiFactory.createMixin();
-        if (mixinId != null) {
-            // Create mixin.
-            String scheme;
-            String term;
-            // String title;
-            // mixin = occiFactory.createMixin();
-            term = mixinId.split("#")[1];
-            scheme = mixinId.split("#")[0] + "#";
-            // TODO : How to find the title in this string ?
-            // mixin.setTitle(title);
-            mixin.setTerm(term);
-            mixin.setScheme(scheme);
-        }
-
-        return mixin;
+        return attributes;
     }
 
     /**
@@ -1552,31 +700,6 @@ public class ConfigurationManager {
     }
 
     /**
-     * @param ext
-     * @param actionId (action scheme+term)
-     * @return Action, may return null if not found on extension.
-     */
-    public static Action getActionKindFromExtension(final Extension ext, final String actionId) {
-        EList<Kind> kinds = ext.getKinds();
-        EList<Action> actionKinds;
-        Action actionKind = null;
-        for (Kind kind : kinds) {
-            actionKinds = kind.getActions();
-            for (Action action : actionKinds) {
-                if ((action.getScheme() + action.getTerm()).equals(actionId)) {
-                    actionKind = action;
-                    break;
-                }
-            }
-            if (actionKind != null) {
-                break;
-            }
-        }
-
-        return actionKind;
-    }
-
-    /**
      * Get used extension with this kind.
      *
      * @param owner owner of the configuration
@@ -1603,6 +726,7 @@ public class ConfigurationManager {
 
         return extRet;
     }
+
     /**
      * Get used extension with this kind.
      *
@@ -1632,104 +756,6 @@ public class ConfigurationManager {
     }
 
     /**
-     * Find extension used with this entity.
-     *
-     * @param entity
-     * @return an extension or null if not found
-     */
-    public static Extension getExtensionFromEntity(Entity entity) {
-        Extension extRet = null;
-        // Search owner of the entity.
-        Set<String> owners = configurations.keySet();
-        Configuration configuration;
-        EList<Resource> resources;
-        EList<Extension> exts;
-        for (String owner : owners) {
-            configuration = getConfigurationForOwner(owner);
-
-            resources = configuration.getResources();
-            for (Resource resource : resources) {
-                if (resource.getId().equals(entity.getId())) {
-                    // We found the configuration and owner of the entity.
-                    // Now we get the extension from entity kind.
-                    Kind entityKind = entity.getKind();
-                    exts = configuration.getUse();
-                    for (Extension ext : exts) {
-                        if (ext.getKinds().contains(entityKind)) {
-                            extRet = ext;
-                            break;
-                        }
-                    }
-                }
-                if (extRet != null) {
-                    break;
-                }
-            }
-            if (extRet != null) {
-                break;
-            }
-        }
-
-        return extRet;
-    }
-
-    /**
-     * Get all declared owner.
-     *
-     * @return
-     */
-    public static Set<String> getAllOwner() {
-        return configurations.keySet();
-    }
-
-    /**
-     * Find all user mixins scheme+term that have this location.
-     *
-     * @param location (http://localhost:8080/mymixincollection/
-     * @return a map by owner and list of user mixins, map is empty if none
-     * found.
-     */
-    public static Map<String, List<String>> findAllUserMixinKindByLocation(final String location) {
-
-        List<String> mixinKinds;
-        Map<String, List<String>> mixinKindsByOwner = new HashMap<>();
-        // Recherche sur tous les users mixin kinds.
-        Set<String> owners = configurations.keySet();
-        Configuration config;
-        EList<Mixin> mixins;
-        String mixinId;
-        String locationTmp;
-        for (String owner : owners) {
-            mixinKinds = new ArrayList<>();
-            config = getConfigurationForOwner(owner);
-            mixins = config.getMixins();
-            for (Mixin mixin : mixins) {
-                mixinId = mixin.getScheme() + mixin.getTerm();
-                locationTmp = userMixinLocationMap.get(mixinId);
-                if (locationTmp != null && locationTmp.contains(location)) {
-                    // Location found for this mixin.
-                    mixinKinds.add(mixinId);
-                }
-            }
-            if (!mixinKinds.isEmpty()) {
-                mixinKindsByOwner.put(owner, mixinKinds);
-            }
-        }
-
-        return mixinKindsByOwner;
-    }
-
-    /**
-     * Remove referenced configuration for an owner.
-     *
-     * @param owner
-     */
-    public static void resetForOwner(final String owner) {
-        removeConfiguration(owner);
-
-    }
-
-    /**
      * Determine if entity is a Resource or a Link from the provided attributes.
      *
      * @param attr = attributes of an entity
@@ -1743,20 +769,6 @@ public class ConfigurationManager {
         result = !(attr.containsKey(Constants.OCCI_CORE_SOURCE) || attr.containsKey(Constants.OCCI_CORE_TARGET));
 
         return result;
-    }
-
-    /**
-     * Create a Map<String,String> from EList<AttributeState>.
-     *
-     * @param attributes
-     * @return a map<String, String>
-     */
-    public static Map<String, String> getEntityAttributesMap(EList<AttributeState> attributes) {
-        Map<String, String> mapResult = new HashMap<>();
-        for (AttributeState attr : attributes) {
-            mapResult.put(attr.getName(), attr.getValue());
-        }
-        return mapResult;
     }
 
     /**
@@ -1789,9 +801,6 @@ public class ConfigurationManager {
             }
             it.remove();
         }
-
-        // Position the start index if > 0.
-        // JP: start index starts with 1
 
         int startIndex = filter.getCurrentPage();
         int number = filter.getNumberOfItemsPerPage();
@@ -1841,7 +850,7 @@ public class ConfigurationManager {
 
         String relativeLocation;
         try {
-            relativeLocation = getEntityRelativePath(entity.getId());
+            relativeLocation = getLocation(entity.getId());
             relativeLocation = relativeLocation.replaceAll("\\s+", "");
         } catch (ConfigurationException ex) {
             relativeLocation = null;
@@ -1941,22 +950,7 @@ public class ConfigurationManager {
         return control;
     }
 
-    /**
-     * Get the relative path from entity registered, null else.
-     *
-     * @param uuid
-     * @return a location for uuid provided.
-     */
-    public static String getEntityRelativePath(String uuid) throws ConfigurationException {
-        if (uuid == null) {
-            throw new ConfigurationException("No uuid provided to find location.");
-        }
-        String result = getEntitiesRelativePath().get(uuid);
-        if (result == null) {
-            throw new ConfigurationException("No location found for uuid : " + uuid);
-        }
-        return result;
-    }
+
 
     // TODO : rebuild etag number method...
 //    /**
@@ -1974,6 +968,8 @@ public class ConfigurationManager {
 //        // Generate eTag.
 //        return Utils.createEtagNumber(id, owner, version);
 //    }
+
+
 
     /**
      * Get an attribute state object for key parameter.
@@ -1998,35 +994,192 @@ public class ConfigurationManager {
         return attr;
     }
 
-    public static void useAllExtensionForConfigurationInClasspath(String owner) {
-        Configuration config = getConfigurationForOwner(owner);
-        Extension ext;
-        List<Extension> extensions = new LinkedList<>();
-        Collection<String> extReg = OCCIRegistry.getInstance().getRegisteredExtensions();
-        LOGGER.info("Collection: " + extReg);
-        boolean coreAdded = false;
-        for (String extScheme : extReg) {
-            // Load the extension and register, include the core as well...
-            LOGGER.info("Loading model extension : " + extScheme);
-            ext = OcciHelper.loadExtension(extScheme);
-            if (ext.getName().equals("core")) {
-                extensions.add(0, ext); // Add on first infrastructure extension.
-                coreAdded = true;
-            } else if (ext.getName().equals("infrastructure")) {
-                if (coreAdded && extensions.size() > 1) {
-                    extensions.add(1, ext);
-                } else {
-                    extensions.add(0, ext);
-                }
-            } else {
-                extensions.add(ext);
+    /**
+     *
+     * @param category
+     * @param entity
+     * @return
+     */
+    public static boolean isCategoryReferencedOnEntity(final String category, final Entity entity) {
+        if (entity == null || category == null) {
+            return false; // must not arrive.
+        }
+
+        Kind kind = entity.getKind();
+        List<Mixin> mixins = entity.getMixins();
+        String kindId = kind.getScheme() + kind.getTerm();
+
+        if (kindId.equals(category)) {
+            return true;
+        }
+        for (Mixin mixin : mixins) {
+            String mixinId = mixin.getScheme() + mixin.getTerm();
+            if (mixinId.equals(category)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * Find an action object from entity definition kind and associated mixins.
+     * @param entity Entity object model.
+     * @param actionTerm the action term like start.
+     * @return an action object must never return null.
+     * @throws ConfigurationException If no action is found or no entity defined throw this exception.
+     */
+    public static Action getActionFromEntityWithActionTerm(final Entity entity, String actionTerm) throws ConfigurationException {
+        Action action = null;
+        boolean found = false;
+        if (entity == null) {
+            throw new ConfigurationException("No entity defined for this action : " + actionTerm);
+        }
+        Kind kind = entity.getKind();
+        List<Action> actions = kind.getActions();
+
+        // Search the action on kind first.
+        for (Action actionKind : actions) {
+            if (actionKind.getTerm().equals(actionTerm)) {
+                action = actionKind;
+                found = true;
+                break;
             }
         }
 
-        for (Extension extension : extensions) {
-            LOGGER.info("Extension : " + extension.getName() + " added to user configuration.");
-            config.getUse().add(extension);
+        if (!found) {
+            // Search on mixins.
+            List<Mixin> mixins = entity.getMixins();
+            for (Mixin mixin : mixins) {
+                actions = mixin.getActions();
+                for (Action actionMixin : actions) {
+                    if (actionMixin.getTerm().equals(actionTerm)) {
+                        action = actionMixin;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    break;
+                }
+            }
         }
+        if (!found) {
+            throw new ConfigurationException("Action " + actionTerm + " not found on entity : " + entity.getId());
+        }
+
+        return action;
+    }
+
+    /**
+     * Find an action object from entity definition kind and associated mixins.
+     * @param entity Entity object model.
+     * @param actionId the action scheme + action term.
+     * @return an action object must never return null.
+     * @throws ConfigurationException If no action is found or no entity defined throw this exception.
+     */
+    public static Action getActionFromEntityWithActionId(final Entity entity, final String actionId) throws ConfigurationException {
+        Action action = null;
+        boolean found = false;
+        if (entity == null) {
+            throw new ConfigurationException("No entity defined for this action : " + actionId);
+        }
+        Kind kind = entity.getKind();
+        List<Action> actions = kind.getActions();
+
+        // Search the action on kind first.
+        for (Action actionKind : actions) {
+            if ((actionKind.getScheme() + actionKind.getTerm()).equals(actionId)) {
+                action = actionKind;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            // Search on mixins.
+            List<Mixin> mixins = entity.getMixins();
+            for (Mixin mixin : mixins) {
+                actions = mixin.getActions();
+                for (Action actionMixin : actions) {
+                    if ((actionMixin.getScheme() + actionMixin.getTerm()).equals(actionId)) {
+                        action = actionMixin;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    break;
+                }
+            }
+        }
+
+        if (!found) {
+            throw new ConfigurationException("Action " + actionId + " not found on entity : " + entity.getId());
+        }
+
+        return action;
+    }
+    /**
+     * Find a mixin for a location and a user.
+     * @param locationMixin
+     * @param owner
+     * @return
+     */
+    public static Mixin getUserMixinFromLocation(final String locationMixin, final String owner) {
+        // Search for the mixin id.
+        Mixin mixin = null;
+        Set<String> keys = userMixinLocationMap.keySet();
+        String locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationMixin);
+
+        for (String key : keys) {
+            String locationTmp = userMixinLocationMap.get(key).trim();
+
+            String location = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
+
+            if (location.equals(locationCompare)) {
+                // Search the mixin from this scheme+term.
+                mixin = findUserMixinOnConfiguration(key, owner);
+                break;
+            }
+
+        }
+        return mixin;
+
+    }
+    /**
+     * Is mixin this Id is a mixin tag ?
+     * @param owner
+     * @param mixinTag
+     * @return
+     */
+    public static boolean isMixinTags(final String owner, final String mixinTag) {
+        boolean result = false;
+
+        Mixin mixin = findUserMixinOnConfiguration(mixinTag, owner);
+        String location = userMixinLocationMap.get(mixinTag);
+        if (location != null && mixin != null) {
+            result = true;
+        }
+        return result;
+    }
+
+    /**
+     * Get the location of an entity registered by his uuid, if not found, throw a ConfigurationException.
+     *
+     * @param uuid uuid v4 of the entity.
+     * @return a location for uuid provided.
+     * @throws ConfigurationException General configuration exception.
+     */
+    public static String getLocation(String uuid) throws ConfigurationException {
+        if (uuid == null) {
+            throw new ConfigurationException("No uuid provided to find location.");
+        }
+        String result = getEntitiesRelativePath().get(uuid);
+        if (result == null) {
+            throw new ConfigurationException("No location found for uuid : " + uuid);
+        }
+        return result;
     }
 
     /**
@@ -2156,6 +1309,12 @@ public class ConfigurationManager {
         return eDataType;
     }
 
+    /**
+     *
+     * @param entity
+     * @param attrName
+     * @return an object container value from EMF attribute object.
+     */
     private static Object getEMFValueObject(Entity entity, String attrName) {
         EAttribute eAttr;
         Object result = null;
@@ -2170,6 +1329,12 @@ public class ConfigurationManager {
         return result;
     }
 
+    /**
+     *
+     * @param entity
+     * @param attrName
+     * @return
+     */
     public static String getAttrValueStr(Entity entity, String attrName) {
         String result = null;
         EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, attrName);
@@ -2183,6 +1348,12 @@ public class ConfigurationManager {
         return result;
     }
 
+    /**
+     *
+     * @param entity
+     * @param attrName
+     * @return
+     */
     public static Number getAttrValueNumber(Entity entity, String attrName) {
         Number result = null;
         EDataType eAttrType = ConfigurationManager.getEAttributeType(entity, attrName);
@@ -2263,6 +1434,10 @@ public class ConfigurationManager {
 
     }
 
+    /**
+     *
+     * @return
+     */
     public static Map<String, String> getEntitiesRelativePath() {
         if (entitiesRelativePath == null) {
             entitiesRelativePath = new ConcurrentHashMap<>();
@@ -2301,163 +1476,779 @@ public class ConfigurationManager {
         return entity;
     }
 
-    public static boolean isMixinTags(final String owner, final String mixinTag) {
-        boolean result = false;
 
-        Mixin mixin = findUserMixinOnConfiguration(mixinTag, owner);
-        String location = userMixinLocationMap.get(mixinTag);
-        if (location != null && mixin != null) {
+
+
+
+
+
+    // Create model or add object to model section.
+
+    /**
+     * Create a new configuration (empty ==> without any resources and link and
+     * extension) for a user.
+     *
+     * @param owner
+     */
+    private static void createConfiguration(final String owner) {
+        Configuration configuration = occiFactory.createConfiguration();
+        configurations.put(owner, configuration);
+        LOGGER.debug("Configuration for user " + owner + " created");
+    }
+
+    /**
+     * Add a new resource entity to a configuration and update the
+     * configuration's map accordingly.
+     *
+     * @param id           (entity id : "term/title")
+     * @param kind         (scheme#term)
+     * @param mixins       (ex:
+     *                     mixins=[http://schemas.ogf.org/occi/infrastructure/network# ipnetwork])
+     * @param attributes   (ex: attributes={occi.network.vlan=12,
+     *                     occi.network.label=private, occi.network.address=10.1.0.0/16,
+     *                     occi.network.gateway=10.1.255.254})
+     * @param owner
+     * @param relativePath (ex: compute/myuuid
+     * @throws ConfigurationException
+     */
+    public static void addResourceToConfiguration(String id, String kind, List<String> mixins,
+                                                  Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
+
+        if (owner == null || owner.isEmpty()) {
+            // Assume if owner is not used to a default user uuid "anonymous".
+            owner = DEFAULT_OWNER;
+        }
+
+        Configuration configuration = getConfigurationForOwner(owner);
+
+        // Assign a new resource to configuration, if configuration has resource
+        // existed, inform by logger but overwrite existing one.
+        boolean resourceOverwrite;
+        Resource resource = findResource(owner, id);
+        if (resource == null) {
+            resourceOverwrite = false;
+
+            Kind occiKind;
+
+            // Check if kind already exist in realm (on extension model).
+            occiKind = findKindFromExtension(owner, kind);
+
+            if (occiKind == null) {
+                // Kind not found on extension, searching on entities.
+                occiKind = findKindFromEntities(owner, kind);
+            }
+            try {
+                // Create an OCCI resource with good resource type (via extension model).
+                resource = (Resource) OcciHelper.createEntity(occiKind);
+
+                resource.setId(id);
+
+                // Add a new kind to resource (title, scheme, term).
+                // if occiKind is null, this will give a default kind parent.
+                resource.setKind(occiKind);
+
+                addMixinsToEntity(resource, mixins, owner, false);
+
+                // Add the attributes...
+                updateAttributesToEntity(resource, attributes);
+
+            } catch (Throwable ex) {
+                LOGGER.error("Exception thrown while creating an entity. " + id);
+                LOGGER.error("Exception class : " + ex.getClass().getName());
+                if (ex instanceof ConfigurationException) {
+                    throw ex;
+                }
+                throw new ConfigurationException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
+            }
+        } else {
+            LOGGER.info("resource already exist, overwriting...");
+            resourceOverwrite = true;
+
+            // Add the mixins if any.
+            addMixinsToEntity(resource, mixins, owner, true);
+
+            updateAttributesToEntity(resource, attributes);
+
+        }
+
+        // Add resource to configuration.
+        if (resourceOverwrite) {
+            LOGGER.info("resource updated " + resource.getId() + " on OCCI configuration");
+        } else {
+            configuration.getResources().add(resource);
+            LOGGER.info("Added Resource " + resource.getId() + " to configuration object.");
+        }
+        updateVersion(owner, id);
+        // Add the entity to relative path map.
+        entitiesRelativePath.put(id, relativePath);
+
+    }
+
+    /**
+     * Add a new link entity to a configuration and update the configuration's
+     * map accordingly.
+     *
+     * @param id
+     * @param kind
+     * @param mixins
+     * @param src
+     * @param target
+     * @param attributes
+     * @param owner
+     * @param relativePath
+     * @throws ConfigurationException General configuration exception
+     */
+    public static void addLinkToConfiguration(String id, String kind, java.util.List<String> mixins, String src,
+                                              String target, Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
+
+        if (owner == null || owner.isEmpty()) {
+            // Assume if owner is not used to a default user uuid "anonymous".
+            owner = DEFAULT_OWNER;
+        }
+
+        boolean overwrite = false;
+        Resource resourceSrc = findResource(owner, src);
+        Resource resourceDest = findResource(owner, target);
+
+        if (resourceSrc == null) {
+            throw new ConfigurationException("Cannot find the source of the link: " + id);
+        }
+        if (resourceDest == null) {
+            throw new ConfigurationException("Cannot find the target of the link: " + id);
+        }
+
+        Link link = findLink(owner, id);
+        if (link == null) {
+
+            Kind occiKind;
+            // Check if kind already exist in realm (on extension model).
+            occiKind = findKindFromExtension(owner, kind);
+
+            if (occiKind == null) {
+                // Kind not found on extension, searching on entities.
+                occiKind = findKindFromEntities(owner, kind);
+            }
+            try {
+                // Link doesnt exist on configuration, we create it.
+                link = (Link) OcciHelper.createEntity(occiKind);
+                link.setId(id);
+
+                // Add a new kind to resource (title, scheme, term).
+                link.setKind(occiKind);
+
+                addMixinsToEntity(link, mixins, owner, false);
+
+                updateAttributesToEntity(link, attributes);
+
+            } catch (Throwable ex) {
+                LOGGER.error("Exception thrown while creating an entity. " + id);
+                if (ex instanceof ConfigurationException) {
+                    throw ex;
+                }
+
+                throw new ConfigurationException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
+            }
+        } else {
+            // Link exist upon our configuration, we update it.
+
+            overwrite = true;
+
+            addMixinsToEntity(link, mixins, owner, true);
+
+            updateAttributesToEntity(link, attributes);
+        }
+
+
+        link.setSource(resourceSrc);
+        link.setTarget(resourceDest);
+
+        // Assign link to resource source.
+        resourceSrc.getLinks().add(link);
+
+        updateVersion(owner, id);
+
+        if (overwrite) {
+            LOGGER.info("Link " + id + " updated ! Version: " + versionObjectMap.get(owner + id));
+        } else {
+            LOGGER.info("link " + id + " added to configuration !");
+        }
+        entitiesRelativePath.put(id, relativePath);
+
+    }
+
+    /**
+     * Add all the attributes of a given Kind instance and all its parent kinds.
+     *
+     * @param attributes the collection where attributes will be added.
+     * @param kind       the given Kind instance.
+     */
+    private static void addAllAttributes(final Collection<Attribute> attributes, final Kind kind) {
+        Kind kindParent = kind.getParent();
+        if (kindParent != null) {
+            addAllAttributes(attributes, kindParent);
+        }
+        attributes.addAll(kind.getAttributes());
+    }
+
+    /**
+     * Add all the attributes of a given Mixin instance and all its depend
+     * mixins.
+     *
+     * @param attributes the collection where attributes will be added.
+     * @param mixin      the given Mixin instance.
+     */
+    private static void addAllAttributes(final Collection<Attribute> attributes, final Mixin mixin) {
+        boolean found;
+        for (Mixin md : mixin.getDepends()) {
+            addAllAttributes(attributes, md);
+        }
+        // Compare with attributes on entity.
+        List<Attribute> mixinAttrs = mixin.getAttributes();
+        if (!attributes.isEmpty()) {
+
+            for (Attribute attrMixin : mixinAttrs) {
+                found = false;
+                // Check if we can add it. avoid doublon. cf CRTP : mixin medium :> resource_tpl. for example.
+                for (Attribute attrKind : attributes) {
+                    if (attrKind.getName().equals(attrMixin.getName())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Add the mixin attribute.
+                    attributes.add(attrMixin);
+                }
+            }
+        } else {
+            attributes.addAll(mixin.getAttributes());
+        }
+
+    }
+
+    /**
+     * Add all attributes not already present.
+     *
+     * @param entity
+     */
+    private static void addAllAttributes(Entity entity) {
+        // Compute already present attribute names.
+        List<AttributeState> attributeStates = entity.getAttributes();
+        HashSet<String> attributeNames = new HashSet<>();
+        // Iterate over all attribute state instances.
+        for (AttributeState attributeState : attributeStates) {
+            attributeNames.add(attributeState.getName());
+        }
+        Collection<Attribute> attribs = getAllAttributes(entity);
+        // Iterate over all attributes.
+        for (Attribute attribute : attribs) {
+            String attributeName = attribute.getName();
+            if (!attributeNames.contains(attributeName)) {
+                // If not already present create it.
+                AttributeState attributeState = OCCIFactory.eINSTANCE.createAttributeState();
+                attributeState.setName(attributeName);
+                String attributeDefault = attribute.getDefault();
+                if (attributeDefault != null) {
+                    // if default set then set value.
+                    attributeState.setValue(attributeDefault);
+                }
+                // Add it to attribute states of this entity.
+                attributeStates.add(attributeState);
+            }
+        }
+    }
+
+
+
+    /**
+     * Create a new mixin without any association.
+     *
+     * @param mixinId
+     * @return
+     */
+    private static Mixin createMixin(final String mixinId) {
+        Mixin mixin = occiFactory.createMixin();
+        if (mixinId != null) {
+            String scheme;
+            String term;
+            term = mixinId.split("#")[1];
+            scheme = mixinId.split("#")[0] + "#";
+            mixin.setTerm(term);
+            mixin.setScheme(scheme);
+        }
+
+        return mixin;
+    }
+
+    /**
+     * Add mixins to an existing entity (resources or links). Ex of mixin string
+     * format : http://schemas.ogf.org/occi/infrastructure/network#ipnetwork
+     *
+     * @param entity     (OCCI Entity).
+     * @param mixins     (List of mixins).
+     * @param owner
+     * @param updateMode (if updateMode is true, reset existing and replace with
+     *                   new ones)
+     * @throws ConfigurationException
+     */
+    public static void addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) throws ConfigurationException {
+        if (updateMode) {
+            entity.getMixins().clear();
+        }
+        if (mixins != null && !mixins.isEmpty()) {
+
+            for (String mixinStr : mixins) {
+                // Check if this mixin exist in realm extensions.
+                Mixin mixin = findMixinOnExtension(owner, mixinStr);
+
+                if (mixin == null) {
+                    LOGGER.info("Mixin not found on extensions, searching on referenced entities: --> Term : " + mixinStr);
+                    // Search the mixin on entities.
+                    mixin = findMixinOnEntities(owner, mixinStr);
+
+                    if (mixin == null) {
+                        // Search on the mixin tag.
+                        mixin = findUserMixinOnConfiguration(mixinStr, owner);
+                        if (mixin == null) {
+                            throw new ConfigurationException("Mixin " + mixinStr + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
+                        }
+                    }
+                    LOGGER.info("Mixin found on configuration : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+
+                } else {
+                    LOGGER.info("Mixin found on used extensions : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                }
+
+                LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                LOGGER.info("Mixin attributes : ");
+
+                Collection<Attribute> attrs = mixin.getAttributes();
+                if (attrs != null && !attrs.isEmpty()) {
+                    LOGGER.info("Attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                    for (Attribute attr : attrs) {
+                        LOGGER.info("Attribute : " + attr.getName() + " --> " + attr.getDescription());
+                    }
+                } else {
+                    LOGGER.warn("No attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                }
+
+                entity.getMixins().add(mixin);
+            }
+        }
+    }
+
+    /**
+     * Associate a list of entities with a mixin, replacing existing list if
+     * any. if mixin doest exist, this will throw a new exception.
+     *
+     * @param owner
+     * @param mixinId
+     * @param entityIds
+     * @param updateMode
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     */
+    public static void saveMixinForEntities(final String mixinId, final List<String> entityIds,
+                                            final boolean updateMode, final String owner) throws ConfigurationException {
+
+        // searching for the mixin to register.
+        Mixin mixin = findMixinOnExtension(owner, mixinId);
+
+        if (mixin == null) {
+            mixin = findMixinOnEntities(owner, mixinId);
+            if (mixin == null) {
+                // Search on the mixin tag.
+                mixin = findUserMixinOnConfiguration(mixinId, owner);
+                if (mixin == null) {
+                    throw new ConfigurationException("Mixin " + mixinId + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
+                }
+            }
+        }
+        LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+        List<Entity> entities = new ArrayList<>();
+        for (String entityId : entityIds) {
+            Entity entity = findEntity(owner, entityId);
+
+            if (entity != null && !entity.getMixins().contains(mixin)) {
+                entity.getMixins().add(mixin);
+                updateVersion(owner, entityId);
+            }
+            if (entity != null) {
+                entities.add(entity);
+            }
+        }
+
+        if (!updateMode) {
+            boolean found;
+            // Remove entities those are not in the list.
+            Iterator<Entity> it = entities.iterator();
+            while (it.hasNext()) {
+                found = false;
+                Entity entityMixin = it.next();
+                for (String entityId : entityIds) {
+                    if (entityMixin.getId().equals(entityId)) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    // Remove reference mixin of the entity.
+                    entityMixin.getMixins().remove(mixin);
+
+                    // Remove the entity from mixin.
+                    // it.remove();
+                }
+
+            }
+        }
+
+    }
+
+    /**
+     * Add a user mixin to configuration's Object (user tag).
+     *
+     * @param id
+     * @param title
+     * @param location
+     * @param owner
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
+     */
+    public static void addUserMixinOnConfiguration(final String id, final String title, final String location, final String owner) throws ConfigurationException {
+        if (owner == null || id == null || location == null) {
+            return;
+        }
+
+        Configuration configuration = getConfigurationForOwner(owner);
+
+        // Check if this mixin already exist on configuration, if this is the case, overwrite mixin definition.
+        Mixin mixin = findUserMixinOnConfiguration(id, owner);
+        if (mixin == null) {
+            mixin = createMixin(id);
+            mixin.setTitle(title);
+        } else {
+            // Check if this mixin is a mixin extension..
+            if (!isMixinTags(owner, id)) {
+                throw new ConfigurationException("This mixin : " + id + " is not a mixin tag, but it exist on referenced extension and configuration.");
+            }
+            LOGGER.info("Overwriting mixin on configuration : " + id);
+            configuration.getMixins().remove(mixin);
+        }
+        LOGGER.info("Adding mixin on configuration : " + id);
+        // We add the mixin location to the userMixin map.
+        userMixinLocationMap.put(id, location);
+
+        configuration.getMixins().add(mixin);
+
+    }
+
+
+
+    // Update entity / config section
+    /**
+     * Update / add attributes to entity.
+     *
+     * @param entity
+     * @param attributes
+     * @return Updated entity object.
+     */
+    public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes) {
+        if (attributes == null || attributes.isEmpty()) {
+            // TODO : Check if concrete object attributes are deleted, or update MART with a remove attributes method.
+            entity.getAttributes().clear();
+            return entity;
+        }
+        String attrName;
+        String attrValue;
+
+        // Ensure that all attributes are in the entity AttributeState list object.
+        addAllAttributes(entity);
+
+        for (Map.Entry<String, String> entry : attributes.entrySet()) {
+            attrName = entry.getKey();
+            attrValue = entry.getValue();
+            if (!attrName.isEmpty()
+                    && !attrName.equals("occi.core.id") && !attrName.equals("occi.core.target") && !attrName.equals("occi.core.source")) {
+                LOGGER.info("Attribute set value : " + attrValue);
+
+                OcciHelper.setAttribute(entity, attrName, attrValue);
+
+                AttributeState attrState = getAttributeStateObject(entity, attrName);
+                if (attrState != null) {
+                    String attrStateValue = attrState.getValue();
+                    if (attrStateValue != null && !attrStateValue.equals(attrValue)) {
+                        // update the attribute value.
+                        attrState.setValue(attrValue);
+
+                    } else if (attrValue != null) {
+                        attrState.setValue(attrValue);
+                    }
+
+                    LOGGER.info("Attribute : " + attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
+                }
+            }
+        }
+
+        return entity;
+    }
+
+    /**
+     * Increment a version of an object (resource or link << entity)
+     *
+     * @param owner
+     * @param id
+     */
+    public static void updateVersion(final String owner, final String id) {
+        String key = owner + id;
+        Integer version = versionObjectMap.get(key);
+        if (version == null) {
+            version = 1;
+        }
+        version++;
+        versionObjectMap.put(key, version);
+
+    }
+
+
+
+
+
+    // Remove objects section.
+    /**
+     * Remove an entity (resource or link) from the owner's configuration or
+     * delete all entities from given kind id or disassociate entities from
+     * given mixin id.
+     *
+     * @param owner
+     * @param id    (kind id or mixin id or entity Id!)
+     */
+    public static void removeOrDissociateFromConfiguration(final String owner, final String id) {
+        boolean found = false;
+        boolean resourceToDelete = false;
+        boolean kindEntitiesToDelete = false;
+        boolean linkToDelete = false;
+        boolean mixinToDissociate = false;
+
+        Kind kind = null;
+        Resource resource;
+        Link link = null;
+        Mixin mixin = null;
+
+        // searching in resources.
+        resource = findResource(owner, id);
+        if (resource != null) {
+            found = true;
+            resourceToDelete = true;
+        }
+        if (!found) {
+            link = findLink(owner, id);
+            if (link != null) {
+                found = true;
+                linkToDelete = true;
+            }
+        }
+        if (!found) {
+            // check if this is a kind id.
+            kind = findKindFromEntities(owner, id);
+            if (kind != null) {
+                kindEntitiesToDelete = true;
+                found = true;
+            }
+        }
+        if (!found) {
+            mixin = findMixinOnEntities(owner, id);
+            if (mixin != null) {
+                mixinToDissociate = true;
+            }
+        }
+
+        if (resourceToDelete) {
+            removeResource(owner, resource);
+        }
+        if (linkToDelete) {
+            removeLink(link);
+        }
+        if (kindEntitiesToDelete) {
+            removeEntitiesForKind(owner, kind);
+        }
+        if (mixinToDissociate) {
+            dissociateMixinFromEntities(owner, mixin);
+        }
+    }
+
+    /**
+     * Remove a resource from owner's configuration.
+     *
+     * @param owner
+     * @param resource
+     */
+    private static void removeResource(final String owner, final Resource resource) {
+        Configuration config = getConfigurationForOwner(owner);
+
+        Iterator<Link> it = resource.getLinks().iterator();
+        while (it.hasNext()) {
+            Link link = it.next();
+            Resource src = link.getSource();
+            if (!src.equals(resource)) {
+                src.getLinks().remove(link);
+                entitiesRelativePath.remove(link.getId());
+            }
+            Resource target = link.getTarget();
+            if (!target.equals(resource)) {
+                target.getLinks().remove(link);
+                entitiesRelativePath.remove(link.getId());
+            }
+        }
+
+        resource.getLinks().clear();
+        config.getResources().remove(resource);
+        entitiesRelativePath.remove(resource.getId());
+    }
+
+    /**
+     * Remove a link from owner's configuration.
+     *
+     * @param link
+     */
+    private static void removeLink(final Link link) {
+        Resource resourceSrc = link.getSource();
+        Resource resourceTarget = link.getTarget();
+        resourceSrc.getLinks().remove(link);
+        resourceTarget.getLinks().remove(link);
+        entitiesRelativePath.remove(link.getId());
+
+    }
+
+    /**
+     * Remove all entities for this kind.
+     *
+     * @param owner
+     * @param kind
+     */
+    private static void removeEntitiesForKind(final String owner, final Kind kind) {
+        if (kind == null) {
+            return;
+        }
+        List<Entity> entities = findAllEntitiesForKind(owner, kind.getScheme() + kind.getTerm());
+
+        for (Entity entity : entities) {
+            if (entity instanceof Resource) {
+                removeResource(owner, (Resource) entity);
+            } else if (entity instanceof Link) {
+                removeLink((Link) entity);
+            }
+        }
+        entities.clear();
+    }
+
+    /**
+     * Dissociate entities from this mixin.
+     *
+     * @param owner
+     * @param mixin
+     */
+    private static void dissociateMixinFromEntities(final String owner, final Mixin mixin) {
+        if (mixin == null) {
+            return;
+        }
+        List<Entity> entities = findAllEntitiesForMixin(owner, mixin.getScheme() + mixin.getTerm());
+        for (Entity entity : entities) {
+            entity.getMixins().remove(mixin);
+            updateVersion(owner, entity.getId());
+        }
+        entities.clear();
+
+    }
+
+    /**
+     * Dissociate a mixin from an entity.
+     *
+     * @param owner
+     * @param mixinId
+     * @param entity
+     * @return
+     */
+    public static boolean dissociateMixinFromEntity(final String owner, final String mixinId, Entity entity) {
+        boolean result = false;
+        if (mixinId == null) {
+            return false;
+        }
+        // Load the mixin object.
+        List<Mixin> mixins = entity.getMixins();
+        if (mixins.isEmpty()) {
+            return true;
+        }
+        Mixin myMixin = null;
+        for (Mixin mixin : mixins) {
+            if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
+                myMixin = mixin;
+                break;
+            }
+        }
+        // Remove the mixin.
+        if (myMixin != null) {
+            // First we remove its attributes if any.
+            EList<Attribute> attributesToRemove = myMixin.getAttributes();
+            if (!attributesToRemove.isEmpty()) {
+                removeEntityAttributes(entity, attributesToRemove);
+            }
+
+            entity.getMixins().remove(myMixin);
+            updateVersion(owner, entity.getId());
             result = true;
         }
         return result;
     }
 
-    public static Mixin getUserMixinFromLocation(final String locationMixin, final String owner) {
-        // Search for the mixin id.
-        Mixin mixin = null;
-        Set<String> keys = userMixinLocationMap.keySet();
-        String locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationMixin);
+    /**
+     * Remove attributes from entity.
+     *
+     * @param entity
+     * @param attributesToRemove
+     */
+    public static void removeEntityAttributes(Entity entity, EList<Attribute> attributesToRemove) {
 
-        for (String key : keys) {
-            String locationTmp = userMixinLocationMap.get(key).trim();
-
-            String location = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
-
-            if (location.equals(locationCompare)) {
-                // Search the mixin from this scheme+term.
-                mixin = findUserMixinOnConfiguration(key, owner);
-                break;
-            }
-
-        }
-        return mixin;
-
-    }
-
-    public static boolean isCategoryReferencedOnEntity(final String category, final Entity entity) {
-        if (entity == null || category == null) {
-            return false; // must not arrive.
-        }
-
-        Kind kind = entity.getKind();
-        List<Mixin> mixins = entity.getMixins();
-        String kindId = kind.getScheme() + kind.getTerm();
-
-        if (kindId.equals(category)) {
-            return true;
-        }
-        for (Mixin mixin : mixins) {
-            String mixinId = mixin.getScheme() + mixin.getTerm();
-            if (mixinId.equals(category)) {
-                return true;
+        Iterator<AttributeState> entityAttrs = entity.getAttributes().iterator();
+        boolean isKindAttribute;
+        while (entityAttrs.hasNext()) {
+            AttributeState attrState = entityAttrs.next();
+            for (Attribute attribute : attributesToRemove) {
+                isKindAttribute = isKindAttribute(entity.getKind(), attribute.getName());
+                if (attribute.getName().equals(attrState.getName()) && !isKindAttribute) {
+                    entityAttrs.remove();
+                }
             }
         }
-        return false;
-    }
 
-    public static List<Extension> getUsedExtensions(final String owner) {
-        List<Extension> ext;
-        Configuration conf = getConfigurationForOwner(owner);
-        ext = conf.getUse();
-        return ext;
     }
 
     /**
-     * Find an action object from entity definition kind and associated mixins.
-     * @param entity Entity object model.
-     * @param actionTerm the action term like start.
-     * @return an action object must never return null.
-     * @throws ConfigurationException If no action is found or no entity defined throw this exception.
+     * Delete a user mixin from configuration's Object (user tag).
+     *
+     * @param mixinId
+     * @param owner
+     * @throws org.occiware.mart.server.servlet.model.exceptions.ConfigurationException
      */
-    public static Action getActionFromEntityWithActionTerm(final Entity entity, String actionTerm) throws ConfigurationException {
-        Action action = null;
-        boolean found = false;
-        if (entity == null) {
-            throw new ConfigurationException("No entity defined for this action : " + actionTerm);
-        }
-        Kind kind = entity.getKind();
-        List<Action> actions = kind.getActions();
-
-        // Search the action on kind first.
-        for (Action actionKind : actions) {
-            if (actionKind.getTerm().equals(actionTerm)) {
-                action = actionKind;
-                found = true;
-                break;
-            }
+    public static void removeUserMixinFromConfiguration(final String mixinId, final String owner) throws ConfigurationException {
+        if (mixinId == null) {
+            return;
         }
 
-        if (!found) {
-            // Search on mixins.
-            List<Mixin> mixins = entity.getMixins();
-            for (Mixin mixin : mixins) {
-                actions = mixin.getActions();
-                for (Action actionMixin : actions) {
-                    if (actionMixin.getTerm().equals(actionTerm)) {
-                        action = actionMixin;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    break;
-                }
-            }
-        }
-        if (!found) {
-            throw new ConfigurationException("Action " + actionTerm + " not found on entity : " + entity.getId());
+        // Search for userMixin.
+        Mixin mixin = findUserMixinOnConfiguration(mixinId, owner);
+
+        if (mixin == null) {
+            LOGGER.info("mixin not found on configurations.");
+            throw new ConfigurationException("mixin : " + mixinId + " not found on configuration.");
+
         }
 
-        return action;
+        // We remove the mixin location from the userMixin map.
+        userMixinLocationMap.remove(mixinId);
+
+        // Delete from configuration.
+        Configuration config = getConfigurationForOwner(owner);
+        config.getMixins().remove(mixin);
     }
 
-    /**
-     * Find an action object from entity definition kind and associated mixins.
-     * @param entity Entity object model.
-     * @param actionId the action scheme + action term.
-     * @return an action object must never return null.
-     * @throws ConfigurationException If no action is found or no entity defined throw this exception.
-     */
-    public static Action getActionFromEntityWithActionId(final Entity entity, final String actionId) throws ConfigurationException {
-        Action action = null;
-        boolean found = false;
-        if (entity == null) {
-            throw new ConfigurationException("No entity defined for this action : " + actionId);
-        }
-        Kind kind = entity.getKind();
-        List<Action> actions = kind.getActions();
 
-        // Search the action on kind first.
-        for (Action actionKind : actions) {
-            if ((actionKind.getScheme() + actionKind.getTerm()).equals(actionId)) {
-                action = actionKind;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            // Search on mixins.
-            List<Mixin> mixins = entity.getMixins();
-            for (Mixin mixin : mixins) {
-                actions = mixin.getActions();
-                for (Action actionMixin : actions) {
-                    if ((actionMixin.getScheme() + actionMixin.getTerm()).equals(actionId)) {
-                        action = actionMixin;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    break;
-                }
-            }
-        }
-
-        if (!found) {
-            throw new ConfigurationException("Action " + actionId + " not found on entity : " + entity.getId());
-        }
-
-        return action;
-    }
 }

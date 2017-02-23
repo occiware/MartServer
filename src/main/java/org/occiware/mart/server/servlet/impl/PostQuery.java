@@ -65,6 +65,7 @@ public class PostQuery extends AbstractPostQuery {
                 throw new InternalServerErrorException(ex);
             }
         }
+
         List<InputData> datas = inputParser.getInputDatas();
 
         for (InputData data : datas) {
@@ -103,6 +104,7 @@ public class PostQuery extends AbstractPostQuery {
                     }
                 }
 
+
                 // Is action is scheme + term or only a term parameter.
                 if (ConfigurationManager.getExtensionForAction(ConfigurationManager.DEFAULT_OWNER, actionId) == null) {
                     // This is maybe an action term only.
@@ -130,7 +132,7 @@ public class PostQuery extends AbstractPostQuery {
                     // Check if location path correspond to entity registered path.
                     String locationTmp;
                     try {
-                        locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
+                        locationTmp = ConfigurationManager.getLocation(entityId);
                         locationTmp = locationTmp.replace(entityId, "");
                     } catch (ConfigurationException ex) {
                         try {
@@ -183,7 +185,7 @@ public class PostQuery extends AbstractPostQuery {
                         Entity entityTmp = it.next();
                         String entityLocation;
                         try {
-                            entityLocation = ConfigurationManager.getEntityRelativePath(entityTmp.getId());
+                            entityLocation = ConfigurationManager.getLocation(entityTmp.getId());
 
                         } catch (ConfigurationException ex) {
                             try {
@@ -245,7 +247,7 @@ public class PostQuery extends AbstractPostQuery {
                 // Check if location path correspond to entity registered path.
                 String locationTmp;
                 try {
-                    locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
+                    locationTmp = ConfigurationManager.getLocation(entityId);
                     locationTmp = locationTmp.replace(entityId, "");
                     locationTmp = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
                 } catch (ConfigurationException ex) {

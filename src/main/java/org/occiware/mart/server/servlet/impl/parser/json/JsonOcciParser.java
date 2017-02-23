@@ -32,7 +32,6 @@ import org.occiware.mart.server.servlet.facade.AbstractRequestParser;
 import org.occiware.mart.server.servlet.impl.parser.json.render.*;
 import org.occiware.mart.server.servlet.impl.parser.json.render.queryinterface.*;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
-import org.occiware.mart.server.servlet.impl.parser.json.utils.ValidatorUtils;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.Constants;
@@ -46,9 +45,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -57,6 +53,8 @@ import java.util.*;
 public class JsonOcciParser extends AbstractRequestParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonOcciParser.class);
+
+    public static final String EMPTY_JSON = "{ }";
 
     @Override
     public void parseInputQuery(HttpHeaders headers, HttpServletRequest request) throws CategoryParseException, AttributeParseException {
@@ -473,14 +471,19 @@ public class JsonOcciParser extends AbstractRequestParser {
             }
             // Case 2 : Object is a String.
             if (object instanceof String) {
-                MessageJson msgJson = new MessageJson();
-                msgJson.setStatus(status.getStatusCode());
-                if (status.equals(Response.Status.OK)) {
-                    msgJson.setMessage("ok");
+                String msgContent = (String) object;
+                if (msgContent.equals(EMPTY_JSON)) {
+                    response = renderResponseWithMesssageContent(status, msgContent);
                 } else {
-                    msgJson.setMessage((String) object);
+                    MessageJson msgJson = new MessageJson();
+                    msgJson.setStatus(status.getStatusCode());
+                    if (status.equals(Response.Status.OK)) {
+                        msgJson.setMessage("ok");
+                    } else {
+                        msgJson.setMessage((String) object);
+                    }
+                    response = renderResponseWithMesssageContent(status, msgJson.toStringJson());
                 }
-                response = renderResponseWithMesssageContent(status, msgJson.toStringJson());
             }
 
             if (object instanceof Entity) {

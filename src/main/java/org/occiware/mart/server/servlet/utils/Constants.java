@@ -122,4 +122,8 @@ public class Constants {
             + "(;\\s*(?<" + GROUP_ATTRIBUTES + ">(;?\\s*" + REGEXP_ATTRIBUTE_REPR + ")*))?" // attributes (optional)
             + ";?"; // additional semicolon at the end (not specified, for interoperability)
     public static final Pattern PATTERN_LINK = Pattern.compile(REGEXP_LINK);
+
+    public static final String JSON_V4_SCHEMA_IDENTIFIER = "http://json-schema.org/draft-04/schema#";
+    private static final String JSON_SCHEMA_IDENTIFIER_ELEMENT = "$schema";
+
 }

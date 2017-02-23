@@ -19,7 +19,7 @@
 package org.occiware.mart.server.servlet.impl.parser.json.render.queryinterface;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.occiware.mart.server.servlet.impl.parser.json.utils.ValidatorUtils;
+import org.occiware.mart.server.servlet.utils.Constants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,7 +49,7 @@ public class AttributeInterfaceJson {
 
     public AttributeInterfaceJson() {
         // Default pattern with string type.
-        pattern.put("$schema", ValidatorUtils.JSON_V4_SCHEMA_IDENTIFIER);
+        pattern.put("$schema", Constants.JSON_V4_SCHEMA_IDENTIFIER);
         pattern.put("type", type);
         pattern.put("pattern", '\\' + "S+");
     }

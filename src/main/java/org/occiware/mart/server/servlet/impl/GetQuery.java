@@ -21,6 +21,7 @@ package org.occiware.mart.server.servlet.impl;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.servlet.exception.ResponseParseException;
 import org.occiware.mart.server.servlet.facade.AbstractGetQuery;
+import org.occiware.mart.server.servlet.impl.parser.json.JsonOcciParser;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
@@ -62,112 +63,64 @@ public class GetQuery extends AbstractGetQuery {
         }
 
         List<InputData> datas = inputParser.getInputDatas();
-
-
-        for (InputData data : datas) {
-
-            PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
-
-            String location = pathParser.getLocation();
-            if (location == null || location.trim().isEmpty()) {
-                location = pathParser.getPath();
+        InputData data = null;
+        if (!datas.isEmpty()) {
+            // Get only the first occurence. The others are ignored.
+            data = datas.get(0);
+        }
+        if (data == null) {
+            try {
+                response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
             }
+        }
 
-            String categoryId = pathParser.getCategoryId();
+        PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
+
+        String location = pathParser.getLocation();
+        if (location == null || location.trim().isEmpty()) {
+            location = pathParser.getPath();
+        }
+
+        String categoryId = pathParser.getCategoryId();
 
 
-            // Query interface check, the last case of this check is for query for ex: /compute/-/ where we filter for a category (kind or mixin).
-            if (pathParser.isInterfQuery()) {
-                // Delegate to query interface method.
-                return getQueryInterface(path, headers);
+        // Query interface check, the last case of this check is for query for ex: /compute/-/ where we filter for a category (kind or mixin).
+        if (pathParser.isInterfQuery()) {
+            // Delegate to query interface method.
+            return getQueryInterface(path, headers);
+        }
+
+        if (pathParser.isActionInvocationQuery()) {
+            try {
+                response = outputParser.parseResponse("You cannot use an action with GET method.", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
             }
+        }
 
-            if (pathParser.isActionInvocationQuery()) {
-                try {
-                    response = outputParser.parseResponse("You cannot use an action with GET method.", Response.Status.BAD_REQUEST);
-                    return response;
-                } catch (ResponseParseException ex) {
-                    throw new InternalServerErrorException(ex);
-                }
-            }
+        Entity entity;
+        String entityId = data.getEntityUUID();
+        Map<String, String> attrs = data.getAttrs();
+        if (entityId == null) {
+            entityId = Utils.getUUIDFromPath(location, attrs);
+        }
 
-            Entity entity;
-            String entityId = data.getEntityUUID();
-            Map<String, String> attrs = data.getAttrs();
+
+        // Get one entity check with uuid provided.
+        // path with category/kind : http://localhost:8080/compute/uuid
+        // custom location: http://localhost:8080/foo/bar/myvm/uuid
+        if (pathParser.isEntityQuery()) {
+
             if (entityId == null) {
-                entityId = Utils.getUUIDFromPath(location, attrs);
-            }
+                entity = ConfigurationManager.getEntityFromPath(location);
 
-
-            // Get one entity check with uuid provided.
-            // path with category/kind : http://localhost:8080/compute/uuid
-            // custom location: http://localhost:8080/foo/bar/myvm/uuid
-            if (pathParser.isEntityQuery()) {
-
-                if (entityId == null) {
-                    entity = ConfigurationManager.getEntityFromPath(location);
-
-                } else {
-                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
-                    if (entity == null) {
-                        try {
-                            response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
-                            return response;
-                        } catch (ResponseParseException ex) {
-                            throw new InternalServerErrorException(ex);
-                        }
-                    }
-
-                    String locationTmp;
-                    try {
-                        locationTmp = ConfigurationManager.getEntityRelativePath(entityId);
-                        locationTmp = locationTmp.replace(entityId, "");
-                    } catch (ConfigurationException ex) {
-                        try {
-                            response = outputParser.parseResponse(ex.getMessage(), Response.Status.NOT_FOUND);
-                            return response;
-                        } catch (ResponseParseException e) {
-                            throw new InternalServerErrorException();
-                        }
-                    }
-                    locationTmp = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
-                    String locationCompare = location.replace(entityId, "");
-                    locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationCompare);
-
-                    if (!locationCompare.equals(locationTmp) && !ConfigurationManager.isCategoryReferencedOnEntity(categoryId, entity)) {
-                        try {
-                            response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + locationTmp, Response.Status.NOT_FOUND);
-                            return response;
-                        } catch (ResponseParseException ex) {
-                            throw new InternalServerErrorException(ex);
-                        }
-                    }
-                }
-
-                if (entity != null) {
-                    entity.occiRetrieve();
-
-                    if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
-                        try {
-                            String locationTmp = ConfigurationManager.getLocation(entity);
-                            List<String> locations = new ArrayList<>();
-                            locations.add(locationTmp);
-                            response = outputParser.parseResponse(locations);
-                            return response;
-                        } catch (ResponseParseException ex) {
-                            // This must never go here. If that's the case this is a bug in parser.
-                            throw new InternalServerErrorException(ex);
-                        }
-                    } else {
-                        try {
-                            response = outputParser.parseResponse(entity);
-                            return response;
-                        } catch (ResponseParseException ex) {
-                            // This must never go here. If that's the case this is a bug in parser.
-                            throw new InternalServerErrorException(ex);
-                        }
-                    }
-                } else {
+            } else {
+                entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+                if (entity == null) {
                     try {
                         response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
                         return response;
@@ -175,23 +128,78 @@ public class GetQuery extends AbstractGetQuery {
                         throw new InternalServerErrorException(ex);
                     }
                 }
+
+                String locationTmp;
+                try {
+                    locationTmp = ConfigurationManager.getLocation(entityId);
+                    locationTmp = locationTmp.replace(entityId, "");
+                } catch (ConfigurationException ex) {
+                    try {
+                        response = outputParser.parseResponse(ex.getMessage(), Response.Status.NOT_FOUND);
+                        return response;
+                    } catch (ResponseParseException e) {
+                        throw new InternalServerErrorException();
+                    }
+                }
+                locationTmp = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
+                String locationCompare = location.replace(entityId, "");
+                locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationCompare);
+
+                if (!locationCompare.equals(locationTmp) && !ConfigurationManager.isCategoryReferencedOnEntity(categoryId, entity)) {
+                    try {
+                        response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + locationTmp, Response.Status.NOT_FOUND);
+                        return response;
+                    } catch (ResponseParseException ex) {
+                        throw new InternalServerErrorException(ex);
+                    }
+                }
             }
 
-            if (pathParser.isCollectionQuery()) {
-                // Collections part.
-                response = getEntities(path);
-                return response;
+            if (entity != null) {
+                entity.occiRetrieve();
+
+                if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+                    try {
+                        String locationTmp = ConfigurationManager.getLocation(entity);
+                        List<String> locations = new ArrayList<>();
+                        locations.add(locationTmp);
+                        response = outputParser.parseResponse(locations);
+                        return response;
+                    } catch (ResponseParseException ex) {
+                        // This must never go here. If that's the case this is a bug in parser.
+                        throw new InternalServerErrorException(ex);
+                    }
+                } else {
+                    try {
+                        response = outputParser.parseResponse(entity);
+                        return response;
+                    } catch (ResponseParseException ex) {
+                        // This must never go here. If that's the case this is a bug in parser.
+                        throw new InternalServerErrorException(ex);
+                    }
+                }
             } else {
                 try {
-                    response = outputParser.parseResponse("Unknown GET query type.", Response.Status.BAD_REQUEST);
+                    response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
                     return response;
                 } catch (ResponseParseException ex) {
                     throw new InternalServerErrorException(ex);
                 }
             }
-        } // End for each data.
+        }
 
-        return response;
+        if (pathParser.isCollectionQuery()) {
+            // Collections part.
+            response = getEntities(path);
+            return response;
+        } else {
+            try {
+                response = outputParser.parseResponse("Unknown GET query type.", Response.Status.BAD_REQUEST);
+                return response;
+            } catch (ResponseParseException ex) {
+                throw new InternalServerErrorException(ex);
+            }
+        }
     }
 
     /**
@@ -243,13 +251,22 @@ public class GetQuery extends AbstractGetQuery {
                     locations.add(location);
                 }
                 if (locations.isEmpty()) {
-                    response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+
+                    if (acceptType.equals(Constants.MEDIA_TYPE_JSON) || acceptType.equals(Constants.MEDIA_TYPE_JSON_OCCI)) {
+                        response = outputParser.parseResponse("{ }");
+                    } else {
+                        response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+                    }
                     return response;
                 }
                 response = outputParser.parseResponse(locations);
             } else {
                 if (entities.isEmpty()) {
-                    response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+                    if (acceptType.equals(Constants.MEDIA_TYPE_JSON) || acceptType.equals(Constants.MEDIA_TYPE_JSON_OCCI)) {
+                        response = outputParser.parseResponse(JsonOcciParser.EMPTY_JSON);
+                    } else {
+                        response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
+                    }
                     return response;
                 }
                 List<Entity> entitiesInf = new LinkedList<>();

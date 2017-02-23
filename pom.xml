@@ -1,14 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-    <!-- Copyright (c) 2015-2017 Inria Licensed under the Apache License,
-Version 2.0 (the "License"); you may not use this file except in compliance
-with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software distributed
-under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
-OR CONDITIONS OF ANY KIND, either express or implied. See the License for
-the specific language governing permissions and limitations under the License. -->
+<?xml version='1.0' encoding='UTF-8'?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.occiware.mart.server.dev</groupId>
@@ -31,7 +22,7 @@ the specific language governing permissions and limitations under the License. -
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.7.7</version>
-            <scope>compile</scope>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -52,6 +43,17 @@ the specific language governing permissions and limitations under the License. -
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-http</artifactId>
             <version>9.3.9.v20160517</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
@@ -63,85 +65,59 @@ the specific language governing permissions and limitations under the License. -
             <artifactId>jersey-container-servlet-core</artifactId>
             <version>2.23.1</version>
         </dependency>
-
         <dependency>
-            <!-- OCCI Core Model implementation. -->
             <groupId>Clouddesigner</groupId>
             <artifactId>org.occiware.clouddesigner.occi</artifactId>
             <version>0.1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <!-- OCCI Core infrastructure implementation. -->
             <groupId>Clouddesigner</groupId>
             <artifactId>org.occiware.clouddesigner.occi.infrastructure</artifactId>
             <version>0.1.0-SNAPSHOT</version>
+            <scope>runtime</scope>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>Clouddesigner</groupId>-->
-        <!--<artifactId>org.occiware.clouddesigner.occi.crtp</artifactId>-->
-        <!--<version>0.1.0-SNAPSHOT</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>Clouddesigner</groupId>-->
-        <!--<artifactId>org.occiware.clouddesigner.occi.infrastructure.crtp.backend</artifactId>-->
-        <!--<version>0.1.0-SNAPSHOT</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>Clouddesigner</groupId>-->
-        <!--<artifactId>org.occiware.clouddesigner.occi.infrastructure.connector.vmware</artifactId>-->
-        <!--<version>0.1.0-SNAPSHOT</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>dom4j</groupId>-->
-        <!--<artifactId>dom4j</artifactId>-->
-        <!--<version>1.6.1</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>com.toastcoders</groupId>-->
-        <!--<artifactId>yavijava</artifactId>-->
-        <!--<version>6.0.04</version>-->
-        <!--</dependency>-->
-
-        <!--        <dependency>
-             OCCI Core infrastructure dummy connector implementation. 
+        <!--<dependency>
             <groupId>Clouddesigner</groupId>
             <artifactId>org.occiware.clouddesigner.occi.infrastructure.connector.dummy</artifactId>
             <version>0.1.0-SNAPSHOT</version>
+            <scope>runtime</scope>
         </dependency>-->
-        <!-- Requires Eclipse Modeling Framework. -->
+
         <dependency>
             <groupId>org.eclipse.core</groupId>
             <artifactId>commands</artifactId>
             <version>3.3.0-I20070605-0010</version>
-            <scope>compile</scope>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jface</groupId>
             <artifactId>databinding</artifactId>
             <version>1.1.0-I20070606-0010</version>
-            <scope>compile</scope>
+            <scope>runtime</scope>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>org.eclipse.ui</groupId>
             <artifactId>ide</artifactId>
             <version>3.3.0-I20070620</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
+        </dependency>-->
+        <!--<dependency>
             <groupId>org.eclipse.swt</groupId>
             <artifactId>org.eclipse.swt.gtk.linux.x86</artifactId>
             <version>4.3</version>
             <scope>compile</scope>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.eclipse.emf</groupId>
             <artifactId>org.eclipse.emf.ecore</artifactId>
             <version>2.11.1-v20150805-0538</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.emf</groupId>
             <artifactId>org.eclipse.emf.common</artifactId>
             <version>2.11.0-v20150805-0538</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.emf</groupId>
@@ -149,63 +125,61 @@ the specific language governing permissions and limitations under the License. -
             <version>2.11.1-v20150805-0538</version>
             <scope>runtime</scope>
         </dependency>
-        <!-- Eclipse OCL required. -->
+
         <dependency>
             <groupId>org.eclipse.ocl</groupId>
             <artifactId>org.eclipse.ocl.pivot</artifactId>
             <version>1.0.1.v20150908-1239</version>
-            <scope>compile</scope>
+            <scope>runtime</scope>
         </dependency>
-        <!-- Is required by Eclipse OCL. -->
+
         <dependency>
             <groupId>org.eclipse.ocl</groupId>
             <artifactId>org.eclipse.ocl.common</artifactId>
             <version>1.3.0.v20150519-0914</version>
-            <scope>compile</scope>
+            <scope>runtime</scope>
         </dependency>
-        <!-- Is required by Eclipse OCL. -->
+
         <dependency>
             <groupId>org.eclipse.emf</groupId>
             <artifactId>org.eclipse.emf.edit</artifactId>
-            <!-- TODO: This is not the same version. -->
             <version>2.11.0-v20150123-0357</version>
-            <!-- 2.11.1.v20150805-0538 -->
-            <scope>compile</scope>
+            <scope>runtime</scope>
         </dependency>
-        <!-- Guava is used by Eclipse OCL. -->
-        <dependency>
+
+<!--        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>19.0-rc2</version>
             <scope>compile</scope>
-        </dependency>
-        <!-- Log4J is used by Eclipse OCL. -->
+        </dependency>-->
+
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
             <scope>compile</scope>
         </dependency>
-        <!-- Eclipse OSGi is used by Eclipse OCL. -->
+
         <dependency>
             <groupId>org.eclipse</groupId>
             <artifactId>osgi</artifactId>
             <version>3.10.0-v20140606-1445</version>
-            <scope>compile</scope>
+            <scope>runtime</scope>
         </dependency>
-        <dependency>
+
+        <!--<dependency>
             <groupId>org.eclipse.xtext</groupId>
             <artifactId>org.eclipse.xtext.xbase.lib</artifactId>
             <version>2.9.2</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+        </dependency>-->
+
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.5</version>
         </dependency>
-        <!-- Jackson dependency -->
-        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
@@ -216,16 +190,19 @@ the specific language governing permissions and limitations under the License. -
             <artifactId>jackson-databind</artifactId>
             <version>2.8.1</version>
         </dependency>
+
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.8.0</version>
+        </dependency>
+
+       <!-- <dependency>
             <groupId>com.github.fge</groupId>
             <artifactId>json-schema-validator</artifactId>
             <version>2.2.6</version>
-        </dependency>
-        <!--        <dependency>
-            <groupId>com.networknt</groupId>
-            <artifactId>json-schema-validator</artifactId>
-            <version>0.1.1</version>
         </dependency>-->
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -306,32 +283,6 @@ the specific language governing permissions and limitations under the License. -
                     </execution>
                 </executions>
             </plugin>
-            <!--<plugin>-->
-            <!--<groupId>org.apache.maven.plugins</groupId>-->
-            <!--<artifactId>maven-assembly-plugin</artifactId>-->
-            <!--<version>2.6</version>-->
-            <!--<configuration>-->
-            <!--<descriptorRefs>-->
-            <!--<descriptorRef>jar-with-dependencies</descriptorRef>-->
-            <!--</descriptorRefs>-->
-            <!--<archive>-->
-            <!--<manifest>-->
-            <!--<addClasspath>true</addClasspath>-->
-            <!--<mainClass>org.occiware.mart.server.MartServer</mainClass>-->
-            <!--<classpathPrefix>lib/</classpathPrefix>-->
-            <!--</manifest>-->
-            <!--</archive>-->
-            <!--</configuration>-->
-            <!--<executions>-->
-            <!--<execution>-->
-            <!--<id>assemble-all</id>-->
-            <!--<phase>package</phase>-->
-            <!--<goals>-->
-            <!--<goal>single</goal>-->
-            <!--</goals>-->
-            <!--</execution>-->
-            <!--</executions>-->
-            <!--</plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -359,19 +310,9 @@ the specific language governing permissions and limitations under the License. -
                 </executions>
                 <configuration>
                     <mainClass>org.occiware.mart.server.MartServer</mainClass>
-                    <!--          <arguments>
-                      <argument>argument1</argument>
-                    </arguments>-->
-                    <!--          <systemProperties>
-                      <systemProperty>
-                        <key>myproperty</key>
-                        <value>myvalue</value>
-                      </systemProperty>
-                    </systemProperties>-->
                 </configuration>
             </plugin>
         </plugins>
-
     </build>
 
 

@@ -56,8 +56,8 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
     protected UriInfo uri;
     protected IRequestParser inputParser;
     protected IRequestParser outputParser;
-    private String contentType = "text/occi";
-    private String acceptType = "text/occi";
+    private String contentType = Constants.MEDIA_TYPE_TEXT_OCCI;
+    private String acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
 
     @Override
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {

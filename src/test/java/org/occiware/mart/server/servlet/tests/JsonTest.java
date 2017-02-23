@@ -20,7 +20,6 @@ package org.occiware.mart.server.servlet.tests;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.junit.Test;
 import org.occiware.mart.server.servlet.exception.AttributeParseException;
 import org.occiware.mart.server.servlet.exception.CategoryParseException;
@@ -28,7 +27,6 @@ import org.occiware.mart.server.servlet.impl.parser.json.JsonOcciParser;
 import org.occiware.mart.server.servlet.impl.parser.json.render.ActionJson;
 import org.occiware.mart.server.servlet.impl.parser.json.render.OcciMainJson;
 import org.occiware.mart.server.servlet.impl.parser.json.utils.InputData;
-import org.occiware.mart.server.servlet.impl.parser.json.utils.ValidatorUtils;
 import org.occiware.mart.server.servlet.model.ConfigurationManager;
 import org.occiware.mart.server.servlet.utils.Utils;
 
@@ -48,59 +46,6 @@ import static org.junit.Assert.*;
  */
 public class JsonTest {
 
-
-    // @Test
-    public void testJsonValidator() {
-
-        try {
-            // Get the resource.json inputstream.
-            File resIn = getJsonResourceOneInput();
-            assertNotNull(resIn);
-            File schemaIn = getJsonSchemaControl();
-            assertNotNull(schemaIn);
-            boolean result = ValidatorUtils.isJsonValid(schemaIn, resIn);
-
-            // Utils.closeQuietly(resIn);
-            // Utils.closeQuietly(schemaIn);
-            if (result) {
-                System.out.println("Valid!");
-            } else {
-                System.out.println("NOT valid!");
-            }
-            assertTrue(result);
-        } catch (ProcessingException | IOException ex) {
-            Logger.getLogger(JsonTest.class.getName()).log(Level.SEVERE, null, ex);
-            throw new RuntimeException(ex);
-
-        }
-
-    }
-
-    private File getJsonSchemaControl() {
-        File inputSchemaJsonFile = new File(this.getClass().getResource("/jsonschemas/OCCI-schema.json").getFile());
-        System.out.println(inputSchemaJsonFile.getAbsolutePath());
-        assertNotNull(inputSchemaJsonFile);
-        return inputSchemaJsonFile;
-    }
-
-    private File getJsonResourceOneInput() {
-        File inputJsonFile = new File(this.getClass().getResource("/testjson/integration/creation/resource1.json").getFile());
-        System.out.println(inputJsonFile.getAbsolutePath());
-        assertNotNull(inputJsonFile);
-        return inputJsonFile;
-    }
-
-    // @Test
-    public void testJsonInterface() {
-        JsonOcciParser parser = new JsonOcciParser();
-        ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
-        ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
-        Response response = parser.getInterface(null, ConfigurationManager.DEFAULT_OWNER);
-        assertNotNull(response);
-        assertTrue(response.hasEntity());
-
-        System.out.println(response.getEntity());
-    }
 
     // TODO : Activate unit tests on travis deployment only build.
     @Test
