@@ -1,8 +1,11 @@
 # MartServer
-Model@Runtime server application, OCCI HTTP Server with OCCIware model support (Configuration / Extension / Runtime Connector). 
 
 ## Build status
-[![Build Status](https://travis-ci.org/cgourdin/MartServer.svg?branch=master)](https://travis-ci.org/cgourdin/MartServer)
+[![Build Status](https://travis-ci.org/occiware/MartServer.svg?branch=master)](https://travis-ci.org/occiware/MartServer)
+
+## Description
+
+Model@Runtime server application, OCCI HTTP Server with OCCIware model support (Configuration / Extension / Runtime Connector). 
 
 ## Progress dashboard
 [Progress development dashboard](doc/devstatus.md)
