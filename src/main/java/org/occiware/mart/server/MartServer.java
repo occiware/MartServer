@@ -18,8 +18,15 @@
  */
 package org.occiware.mart.server;
 
+import org.eclipse.jetty.proxy.ProxyServlet;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -28,6 +35,10 @@ import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
 import org.occiware.mart.server.servlet.utils.LoggerConfig;
 import org.occiware.mart.server.servlet.utils.Utils;
 
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -93,7 +104,17 @@ public class MartServer {
         // Initialize logger appenders.
         LoggerConfig.initAppenders(logDirectoryPath);
 
+//        Thread thFrontEnd = new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                startOcciInterfaceServer();
+//            }
+//        });
+//
+//        thFrontEnd.start();
+
         try {
+            System.out.println("Starting OCCI REST MartServer...");
             server.start();
             server.join();
         } catch (Exception ex) {
@@ -189,5 +210,82 @@ public class MartServer {
         httpProtocol = HTTP_PROTOCOL;
     }
 
+    /**
+     * start an occi interface frontend.
+     */
+    private static void startOcciInterfaceServer() {
+
+        Server wserver = new Server(3000);
+
+        // Create the ResourceHandler. It is the object that will actually
+        // handle the request for a given file. It is
+        // a Jetty Handler object so it is suitable for chaining with other
+        // handlers as you will see in other examples.
+        ResourceHandler resource_handler = new ResourceHandler();
+        // Configure the ResourceHandler. Setting the resource base indicates
+        // where the files should be served out of.
+        // In this example it is the current directory but it can be configured
+        // to anything that the jvm has access to.
+        resource_handler.setDirectoriesListed(true);
+        resource_handler.setWelcomeFiles(new String[] { "index.html" });
+        resource_handler.setResourceBase("./webapp");
+
+//        ServletHandler handler = new ServletHandler();
+//        ServletHolder holder = handler.addServletWithMapping(org.eclipse.jetty.proxy.ProxyServlet.Transparent.class, "/proxiedOCCIServer/*");
+//        holder.setInitParameter("ProxyTo", "http://localhost:3000/index.html");
+//        holder.setInitParameter("Prefix", "/*");
+//
+//        ServletContextHandler context = new ServletContextHandler(wserver, "/index.html");
+//
+//        context.addServlet(holder, "/*");
+
+        GzipHandler gzip = new GzipHandler();
+
+        wserver.setHandler(gzip);
+        HandlerList handlers = new HandlerList();
+
+        handlers.setHandlers(new Handler[] { resource_handler,
+                new DefaultHandler() });
+        gzip.setHandler(handlers);
+
+        try {
+            System.out.println("Starting server occiinterface http.");
+            wserver.start();
+            wserver.join();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+    }
+
+//    public static class FrontEndProxyServlet extends ProxyServlet {
+//        @Override
+//        public void init(ServletConfig config) throws ServletException {
+//            super.init(config);
+//            System.out.println(">> init done !");
+//        }
+//
+//        @Override
+//        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
+//            System.out.println(">>> got a request !");
+//            super.service(req, res);
+//        }
+//
+//    }
+
+//
+//    public static class MyProxyServlet extends ProxyServlet {
+//        @Override
+//        public void init(ServletConfig config) throws ServletException {
+//            super.init(config);
+//            System.out.println(">> init done !");
+//        }
+//
+//        @Override
+//        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
+//            System.out.println(">>> got a request !");
+//            super.service(req, res);
+//        }
+//    }
 
 }

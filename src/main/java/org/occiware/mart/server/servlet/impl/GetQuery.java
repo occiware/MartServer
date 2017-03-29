@@ -31,13 +31,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -285,4 +288,13 @@ public class GetQuery extends AbstractGetQuery {
         return response;
     }
 
+//    @Path("/occiinterface/")
+//    @GET
+//    @Produces(MediaType.TEXT_HTML)
+//    public InputStream getOcciInterfacePage() {
+//
+//        InputStream in = GetQuery.class.getResourceAsStream(("/occiinterface/index.html"));
+//        // URL url = getClass().getClassLoader().getResource("/occiinterface/index.html");
+//        return in;
+//    }
 }

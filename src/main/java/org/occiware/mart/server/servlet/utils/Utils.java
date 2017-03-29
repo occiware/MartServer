@@ -100,6 +100,7 @@ public class Utils {
         for (String val : vals) {
             if (val.toLowerCase().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                 result = true;
+                break;
             }
         }
         return result;

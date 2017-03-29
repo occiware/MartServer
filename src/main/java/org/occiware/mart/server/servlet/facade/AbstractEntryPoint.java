@@ -65,8 +65,8 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         Response response;
         String contextRoot = getUri().getBaseUri().toString();
         String uriPath = getUri().getPath();
-        LOGGER.info("Context root : " + contextRoot);
-        LOGGER.info("URI relative path: " + uriPath);
+        LOGGER.debug("Context root : " + contextRoot);
+        LOGGER.debug("URI relative path: " + uriPath);
 
         // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
         response = Utils.checkClientOCCIVersion(headers);

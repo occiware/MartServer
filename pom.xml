@@ -41,6 +41,16 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlets</artifactId>
+            <version>9.3.9.v20160517</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-proxy</artifactId>
+            <version>9.3.9.v20160517</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-http</artifactId>
             <version>9.3.9.v20160517</version>
             <scope>runtime</scope>
@@ -256,6 +266,7 @@
                     <mainClass>org.occiware.mart.server.MartServer</mainClass>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
 
