@@ -1,6 +1,8 @@
-/target/
+target/
 .idea/
-MartServer.iml
+*.iml
 nb-configuration.xml
 .DS_Store
-/logs/
+logs/
+*.class
+*.lst

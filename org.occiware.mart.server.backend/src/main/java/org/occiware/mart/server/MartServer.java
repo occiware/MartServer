@@ -104,14 +104,8 @@ public class MartServer {
         // Initialize logger appenders.
         LoggerConfig.initAppenders(logDirectoryPath);
 
-//        Thread thFrontEnd = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                startOcciInterfaceServer();
-//            }
-//        });
-//
-//        thFrontEnd.start();
+        // Thread thFrontEnd = new Thread(new FrontEndService());
+        // thFrontEnd.start();
 
         try {
             System.out.println("Starting OCCI REST MartServer...");
@@ -215,6 +209,10 @@ public class MartServer {
      */
     private static void startOcciInterfaceServer() {
 
+
+
+
+
         Server wserver = new Server(3000);
 
         // Create the ResourceHandler. It is the object that will actually
@@ -229,15 +227,6 @@ public class MartServer {
         resource_handler.setDirectoriesListed(true);
         resource_handler.setWelcomeFiles(new String[] { "index.html" });
         resource_handler.setResourceBase("./webapp");
-
-//        ServletHandler handler = new ServletHandler();
-//        ServletHolder holder = handler.addServletWithMapping(org.eclipse.jetty.proxy.ProxyServlet.Transparent.class, "/proxiedOCCIServer/*");
-//        holder.setInitParameter("ProxyTo", "http://localhost:3000/index.html");
-//        holder.setInitParameter("Prefix", "/*");
-//
-//        ServletContextHandler context = new ServletContextHandler(wserver, "/index.html");
-//
-//        context.addServlet(holder, "/*");
 
         GzipHandler gzip = new GzipHandler();
 
