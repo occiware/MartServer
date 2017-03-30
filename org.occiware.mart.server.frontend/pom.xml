@@ -26,5 +26,161 @@
             </snapshots>
         </repository>
     </repositories>
-    
+    <!-- Build must do that :
+        - Get from github occinterface project.
+        - Install locally node and npm to get dependencies (webpack)
+        - Build with npm the frontend
+        - Build a war to deploy on a jetty or other java server.
+    -->
+    <build>
+        <finalName>org.occiware.mart.server.frontend</finalName>
+
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.3</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <!-- Git clone / pull the project OCCInterface if necessary. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.5.0</version>
+                <executions>
+                    <execution>
+                        <id>occinterface-clone</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <executable>git</executable>
+                            <arguments>
+                                <argument>clone</argument>
+                                <argument>https://github.com/occiware/OCCInterface.git</argument>
+                                <argument>src/main/frontend/occinterface</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>occinterface-cleanup</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>pre-clean</phase>
+                        <configuration>
+                            <executable>rm</executable>
+                            <arguments>
+                                <argument>-R</argument>
+                                <argument>-f</argument>
+                                <argument>src/main/frontend/occinterface/</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.mortbay.jetty</groupId>
+                <artifactId>maven-jetty-plugin</artifactId>
+                <version>6.1.26</version>
+                <configuration>
+                    <connectors>
+                        <connector implementation="org.mortbay.jetty.bio.SocketConnector">
+                            <port>3000</port>
+                        </connector>
+                    </connectors>
+                    <overrideWebXml>src/main/frontend/dev_override_web.xml</overrideWebXml>
+                </configuration>
+            </plugin>
+
+            <!-- build with a node locally installed -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.4</version>
+                <configuration>
+                    <nodeVersion>v6.5.0</nodeVersion>
+                    <npmVersion>3.10.3</npmVersion>
+                    <installDirectory>.</installDirectory>
+                    <workingDirectory>src/main/frontend/occinterface/</workingDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install node and npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                    </execution>
+
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+
+            </plugin>
+            <!--<plugin>
+                <groupId>org.codehaus.groovy.maven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <version>1.0</version>
+                <executions>
+                    <execution>
+                        <id>webpack</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>execute</goal>
+                        </goals>
+                        <configuration>
+                            <source><![CDATA[
+                                /*
+                                 * If running in Jetty - compile jsx files when they change
+                                 * Otherwise just compile them once
+                                 */
+                                boolean isJettyRun = false
+                                List<String> goals = session.getGoals()
+                                for (String s : goals)
+                                    if (s.equals('jetty:run'))
+                                        isJettyRun = true
+                                if (isJettyRun) {
+                                    println "Compiling client code in developper mode..."
+                                    def proc_webpack = new ProcessBuilder(["node/node", "src/main/frontend/occinterface/node_modules/webpack-dev-server/bin/webpack-dev-server.js", "&#45;&#45;inline", "&#45;&#45;hot", "&#45;&#45;stdin", "&#45;&#45;port", "3000"]).inheritIO().directory(project.getBasedir()).start()
+                                } else {
+                                    println "Compiling client code..."
+                                    def webpack = new ProcessBuilder(["node/node", "src/main/frontend/occinterface/node_modules/webpack/bin/webpack.js", "-p", "&#45;&#45;progress", "&#45;&#45;bail"]).inheritIO().directory(project.getBasedir())
+                                    def env = webpack.environment()
+                                    env.put("WAR_NAME", project.build.finalName)
+                                    def proc_webpack = webpack.start()
+                                    proc_webpack.waitForOrKill(120000)
+                                    if(proc_webpack.exitValue() != 0)
+                                        throw new org.apache.maven.plugin.MojoFailureException("Error compiling client code")
+                                }
+                                ]]></source>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>-->
+
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.mitre.dsmiley.httpproxy</groupId>
+            <artifactId>smiley-http-proxy-servlet</artifactId>
+            <version>1.7</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
 </project>

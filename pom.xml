@@ -18,7 +18,7 @@
     </modules>
     <profiles>
         <profile>
-            <!-- type mvn -Pbuild.frontend -->
+            <!-- type mvn -Pbuild.occinterface -->
             <id>build.occinterface</id>
             <modules>
                 <module>org.occiware.mart.server.frontend</module>

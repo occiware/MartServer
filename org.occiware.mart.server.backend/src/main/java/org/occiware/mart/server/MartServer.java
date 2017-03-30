@@ -212,7 +212,6 @@ public class MartServer {
 
 
 
-
         Server wserver = new Server(3000);
 
         // Create the ResourceHandler. It is the object that will actually
