@@ -3,7 +3,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.occiware</groupId>
-    <artifactId>org.occiware.mart.server</artifactId>
+    <artifactId>org.occiware.mart</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <properties>
@@ -12,36 +12,31 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
     <modules>
-        <!-- common to all modules -->
-        <module>org.occiware.mart.server.backend</module>
-        
+        <module>org.occiware.mart.server</module>
+        <module>org.occiware.mart.jetty</module>
     </modules>
-    <profiles>
+
+   <profiles>
         <profile>
+
+
             <!-- type mvn -Pbuild.occinterface -->
             <id>build.occinterface</id>
             <modules>
-                <module>org.occiware.mart.server.frontend</module>
+                <module>org.occiware.mart.occinterface</module>
             </modules>
          </profile>
         <profile>
             <!-- type mvn -Pbuild.war -->
             <id>build.war</id>
             <modules>
-                <module>org.occiware.mart.server.webapp</module>
+                <module>org.occiware.mart.war</module>
             </modules>
         </profile>
-        <profile>
-            <!-- type mvn -Pbuild.all -->
-            <id>build.all</id>
-            <modules>
-                <module>org.occiware.mart.server.frontend</module>
-                <module>org.occiware.mart.server.webapp</module>
-            </modules>
-        </profile>
+
     </profiles>
-    
-    <!--<repositories>
+
+    <repositories>
         <repository>
             <id>oss-sonatype</id>
             <name>oss-sonatype</name>
@@ -50,6 +45,6 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
-    </repositories>-->
+    </repositories>
 
 </project>

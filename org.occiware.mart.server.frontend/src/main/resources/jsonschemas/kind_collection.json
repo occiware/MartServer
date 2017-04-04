@@ -1,5 +1,0 @@
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "$ref": "OCCI-schema.json#definitions/kind_collection"
-}
-
