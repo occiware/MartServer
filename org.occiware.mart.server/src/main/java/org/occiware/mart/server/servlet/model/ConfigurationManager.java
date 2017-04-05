@@ -79,7 +79,9 @@ public class ConfigurationManager {
 
         // Registering extension found in classpath.
         MART.initMART();
-
+        // init one configuration and extension model...
+        getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
+        useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
     }
 
     /**
@@ -90,6 +92,7 @@ public class ConfigurationManager {
      */
     public static Configuration getConfigurationForOwner(final String owner) {
         if (configurations.get(owner) == null) {
+            LOGGER.warn("Create configuration for owner : " + owner);
             createConfiguration(owner);
         }
         return configurations.get(owner);
@@ -105,29 +108,31 @@ public class ConfigurationManager {
         Extension ext;
         List<Extension> extensions = new LinkedList<>();
         Collection<String> extReg = OCCIRegistry.getInstance().getRegisteredExtensions();
-        LOGGER.info("Collection: " + extReg);
+        LOGGER.info("Collection: " + extReg + " --> owner : " + owner);
         boolean coreAdded = false;
-        for (String extScheme : extReg) {
-            // Load the extension and register, include the core as well...
-            LOGGER.info("Loading model extension : " + extScheme);
-            ext = OcciHelper.loadExtension(extScheme);
-            if (ext.getName().equals("core")) {
-                extensions.add(0, ext); // Add on first infrastructure extension.
-                coreAdded = true;
-            } else if (ext.getName().equals("infrastructure")) {
-                if (coreAdded && extensions.size() > 1) {
-                    extensions.add(1, ext);
+        if (config.getUse().isEmpty()) {
+            for (String extScheme : extReg) {
+                // Load the extension and register, include the core as well...
+                LOGGER.info("Loading model extension : " + extScheme + " --> owner : " + owner);
+                ext = OcciHelper.loadExtension(extScheme);
+                if (ext.getName().equals("core")) {
+                    extensions.add(0, ext); // Add on first infrastructure extension.
+                    coreAdded = true;
+                } else if (ext.getName().equals("infrastructure")) {
+                    if (coreAdded && extensions.size() > 1) {
+                        extensions.add(1, ext);
+                    } else {
+                        extensions.add(0, ext);
+                    }
                 } else {
-                    extensions.add(0, ext);
+                    extensions.add(ext);
                 }
-            } else {
-                extensions.add(ext);
             }
-        }
 
-        for (Extension extension : extensions) {
-            LOGGER.info("Extension : " + extension.getName() + " added to user configuration.");
-            config.getUse().add(extension);
+            for (Extension extension : extensions) {
+                LOGGER.info("Extension : " + extension.getName() + " added to user configuration --> " + "owner : " + owner);
+                config.getUse().add(extension);
+            }
         }
     }
 

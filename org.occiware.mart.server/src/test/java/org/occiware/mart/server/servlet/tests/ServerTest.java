@@ -63,8 +63,8 @@ public class ServerTest {
         ServletContextHandler context = new ServletContextHandler(server, "/*");
         context.addServlet(servlet, "/*");
 
-        ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
-        ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
+        // ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
+        // ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
         server.start();
 
         // manage jetty http client.

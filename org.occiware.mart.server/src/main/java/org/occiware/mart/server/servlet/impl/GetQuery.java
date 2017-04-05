@@ -222,10 +222,16 @@ public class GetQuery extends AbstractGetQuery {
         }
         String categoryFilter;
         categoryFilter = inputParser.getParameter("category");
+
         // First we check params.
         if (categoryFilter == null) {
             // Check if we need to filter for a category like /compute/-/, we get the term.
             categoryFilter = Utils.getCategoryFilter(path, ConfigurationManager.DEFAULT_OWNER);
+            if (categoryFilter != null && !categoryFilter.isEmpty()) {
+                LOGGER.warn("use a category filter: " + categoryFilter);
+            }
+        } else {
+            LOGGER.warn("use a category filter: " + categoryFilter);
         }
 
         response = outputParser.getInterface(categoryFilter, ConfigurationManager.DEFAULT_OWNER);

@@ -87,8 +87,8 @@ public class MartServer {
         ServletContextHandler context = new ServletContextHandler(server, "/*");
         context.addServlet(servlet, "/*");
 
-        ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
-        ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
+        // ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
+        // ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
 
         // Initialize logger appenders.
         LoggerConfig.initAppenders(logDirectoryPath);
