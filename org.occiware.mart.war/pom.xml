@@ -32,7 +32,7 @@
         </dependency>
     </dependencies>
     <build>
-        <finalName>org.occiware.mart.war</finalName>
+        <finalName>occiwar</finalName>
         <plugins>
             <!-- Set JDK Compiler Level -->
             <plugin>
@@ -63,14 +63,78 @@
                 <artifactId>tomcat7-maven-plugin</artifactId>
                 <version>2.2</version>
                 <configuration>
+                    <url>http://localhost:8080/manager</url>
+                    <server>localhost</server>
                     <path>/</path>
                 </configuration>
             </plugin>
 
+            <!-- For jetty use with jetty plugin. -->
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>9.4.3.v20170317</version>
+                <configuration>
+                    <!-- avoiding scanning jars to speed up jetty startup :
+                    http://haksoo.wordpress.com/2013/10/05/jetty-8-maven-plugin-too-slow/ -->
+                    <!-- <contextXml>${basedir}/src/main/webapp/WEB-INF/jetty-context.xml</contextXml> -->
+                    <scanIntervalSeconds>0</scanIntervalSeconds>
+                    <webAppConfig>
+                        <war>${basedir}/target/occiwar.war</war>
+                        <contextPath>/</contextPath>
+                    </webAppConfig>
+
+                </configuration>
+            </plugin>
 
         </plugins>
+
     </build>
 
+    <profiles>
+        <profile>
+            <id>withoccinterface</id>
+            <build>
+
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>2.4.2</version>
+                        <executions>
+                            <execution>
+                                <id>default-copy-resources</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <overwrite>false</overwrite>
+                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/occinterface/</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>../org.occiware.mart.occinterface/src/main/webapp/occinterface</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+
+                    <!-- build war plugin part -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-war-plugin</artifactId>
+                        <version>2.3</version>
+                        <configuration>
+                            <failOnMissingWebXml>false</failOnMissingWebXml>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 
 </project>

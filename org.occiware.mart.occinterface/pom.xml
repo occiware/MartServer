@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -16,13 +17,6 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
-
-    <!-- Build must do that :
-        - Get from github occinterface project.
-        - Install locally node and npm to get dependencies (webpack)
-        - Build with npm the frontend
-        - Build a war to deploy on a jetty or other java server.
-    -->
     <build>
         <finalName>org.occiware.mart.occinterface</finalName>
 
@@ -55,7 +49,7 @@
                             <arguments>
                                 <argument>clone</argument>
                                 <argument>https://github.com/occiware/OCCInterface.git</argument>
-                                <argument>src/main/frontend/occinterface</argument>
+                                <argument>src/main/webapp/occinterface</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -70,7 +64,7 @@
                             <arguments>
                                 <argument>-R</argument>
                                 <argument>-f</argument>
-                                <argument>src/main/frontend/occinterface/</argument>
+                                <argument>src/main/webapp/occinterface/</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -96,7 +90,7 @@
                     <nodeVersion>v6.5.0</nodeVersion>
                     <npmVersion>3.10.3</npmVersion>
                     <installDirectory>.</installDirectory>
-                    <workingDirectory>src/main/frontend/occinterface/</workingDirectory>
+                    <workingDirectory>src/main/webapp/occinterface/</workingDirectory>
                 </configuration>
                 <executions>
                     <execution>
@@ -133,94 +127,25 @@
                 <version>2.6</version>
                 <configuration>
                     <archive>
-                        <manifest>
+                        <!--<manifest>
                             <addClasspath>true</addClasspath>
                             <mainClass>org.occiware.mart.occinterface.FrontEndService</mainClass>
                             <classpathPrefix>lib/</classpathPrefix>
-                        </manifest>
+                        </manifest>-->
                     </archive>
                 </configuration>
             </plugin>
-
         </plugins>
+        <resources>
+            <resource>
+                <directory>>src/main/resources</directory>
+                <includes><include>**/*</include></includes>
+            </resource>
+            <resource>
+                <directory>src/main/webapp</directory>
+                <includes><include>**/*</include></includes>
+            </resource>
+        </resources>
+
     </build>
-    <dependencies>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.19</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.7</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>9.3.9.v20160517</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlet</artifactId>
-            <version>9.3.9.v20160517</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>9.3.9.v20160517</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlets</artifactId>
-            <version>9.3.9.v20160517</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-proxy</artifactId>
-            <version>9.3.9.v20160517</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-http</artifactId>
-            <version>9.3.9.v20160517</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-            <version>2.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.core</groupId>
-            <artifactId>jersey-server</artifactId>
-            <version>2.23.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-servlet-core</artifactId>
-            <version>2.23.1</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-client</artifactId>
-            <version>9.3.9.v20160517</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-
 </project>

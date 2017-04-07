@@ -13,29 +13,10 @@
     </properties>
     <modules>
         <module>org.occiware.mart.server</module>
+        <module>org.occiware.mart.occinterface</module>
         <module>org.occiware.mart.jetty</module>
+        <module>org.occiware.mart.war</module>
     </modules>
-
-   <profiles>
-        <profile>
-
-
-            <!-- type mvn -Pbuild.occinterface -->
-            <id>build.occinterface</id>
-            <modules>
-                <module>org.occiware.mart.occinterface</module>
-            </modules>
-         </profile>
-        <profile>
-            <!-- type mvn -Pbuild.war -->
-            <id>build.war</id>
-            <modules>
-                <module>org.occiware.mart.war</module>
-            </modules>
-        </profile>
-
-    </profiles>
-
     <repositories>
         <repository>
             <id>oss-sonatype</id>
