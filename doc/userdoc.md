@@ -2,9 +2,9 @@
 Your server is supposed to be started.
 To make that see : [Server documentation](server.md)
 
-By default, if no content type is defined, content type will be text/occi.
+By default, if no content type is defined, content type will be application/json.
 
-By default, if no accept type is defined, accept type will be text/occi.
+By default, if no accept type is defined, accept type will be application/json.
 
 ## text/occi parser.
 

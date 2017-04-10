@@ -13,44 +13,28 @@ Some dependencies are in lib/ directory, mvn initialize reference them in your l
 The file pom.xml declare them via the plugin maven-install-plugin, if you need to customize what library is required, you can update this file with your own dependencies.
 Note that the server use Model@Runtime from Clouddesigner libs, if you have designed your extension model and developped your own connector, you may update the file pom.xml.
 
-
-## Build the server and dependencies (other method, more longer)
-Before all, to build the project, you must get Clouddesigner sources and compile them.
-
-[You can get it here](https://github.com/occiware/ecore)
-
-To build Clouddesigner : 
-
-<pre>
-<code>
-cd ecore/clouddesigner/org.occiware.clouddesigner.parent/
-mvn clean install
-</code>
-</pre>
-
-After that, all occi extensions and connectors are in your local maven repository. We made that because there's no global maven repository for Clouddesigner at this time.
-
-So before building MartServer project, update the file pom.xml with your desired extension and connectors and then :
-
-<pre>
-<code>
-cd MartServer/
-mvn clean install
-</code>
-</pre>
-
 ## Start the server
-Launch the server with this command : 
+ 
+Launch the server with an embedded jetty :
 
+Two options :
 <pre>
-<code>
-cd MartServer/
-mvn exec:java
-</code>
+<code>cd org.occiware.mart.jetty
+mvn exec:java</code>
 </pre>
-And that's all !
 
-You may have a result like this one :
+You can launch the server with an embedded jetty using occinterface integration : 
+<pre>
+<code>mvn jetty:run-war -Pwithoccinterface</code>
+</pre>
+
+Launch the server with an embedded tomcat : 
+<pre>
+<code>cd org.occiware.mart.war
+mvn tomcat7:run-war -Pwithoccinterface</code>
+</pre>
+
+You may have a result like this one for jetty :
 
 <pre>
 <code>
@@ -86,23 +70,16 @@ Mart server will log in path : /Users/myuser/workspace/MartServer/logs/mart_serv
 
 The extensions you have registered in pom.xml must appear in the output log, here i have OCCI core extension and OCCI core infrastructure.
 
-To use connectors and extensions you can declare them directly in the pom.xml file or declare them in a java command line like this :
-Example with VMware connector and backend crtp extension :
-<pre>
-<code>
-java -cp ./target/MartServer-1.0-SNAPSHOT.jar:/home/youruser/.m2/repository/Clouddesigner/org.occiware.clouddesigner.occi.infrastructure/0.1.0-SNAPSHOT/org.occiware.clouddesigner.occi.infrastructure-0.1.0-SNAPSHOT.jar:/home/youruser/.m2/repository/Clouddesigner/org.occiware.clouddesigner.occi.crtp/0.1.0-SNAPSHOT/org.occiware.clouddesigner.occi.crtp-0.1.0-SNAPSHOT.jar:/home/occiware/.m2/repository/Clouddesigner/org.occiware.clouddesigner.occi.infrastructure.crtp.backend/0.1.0-SNAPSHOT/org.occiware.clouddesigner.occi.infrastructure.crtp.backend-0.1.0-SNAPSHOT.jar:/home/youruser/.m2/repository/Clouddesigner/org.occiware.clouddesigner.occi.infrastructure.connector.vmware/0.1.0-SNAPSHOT/org.occiware.clouddesigner.occi.infrastructure.connector.vmware-0.1.0-SNAPSHOT.jar:/home/youruser/ecore/clouddesigner/org.occiware.clouddesigner.occi.infrastructure.connector.vmware/lib/dom4j-1.6.1.jar:/home/occiware/ecore/clouddesigner/org.occiware.clouddesigner.occi.infrastructure.connector.vmware/lib/yavijava-6.0.05-SNAPSHOT.jar org.occiware.mart.jetty.MartServer > infos.log &
-</code>
-</pre>
-
-The best way to build your application is to update the pom.xml file (dependencies section and maven-install-plugin section) and set dependencies directly in lib/ if these are not referenced in maven central (or other repos).
-
 ## Stop server
 Simply kill the java main thread (pkill -9 java) or ctrl+c in current server terminal.
 
 Note that there is no persistence for now, if you stop the server, you will loose all your resources configuration.
 This is plan to make it persistent in a near future to allow the defined resources to be loaded in the same state when you have stopped the server.
 
-## Accessing the server.
+## Configuring the server.
+
+The martserver config file is only useable with org.occiware.mart.jetty package submodule.
+
 The server port is by default on 8080. 
 
 By default the server accept configuration file with name martserver.config located in home directory (so you don't have to add a parameter in comand line when launching the server).
@@ -129,6 +106,9 @@ You can also launch the server with this command line :
 mvn exec:java -Dexec.args="/my_folder_config/server.config"
 </code>
 </pre>
+
+## Using the server
+
 
 If you have launch the server in localhost, you can check that the server is started correctly with this curl command:
 <pre>
