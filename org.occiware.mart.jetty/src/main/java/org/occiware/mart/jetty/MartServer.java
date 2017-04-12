@@ -23,10 +23,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.occiware.mart.server.servlet.model.ConfigurationManager;
-import org.occiware.mart.server.servlet.model.exceptions.ConfigurationException;
-import org.occiware.mart.server.servlet.utils.LoggerConfig;
-import org.occiware.mart.server.servlet.utils.Utils;
+import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.utils.LoggerConfig;
+import org.occiware.mart.server.utils.Utils;
 
 import java.io.File;
 import java.io.FileInputStream;

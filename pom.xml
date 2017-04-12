@@ -13,6 +13,7 @@
     </properties>
     <modules>
         <module>org.occiware.mart.server</module>
+        <module>org.occiware.mart.servlet</module>
         <module>org.occiware.mart.occinterface</module>
         <module>org.occiware.mart.jetty</module>
         <module>org.occiware.mart.war</module>

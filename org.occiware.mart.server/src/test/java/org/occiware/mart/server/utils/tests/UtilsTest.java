@@ -19,7 +19,7 @@
 package org.occiware.mart.server.utils.tests;
 
 import org.junit.Test;
-import org.occiware.mart.server.servlet.utils.Utils;
+import org.occiware.mart.server.utils.Utils;
 
 import java.util.HashMap;
 import java.util.Map;
