@@ -303,4 +303,5 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
     public void setInputParser(IRequestParser inputParser) {
         this.inputParser = inputParser;
     }
+
 }

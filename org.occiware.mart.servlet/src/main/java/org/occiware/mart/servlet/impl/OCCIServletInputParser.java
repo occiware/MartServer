@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 /**
  * Created by cgourdin on 11/04/2017.
@@ -21,11 +21,13 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OCCIServletInputParser.class);
 
-    private HttpHeaders headers;
+    private Map<String, String> headers;
     private HttpServletRequest request;
 
-    public OCCIServletInputParser(OCCIResponse response, String contentType, String username) {
+    public OCCIServletInputParser(OCCIResponse response, String contentType, String username, HttpServletRequest req, Map<String, String> headers) {
         super(response, contentType, username);
+        this.headers = headers;
+        this.request = req;
     }
 
     /**
@@ -46,15 +48,15 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
                     throw new ParseOCCIException("No request to parse.");
                 }
 
-                InputStream jsonInput = null;
+                InputStream in = null;
                 LOGGER.info("Parsing input uploaded datas...");
                 try {
-                    jsonInput = request.getInputStream();
-                    if (jsonInput == null) {
+                    in = request.getInputStream();
+                    if (in == null) {
 
                         throw new ParseOCCIException("The input has no content delivered.");
                     }
-                    content = Utils.convertInputStreamToString(jsonInput);
+                    content = Utils.convertInputStreamToString(in);
 
                     // for Object occiRequest to be fully completed.
                     getInputParser().parseInputToDatas(content);
@@ -62,7 +64,7 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
                 } catch (IOException ex) {
                     throw new ParseOCCIException("The server cant read the json file input --> " + ex.getMessage());
                 } finally {
-                    Utils.closeQuietly(jsonInput);
+                    Utils.closeQuietly(in);
                 }
                 break;
             case Constants.MEDIA_TYPE_TEXT_OCCI:
@@ -72,7 +74,7 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
                 }
 
                 // for object occiRequest to be fully completed, the parameter is Map<String, List<String>> encapsulated on MultivaluedMap.)
-                getInputParser().parseInputToDatas(headers.getRequestHeaders());
+                getInputParser().parseInputToDatas(headers);
                 break;
             default:
                 throw new ParseOCCIException("Cannot parse for " + contentType + " cause: unknown parser");
@@ -86,14 +88,14 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
         // Is the kinds exists on this configuration's extensions ?
         // Is the mixins (with attributes ==> not a mixintag) exist on configuration's extensions ?
         // Is this request is an occi compliant request ?
-        // TODO : !!!!
+        // TODO : in abstract class.
     }
 
-    public HttpHeaders getHeaders() {
+    public Map<String, String> getHeaders() {
         return headers;
     }
 
-    public void setHeaders(HttpHeaders headers) {
+    public void setHeaders(Map<String, String> headers) {
         this.headers = headers;
     }
 

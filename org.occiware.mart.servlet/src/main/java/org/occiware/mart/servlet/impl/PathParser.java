@@ -18,10 +18,6 @@
  */
 package org.occiware.mart.servlet.impl;
 
-import org.occiware.mart.server.parser.Data;
-import org.occiware.mart.server.model.ConfigurationManager;
-import org.occiware.mart.server.utils.Utils;
-
 import java.util.List;
 import java.util.Map;
 

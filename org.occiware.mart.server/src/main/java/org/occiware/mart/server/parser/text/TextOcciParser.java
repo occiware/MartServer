@@ -22,17 +22,14 @@ import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.facade.OCCIRequest;
 import org.occiware.mart.server.facade.OCCIResponse;
+import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.Data;
 import org.occiware.mart.server.parser.IRequestParser;
-import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 
 /**
@@ -167,6 +164,7 @@ public class TextOcciParser implements IRequestParser {
         }
         Data data = occiRequest.getDatas().get(0);
         Map<String, List<String>> map = contentHeader.getHeaderMap();
+
         List<String> values;
         for (Map.Entry<String, List<String>> entry : map.entrySet()) {
             String key = entry.getKey();
@@ -197,7 +195,6 @@ public class TextOcciParser implements IRequestParser {
                     for (String valueTmp : valuesTmp) {
                         data.addXocciLocation(valueTmp);
                     }
-
                     break;
                 }
             }
@@ -211,7 +208,7 @@ public class TextOcciParser implements IRequestParser {
      * @return interface to set in header.
      */
     @Override
-    public Map<String, String> getInterface(final String user) throws ParseOCCIException {
+    public HeaderPojo getInterface(final String user) throws ParseOCCIException {
 
         List<Kind> kinds = occiResponse.getQueryInterfaceData().getKinds();
         List<Mixin> mixins = occiResponse.getQueryInterfaceData().getMixins();
@@ -228,24 +225,29 @@ public class TextOcciParser implements IRequestParser {
         } else {
             throw new ParseOCCIException("No interface to render.");
         }
-        Map<String, String> headerMap = new LinkedHashMap<>();
-        headerMap.put("interface", msg);
-        occiResponse.setResponse(msg);
-        return headerMap;
+        Map<String, List<String>> headerMap = new LinkedHashMap<>();
+        List<String> interfaces = new LinkedList<>();
+        interfaces.add(msg);
+        headerMap.put("interface", interfaces);
+        HeaderPojo header = new HeaderPojo(headerMap);
+        occiResponse.setResponse(header);
+        return header;
     }
 
     @Override
     public String parseMessage(String message, Integer statusCode) throws ParseOCCIException {
         // This may be rendered in header and in content if this is an error message.
-        // TODO : Check if in header special chars are authorized, if not then convert here specials chars.
         occiResponse.setResponse(message);
         return message;
     }
 
     @Override
-    public Map<String, String> renderOutputEntity(Entity entity) throws ParseOCCIException {
+    public HeaderPojo renderOutputEntity(Entity entity) throws ParseOCCIException {
         if (entity == null) {
-            throw new ParseOCCIException("No entity to render");
+            Map<String, List<String>> header = new LinkedHashMap<>();
+            HeaderPojo result = new HeaderPojo(header);
+            occiResponse.setResponse(result);
+            return result;
         }
         String categories = renderCategory(entity.getKind(), false);
 
@@ -261,45 +263,89 @@ public class TextOcciParser implements IRequestParser {
             throw new ParseOCCIException("No category to render.");
         }
 
-        // Link header ==> TODO in implementations for actions on entity.
-        String relativeLocation = ConfigurationManager.getLocation(entity);
-
         String entityAttrs = renderAttributes(entity);
 
-        Map<String, String> headerMap = new LinkedHashMap<>();
-        headerMap.put(Constants.CATEGORY, categories);
-        headerMap.put(Constants.X_OCCI_ATTRIBUTE, entityAttrs);
-        headerMap.put(Constants.X_OCCI_LOCATION, renderXOCCILocationAttr(entity));
-        occiResponse.setResponse(headerMap);
-        return headerMap;
+        Map<String, List<String>> headerMap = new LinkedHashMap<>();
+        List<String> cats = new LinkedList<>();
+        List<String> attrs = new LinkedList<>();
+        List<String> xOcciLocation = new LinkedList<>();
+
+        cats.add(categories);
+        attrs.add(entityAttrs);
+        xOcciLocation.add(renderXOCCILocationAttr(entity));
+
+        List<String> links = renderActionLinksHeader(entity);
+
+        headerMap.put(Constants.CATEGORY, cats);
+        headerMap.put(Constants.X_OCCI_ATTRIBUTE, attrs);
+        headerMap.put(Constants.X_OCCI_LOCATION, xOcciLocation);
+        headerMap.put(Constants.LINK, links);
+
+        HeaderPojo header = new HeaderPojo(headerMap);
+        occiResponse.setResponse(header);
+        return header;
     }
 
 
     @Override
-    public Map<String, String> renderOutputEntities(List<Entity> entities) throws ParseOCCIException {
-
+    public HeaderPojo renderOutputEntities(List<Entity> entities) throws ParseOCCIException {
+        HeaderPojo result;
         // We render only the first entity found, cause to limit size of header.
         if (entities != null && !entities.isEmpty()) {
-            Map<String, String> result = renderOutputEntity(entities.get(0));
+            result = renderOutputEntity(entities.get(0));
             occiResponse.setResponse(result);
             return result;
         }
-
-        throw new ParseOCCIException("No entities to render.");
+        Map<String, List<String>> header = new LinkedHashMap<>();
+        result = new HeaderPojo(header);
+        occiResponse.setResponse(result);
+        return result;
     }
 
 
     @Override
-    public List<String> renderOutputEntitiesLocations(List<String> locations) throws ParseOCCIException {
+    public HeaderPojo renderOutputEntitiesLocations(List<String> locations) throws ParseOCCIException {
+        HeaderPojo header;
+        Map<String, List<String>> headerMap = new LinkedHashMap<>();
         if (!locations.isEmpty()) {
             // String absLocation = getServerURI().toString() + location;
             // responseBuilder.header(Constants.X_OCCI_LOCATION, absLocation);
-            occiResponse.setResponse(locations);
-            return locations; // TODO : Dont forget to add getServerURI().toString() + location on each locations in implentation.
+            headerMap.put(Constants.X_OCCI_LOCATION, locations);
+            header = new HeaderPojo(headerMap);
+            occiResponse.setResponse(header);
+            return header;
         } else {
-            throw new ParseOCCIException("No entities locations were found.");
+            header = new HeaderPojo(headerMap);
+            occiResponse.setResponse(header);
         }
+        return header;
     }
+
+    /**
+     * Render Link: header (cf spec text rendering).
+     *
+     * @param entity
+     * @return An array of Link to set to header.
+     */
+    private List<String> renderActionLinksHeader(final Entity entity) {
+        String location = ConfigurationManager.getLocation(entity);
+        List<String> actionLinks = new LinkedList<>();
+        LOGGER.info("Entity location : " + location);
+        int linkSize = 1;
+        int current = 0;
+        String actionLink;
+        List<Action> actionsTmp = entity.getKind().getActions();
+        for (Action action : actionsTmp) {
+            actionLink = location + entity.getId() + "?action=" + action.getTerm() + ";" + "rel=\""+action.getScheme()+action.getTerm() + "\"";
+            actionLinks.add(actionLink);
+        }
+
+        // For each actions we add the link like this : <mylocation?action=actionTerm>; \
+        //    rel="http://actionScheme#actionTerm"
+        return actionLinks;
+    }
+
+
 
     /**
      * Get text/occi for occi Kinds and actions.

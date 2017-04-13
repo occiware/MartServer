@@ -26,11 +26,14 @@ import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import java.io.*;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -52,10 +55,11 @@ public class ServletUtils {
      * @param headers
      * @return null if no response, not null if failed response.
      */
-    public static Response checkClientOCCIVersion(HttpHeaders headers) {
+    public static boolean checkClientOCCIVersion(Map<String, String> headers) {
         boolean result = true;
-        List<String> vals = getFromValueFromHeaders(headers, Constants.HEADER_USER_AGENT);
-        for (String val : vals) {
+        String val = headers.get(Constants.HEADER_USER_AGENT);
+        if (val != null) {
+
             if (val.contains("OCCI/") || val.contains("occi/")) {
                 // Check if version is compliant with supported occi version 1.2 currently.
                 if (!val.contains(Constants.OCCI_SERVER_VERSION)) {
@@ -73,18 +77,12 @@ public class ServletUtils {
                         } catch (NumberFormatException ex) {
                             // Version is unparseable.
                         }
-
                     }
-
                 }
             }
         }
-        if (!result) {
-            System.out.println("Version is not compliant, max: OCCI v1.2");
-            return Response
-                    .status(Response.Status.NOT_IMPLEMENTED).entity("The requested version is not implemented.").build();
-        }
-        return null;
+
+        return result;
     }
 
     /**
@@ -906,4 +904,43 @@ public class ServletUtils {
 
         return pathTmp;
     }
+
+
+    /**
+     * Get headers from http javax servlet request.
+     * @param request
+     * @return
+     */
+    public static Map<String, String> getRequestHeaders(HttpServletRequest request) {
+
+        Map<String, String> map = new HashMap<>();
+
+        Enumeration headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String key = (String) headerNames.nextElement();
+            String value = request.getHeader(key);
+            map.put(key, value);
+        }
+
+        return map;
+    }
+
+    public static URI getServerURI(HttpServletRequest req) {
+        String protocol = req.getScheme();
+        String hostname = req.getServerName();
+        int port = req.getServerPort();
+        URI serverURI = null;
+        try {
+            serverURI = new URI(protocol + "://" + hostname + ":" + port);
+        } catch (URISyntaxException ex) {
+            LOGGER.error("Cannot parse server URI.");
+        }
+
+        return serverURI;
+    }
+
+
+
+
+
 }

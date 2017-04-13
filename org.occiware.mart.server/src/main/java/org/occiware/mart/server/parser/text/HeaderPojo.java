@@ -20,13 +20,24 @@ public class HeaderPojo {
         return headerMap;
     }
 
-    public void setHeaderMap(Map<String, List<String>> headerMap) {
-        this.headerMap = headerMap;
+    public void put(final String key, final String value) {
+        if (headerMap.get(key) != null) {
+            List<String> values = headerMap.get(key);
+            if (!values.isEmpty() && !values.contains(value)) {
+                values.add(value);
+            }
+        }
     }
 
-    public void put(final String key, final List<String> value) {
-        this.headerMap.put(key, value);
-    }
+    public void put(final String key, final List<String> values) {
+        if (headerMap.containsKey(key)) {
+            for (String value : values) {
+                put(key, value);
+            }
+        } else {
+            headerMap.put(key, values);
+        }
 
+    }
 
 }

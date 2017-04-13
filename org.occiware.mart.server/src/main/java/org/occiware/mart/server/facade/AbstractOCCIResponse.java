@@ -161,13 +161,20 @@ public abstract class AbstractOCCIResponse implements OCCIResponse {
                 return new DummyParser(this);
 
             default:
-                // No parser.
+                // No parser, this could be setted via setOutputParser method.
                 LOGGER.warn("The parser for " + contentType + " doesnt exist !");
-                // TODO : Dummy parser ?
                 return new DummyParser(this);
             // throw new ParseOCCIException("The parser for " + contentType + " doesnt exist !");
         }
     }
 
+    @Override
+    public IRequestParser getOutputParser() {
+        return this.outputParser;
+    }
 
+    @Override
+    public void setOutputParser(IRequestParser outputParser) {
+        this.outputParser = outputParser;
+    }
 }

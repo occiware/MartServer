@@ -19,6 +19,7 @@
 package org.occiware.mart.server.facade;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.Data;
 import org.occiware.mart.server.parser.IRequestParser;
 
@@ -158,5 +159,13 @@ public interface OCCIRequest {
      */
     public void setInputParser(IRequestParser inputParser);
 
+
+    /**
+     * Initialize MartServer configuration model engine.
+     */
+    public static void initMart() {
+        ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
+        ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
+    }
 
 }
