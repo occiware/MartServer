@@ -51,6 +51,9 @@ public interface OCCIRequest {
      */
     public void setUsername(final String username);
 
+    public String getUsername();
+
+
     // CRUD on Configuration model.
 
     /**
@@ -145,7 +148,7 @@ public interface OCCIRequest {
      *
      * @throws ParseOCCIException
      */
-    public void validateRequest() throws ParseOCCIException;
+    public void validateRequest();
 
     /**
      * Get the current inputParser, this is built on constructor phase.

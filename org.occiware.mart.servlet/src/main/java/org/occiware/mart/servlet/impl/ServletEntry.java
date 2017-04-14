@@ -1,10 +1,8 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.facade.OCCIRequest;
-import org.occiware.mart.server.facade.OCCIResponse;
+import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
-import org.occiware.mart.servlet.utils.ServletResponseHelper;
 import org.occiware.mart.servlet.utils.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +29,7 @@ public abstract class ServletEntry {
      * @param req http servlet request object.
      * @param path the relative request path. ex: /mycompute/1/
      */
-    public ServletEntry(URI serverURI, HttpServletResponse resp, Map<String, String> headers, HttpServletRequest req, String path) {
+    public ServletEntry(URI serverURI, HttpServletResponse resp, HeaderPojo headers, HttpServletRequest req, String path) {
         this.serverURI = serverURI;
         this.httpResponse = resp;
         this.headers = headers;
@@ -40,12 +38,12 @@ public abstract class ServletEntry {
     }
 
     private HttpServletRequest httpRequest;
-    private Map<String, String> headers;
+    private HeaderPojo headers;
     private HttpServletResponse httpResponse;
     private String path;
 
-    private OCCIServletInputParser occiRequest;
-    private OCCIServletOutputParser occiResponse;
+    protected OCCIServletInputParser occiRequest;
+    protected OCCIServletOutputParser occiResponse;
 
     private String contentType = Constants.MEDIA_TYPE_TEXT_OCCI;
     private String acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
@@ -133,8 +131,8 @@ public abstract class ServletEntry {
 
         // Load the parsers.
         // check content-type header.
-        contentType = headers.get(Constants.HEADER_CONTENT_TYPE);
-        acceptType = headers.get(Constants.HEADER_ACCEPT);
+        contentType = headers.getFirst(Constants.HEADER_CONTENT_TYPE);
+        acceptType = headers.getFirst(Constants.HEADER_ACCEPT); // TODO : add support for uri-list combined with other type rendering.
 
         if (acceptType == null) {
             acceptType = contentType;
@@ -153,7 +151,7 @@ public abstract class ServletEntry {
         // validateAuth().
 
         occiResponse = new OCCIServletOutputParser(acceptType, "anonymous", httpResponse);
-        occiRequest = new OCCIServletInputParser(occiResponse, contentType, "anonymous", httpRequest, headers);
+        occiRequest = new OCCIServletInputParser(occiResponse, contentType, "anonymous", httpRequest, headers, this.getRequestParameters());
 
         // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
         boolean result = ServletUtils.checkClientOCCIVersion(headers);
@@ -175,10 +173,6 @@ public abstract class ServletEntry {
 
             return occiResponse.parseMessage(msg, HttpServletResponse.SC_BAD_REQUEST);
         }
-
-        // TODO : Path parser ==> refactor this object.
-
-
 
         return httpResponse;
     }

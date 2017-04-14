@@ -3,7 +3,7 @@ package org.occiware.mart.servlet.impl;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.facade.AbstractOCCIResponse;
 import org.occiware.mart.server.facade.OCCIResponse;
-import org.occiware.mart.server.parser.text.HeaderPojo;
+import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

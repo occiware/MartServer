@@ -227,7 +227,7 @@ public class Utils {
      * @param attr
      * @return true if provided or false if not provided
      */
-    public static boolean isEntityUUIDProvided(final String id, final Map<String, String> attr) {
+    public static boolean isEntityUUIDProvided(final String id, final Map<String, Object> attr) {
         String[] uuids = id.split("/");
         boolean match = false;
 
@@ -237,7 +237,7 @@ public class Utils {
                 break;
             }
         }
-        String occiCoreId = attr.get("occi.core.id");
+        String occiCoreId = (String) attr.get(Constants.OCCI_CORE_ID);
         if (!match && occiCoreId != null && !occiCoreId.isEmpty()) {
             String[] spls = {"/", ":"};
             for (String spl : spls) {
@@ -265,7 +265,7 @@ public class Utils {
      * @param attr
      * @return the UUID provided may return null if uuid not found.
      */
-    public static String getUUIDFromPath(final String path, final Map<String, String> attr) {
+    public static String getUUIDFromPath(final String path, final Map<String, Object> attr) {
         String[] uuids = path.split("/");
         String uuidToReturn = null;
 
@@ -280,7 +280,7 @@ public class Utils {
         }
 
         // Check with occi.core.id attribute.
-        String occiCoreId = attr.get(Constants.OCCI_CORE_ID);
+        String occiCoreId = (String)attr.get(Constants.OCCI_CORE_ID);
         if (occiCoreId == null) {
             return null;
         }
@@ -297,7 +297,7 @@ public class Utils {
             }
         }
 
-        return uuidToReturn;
+        return null;
     }
 
     /**
@@ -568,29 +568,6 @@ public class Utils {
 
     public static synchronized int getUniqueInt() {
         return uniqueInt++;
-    }
-
-    /**
-     * Entity request is defined by a known path relative to an entity. This
-     * method search for an entity or entities for the path. if entities found
-     * for the same path, this is a collection request and not an entity request
-     * => return false..
-     *
-     * @param path
-     * @param attrs
-     * @return true if the path is an entity request path, false elsewhere.
-     */
-    public static boolean isEntityRequest(String path, Map<String, String> attrs) {
-        if (isEntityUUIDProvided(path, attrs)) {
-            return true;
-        }
-
-        // this path has no uuid provided, must search on all entities path.
-        List<String> entitiesUuid = getEntityUUIDsFromPath(path);
-
-        // This is a collection request or no entities on paths. Other entities are declared on the same path.
-        return entitiesUuid.size() == 1;
-
     }
 
     /**

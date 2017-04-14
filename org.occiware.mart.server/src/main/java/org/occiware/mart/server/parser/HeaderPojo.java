@@ -1,4 +1,4 @@
-package org.occiware.mart.server.parser.text;
+package org.occiware.mart.server.parser;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +38,23 @@ public class HeaderPojo {
             headerMap.put(key, values);
         }
 
+    }
+
+    /**
+     * Get the first value or null if key doesnt exist.
+     * @param key
+     */
+    public String getFirst(final String key) {
+        String val = null;
+        List<String> values = headerMap.get(key);
+        if(values != null && !values.isEmpty()) {
+            val = values.get(0);
+        }
+        return val;
+    }
+
+    public List<String> getValues(final String key) {
+        return headerMap.get(key);
     }
 
 }

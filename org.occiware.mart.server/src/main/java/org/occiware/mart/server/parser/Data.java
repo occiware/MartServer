@@ -19,7 +19,6 @@
 
 package org.occiware.mart.server.parser;
 
-import org.occiware.mart.server.parser.text.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 
 import java.util.*;
@@ -59,6 +58,11 @@ public class Data {
      * Used for text/occi and maybe other protocols.
      */
     private HeaderPojo header;
+
+    /**
+     * If location path query only.
+     */
+    private boolean datasOnlyOnPath = false;
 
     /**
      * Location of a resource/link or a mixin tag.
@@ -196,5 +200,76 @@ public class Data {
 
     public void setHeader(HeaderPojo header) {
         this.header = header;
+    }
+
+    /**
+     * Mixin definition request (linked to PUT and GET interface method).
+     */
+    private boolean mixinTagDefinitionRequest;
+
+    private boolean entityQuery;
+
+    /**
+     * Define if this is a collection query.
+     */
+    private boolean collectionQuery;
+
+    /**
+     * Define if the path is an interface query /-/.
+     */
+    private boolean interfQuery;
+
+    /**
+     * Define if the query is an action query.
+     */
+    private boolean actionInvocationQuery;
+
+
+    public boolean isMixinTagDefinitionRequest() {
+        return mixinTagDefinitionRequest;
+    }
+
+    public void setMixinTagDefinitionRequest(boolean mixinTagDefinitionRequest) {
+        this.mixinTagDefinitionRequest = mixinTagDefinitionRequest;
+    }
+
+    public boolean isEntityQuery() {
+        return entityQuery;
+    }
+
+    public void setEntityQuery(boolean entityQuery) {
+        this.entityQuery = entityQuery;
+    }
+
+    public boolean isCollectionQuery() {
+        return collectionQuery;
+    }
+
+    public void setCollectionQuery(boolean collectionQuery) {
+        this.collectionQuery = collectionQuery;
+    }
+
+    public boolean isInterfQuery() {
+        return interfQuery;
+    }
+
+    public void setInterfQuery(boolean interfQuery) {
+        this.interfQuery = interfQuery;
+    }
+
+    public boolean isActionInvocationQuery() {
+        return actionInvocationQuery;
+    }
+
+    public void setActionInvocationQuery(boolean actionInvocationQuery) {
+        this.actionInvocationQuery = actionInvocationQuery;
+    }
+
+    public boolean isDatasOnlyOnPath() {
+        return datasOnlyOnPath;
+    }
+
+    public void setDatasOnlyOnPath(boolean datasOnlyOnPath) {
+        this.datasOnlyOnPath = datasOnlyOnPath;
     }
 }

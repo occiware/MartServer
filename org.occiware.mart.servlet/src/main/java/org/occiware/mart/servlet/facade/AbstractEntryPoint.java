@@ -237,7 +237,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
 
         List<Entity> entities;
         // Collection on categories. // Like : get on myhost/compute/
-        boolean isCollectionOnCategoryPath = Utils.isCollectionOnCategory(path);
+        boolean isCollectionOnCategoryPath = ServletUtils.isCollectionOnCategory(path);
 
         String categoryFilter = inputParser.getParameter("category");
         String attributeFilter = inputParser.getParameter("attribute");
@@ -252,13 +252,13 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         filter.setAttributeFilter(attributeFilter);
         filter.setValue(attributeValue);
         if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-            filter.setCategoryFilter(Utils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER));
+            filter.setCategoryFilter(ServletUtils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER));
         } else {
             filter.setFilterOnPath(path);
         }
 
         // Case of the mixin tag entities request.
-        boolean isMixinTagRequest = Utils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
+        boolean isMixinTagRequest = ServletUtils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
         if (isMixinTagRequest) {
             LOGGER.info("Mixin tag request... ");
             Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);

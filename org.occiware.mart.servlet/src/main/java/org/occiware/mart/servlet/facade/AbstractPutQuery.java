@@ -20,6 +20,7 @@ package org.occiware.mart.servlet.facade;
 
 import org.occiware.mart.server.parser.Data;
 import org.occiware.mart.server.utils.Utils;
+import org.occiware.mart.servlet.utils.ServletUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
@@ -40,7 +41,7 @@ public abstract class AbstractPutQuery extends AbstractEntryPoint implements IPu
     public Response inputQuery(String path, HttpHeaders headers, HttpServletRequest request) {
         Response response = super.inputQuery(path, headers, request);
 
-        if (response == null && Utils.isUriListContentTypeUsed(headers)) {
+        if (response == null && ServletUtils.isUriListContentTypeUsed(headers)) {
             // We must here return a bad request.
             throw new BadRequestException("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/");
         }

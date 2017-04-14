@@ -155,10 +155,13 @@ public class JsonOcciParser implements IRequestParser {
                     throw new ParseOCCIException("Unknown json input file, please check your file. " + messages);
                 }
             }
+
         } else {
             // We parse here only the path.
             List<Data> datas = occiRequest.getDatas();
-            datas.add(new Data());
+            Data data = new Data();
+            data.setDatasOnlyOnPath(true);
+            datas.add(data);
         }
     }
 

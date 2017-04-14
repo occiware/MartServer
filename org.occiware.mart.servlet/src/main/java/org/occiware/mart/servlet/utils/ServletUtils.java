@@ -22,14 +22,12 @@ import org.apache.commons.io.IOUtils;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
 import java.io.*;
 import java.math.BigInteger;
 import java.net.URI;
@@ -55,9 +53,9 @@ public class ServletUtils {
      * @param headers
      * @return null if no response, not null if failed response.
      */
-    public static boolean checkClientOCCIVersion(Map<String, String> headers) {
+    public static boolean checkClientOCCIVersion(HeaderPojo headers) {
         boolean result = true;
-        String val = headers.get(Constants.HEADER_USER_AGENT);
+        String val = headers.getFirst(Constants.HEADER_USER_AGENT);
         if (val != null) {
 
             if (val.contains("OCCI/") || val.contains("occi/")) {
@@ -83,78 +81,6 @@ public class ServletUtils {
         }
 
         return result;
-    }
-
-    /**
-     * Check if text/uri-list is used.
-     *
-     * @param headers
-     * @return true if this content-type is an uri-list otherwise false.
-     */
-    public static boolean isUriListContentTypeUsed(HttpHeaders headers) {
-        boolean result = false;
-        // Find media type produce as Content-Type: text/uri-list.
-        List<String> vals = ServletUtils.getFromValueFromHeaders(headers, Constants.HEADER_CONTENT_TYPE);
-
-        for (String val : vals) {
-            if (val.toLowerCase().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
-                result = true;
-                break;
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Return the Content-type from http header.
-     *
-     * @param headers
-     * @return
-     */
-    public static String findContentTypeFromHeader(HttpHeaders headers) {
-        List<String> vals = ServletUtils.getFromValueFromHeaders(headers, Constants.HEADER_CONTENT_TYPE);
-        String contentType = null;
-        for (String val : vals) {
-            if (val != null && !val.isEmpty()) {
-                contentType = val;
-                break;
-            }
-        }
-        return contentType;
-    }
-
-    /**
-     * Return the accept media type from header.
-     *
-     * @param headers
-     * @return
-     */
-    public static String findAcceptTypeFromHeader(HttpHeaders headers) {
-        List<String> vals = ServletUtils.getFromValueFromHeaders(headers, Constants.HEADER_ACCEPT);
-        String contentType = null;
-        for (String val : vals) {
-            if (val != null && !val.isEmpty()) {
-                contentType = val;
-                break;
-            }
-        }
-        return contentType;
-    }
-
-    /**
-     * Get a list of values for a header key.
-     *
-     * @param headers
-     * @param key
-     * @return
-     */
-    public static List<String> getFromValueFromHeaders(HttpHeaders headers, String key) {
-        MultivaluedMap<String, String> headersVal = headers.getRequestHeaders();
-        List<String> vals = headersVal.get(key);
-        if (vals == null) {
-            vals = new ArrayList<>();
-        }
-        return vals;
     }
 
     public static String createUUID() {
@@ -340,7 +266,7 @@ public class ServletUtils {
      * @param attr
      * @return true if provided or false if not provided
      */
-    public static boolean isEntityUUIDProvided(final String id, final Map<String, String> attr) {
+    public static boolean isEntityUUIDProvided(final String id, final Map<String, Object> attr) {
         String[] uuids = id.split("/");
         boolean match = false;
 
@@ -350,7 +276,7 @@ public class ServletUtils {
                 break;
             }
         }
-        String occiCoreId = attr.get("occi.core.id");
+        String occiCoreId = (String) attr.get("occi.core.id");
         if (!match && occiCoreId != null && !occiCoreId.isEmpty()) {
             String[] spls = {"/", ":"};
             for (String spl : spls) {
@@ -378,7 +304,7 @@ public class ServletUtils {
      * @param attr
      * @return the UUID provided may return null if uuid not found.
      */
-    public static String getUUIDFromPath(final String path, final Map<String, String> attr) {
+    public static String getUUIDFromPath(final String path, final Map<String, Object> attr) {
         String[] uuids = path.split("/");
         String uuidToReturn = null;
 
@@ -393,7 +319,7 @@ public class ServletUtils {
         }
 
         // Check with occi.core.id attribute.
-        String occiCoreId = attr.get(Constants.OCCI_CORE_ID);
+        String occiCoreId = (String)attr.get(Constants.OCCI_CORE_ID);
         if (occiCoreId == null) {
             return null;
         }
@@ -410,7 +336,7 @@ public class ServletUtils {
             }
         }
 
-        return uuidToReturn;
+        return null;
     }
 
     /**
@@ -684,29 +610,6 @@ public class ServletUtils {
     }
 
     /**
-     * Entity request is defined by a known path relative to an entity. This
-     * method search for an entity or entities for the path. if entities found
-     * for the same path, this is a collection request and not an entity request
-     * => return false..
-     *
-     * @param path
-     * @param attrs
-     * @return true if the path is an entity request path, false elsewhere.
-     */
-    public static boolean isEntityRequest(String path, Map<String, String> attrs) {
-        if (isEntityUUIDProvided(path, attrs)) {
-            return true;
-        }
-
-        // this path has no uuid provided, must search on all entities path.
-        List<String> entitiesUuid = getEntityUUIDsFromPath(path);
-
-        // This is a collection request or no entities on paths. Other entities are declared on the same path.
-        return entitiesUuid.size() == 1;
-
-    }
-
-    /**
      * Get all entities registered on the same path.
      *
      * @param path
@@ -911,18 +814,24 @@ public class ServletUtils {
      * @param request
      * @return
      */
-    public static Map<String, String> getRequestHeaders(HttpServletRequest request) {
+    public static HeaderPojo getRequestHeaders(HttpServletRequest request) {
 
-        Map<String, String> map = new HashMap<>();
+        HeaderPojo headerPojo;
+        Map<String, List<String>> map = new LinkedHashMap<>();
 
         Enumeration headerNames = request.getHeaderNames();
+        List<String> elements = new LinkedList<>();
         while (headerNames.hasMoreElements()) {
             String key = (String) headerNames.nextElement();
-            String value = request.getHeader(key);
-            map.put(key, value);
+            Enumeration<String> values = request.getHeaders(key);
+            while(values.hasMoreElements()) {
+                elements.add(values.nextElement());
+            }
+            map.put(key, elements);
         }
+        headerPojo = new HeaderPojo(map);
 
-        return map;
+        return headerPojo;
     }
 
     public static URI getServerURI(HttpServletRequest req) {

@@ -259,7 +259,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
     public abstract void parseInput() throws ParseOCCIException;
 
     @Override
-    public abstract void validateRequest() throws ParseOCCIException;
+    public abstract void validateRequest();
 
 
     private IRequestParser buildParser() {
@@ -304,4 +304,9 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
         this.inputParser = inputParser;
     }
 
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
 }
