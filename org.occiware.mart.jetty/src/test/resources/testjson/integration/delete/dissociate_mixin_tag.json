@@ -1,0 +1,7 @@
+{
+  "id": "urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0",
+  "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+  "mixins": [
+    "http://occiware.org/occi/tags#my_mixin2"
+  ]
+}

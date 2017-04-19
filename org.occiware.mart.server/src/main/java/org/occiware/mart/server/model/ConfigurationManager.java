@@ -76,11 +76,9 @@ public class ConfigurationManager {
      */
     private static Map<String, Integer> versionObjectMap = new ConcurrentHashMap<>();
 
-    static {
 
-        // Registering extension found in classpath.
+    public static void initMart() {
         MART.initMART();
-        // init one configuration and extension model...
         getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
         useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
     }
@@ -514,7 +512,9 @@ public class ConfigurationManager {
         }
         entities.addAll(findAllEntitiesOwner(owner));
         // TODO : Order list by entityId, if entities not empty.
-        entities = filterEntities(filter, entities, owner);
+        if (filter != null) {
+            entities = filterEntities(filter, entities, owner);
+        }
         return entities;
     }
 
@@ -790,7 +790,7 @@ public class ConfigurationManager {
 
         String categoryFilter = filter.getCategoryFilter();
         if (categoryFilter != null && !categoryFilter.isEmpty() && !Utils.checkIfCategorySchemeTerm(categoryFilter, user)) {
-            categoryFilter = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, ConfigurationManager.DEFAULT_OWNER);
+            categoryFilter = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, user);
         }
 
         String filterOnPath = filter.getFilterOnPath();
@@ -1406,7 +1406,7 @@ public class ConfigurationManager {
      * @param user
      * @return a String, scheme + term or null if not found on configuration.
      */
-    private static String findCategorySchemeTermFromTerm(String categoryTerm, String user) {
+    public static String findCategorySchemeTermFromTerm(String categoryTerm, String user) {
         List<Kind> kinds = getAllConfigurationKind(user);
         List<Mixin> mixins = getAllConfigurationMixins(user);
         String term;
@@ -1462,7 +1462,7 @@ public class ConfigurationManager {
      * @return an entity from a relative path, if entity doesnt exist on path,
      * return null.
      */
-    public static Entity findEntityFromLocation(final String path) {
+    public static Entity findEntityFromLocation(final String path, final String username) {
         Entity entity = null;
         String uuid = null;
         String pathTmp;
@@ -1476,7 +1476,7 @@ public class ConfigurationManager {
                 }
             }
             if (uuid != null) {
-                entity = findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
+                entity = findEntity(username, uuid);
             }
 
         }

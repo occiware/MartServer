@@ -19,13 +19,11 @@
 package org.occiware.mart.jetty;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.LoggerConfig;
 import org.occiware.mart.server.utils.Utils;
+import org.occiware.mart.servlet.MainServlet;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -78,13 +76,28 @@ public class MartServer {
         }
         readFileConfig();
 
-        ResourceConfig config = new ResourceConfig();
-        config.packages("org.occiware.mart.server.servlet");
-        ServletHolder servlet = new ServletHolder(new ServletContainer(config));
+        // The ServletHandler is a dead simple way to create a context handler
+        // that is backed by an instance of a Servlet.
+        // This handler then needs to be registered with the Server object.
+        ServletHandler handler = new ServletHandler();
+
+
+        // ResourceConfig config = new ResourceConfig();
+        // config.packages("org.occiware.mart.server.servlet");
+        // ServletHolder servlet = new ServletHolder(new ServletContainer(config));
 
         Server server = new Server(port);
-        ServletContextHandler context = new ServletContextHandler(server, "/*");
-        context.addServlet(servlet, "/*");
+        server.setHandler(handler);
+
+        // ServletContextHandler context = new ServletContextHandler(server, "/*");
+        // context.addServlet(servlet, "/*");
+        // Passing in the class for the Servlet allows jetty to instantiate an
+        // instance of that Servlet and mount it on a given context path.
+
+        // IMPORTANT:
+        // This is a raw Servlet, not a Servlet that has been configured
+        // through a web.xml @WebServlet annotation, or anything similar.
+        handler.addServletWithMapping(MainServlet.class, "/*");
 
         // ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
         // ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);

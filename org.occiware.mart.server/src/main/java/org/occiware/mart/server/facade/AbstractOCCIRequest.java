@@ -19,6 +19,7 @@
 package org.occiware.mart.server.facade;
 
 import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.parser.Data;
@@ -28,6 +29,7 @@ import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.parser.text.TextOcciParser;
 import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
@@ -144,7 +146,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
             try {
                 if (data.getEntityUUID() == null || data.getEntityUUID().trim().isEmpty()) {
                     // Try to find entity by its location
-                    entity = ConfigurationManager.findEntityFromLocation(location);
+                    entity = ConfigurationManager.findEntityFromLocation(location, username);
                 } else {
                     // Try to find entity by its id.
                     entity = ConfigurationManager.findEntity(username, location);
@@ -180,10 +182,55 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
     }
 
     @Override
-    public OCCIResponse findEntities() {
-        return null;
+    public OCCIResponse findEntities(CollectionFilter filter) {
+        try {
+            List<Entity> entities = ConfigurationManager.findAllEntities(username, filter);
+
+            for (Entity entity : entities) {
+                // Refresh object.
+                entity.occiRetrieve();
+
+                // Build datas output.
+                Data outputData = new Data();
+                Map<String, Object> attrs = Utils.convertEntityAttributesToMap(entity);
+                List<String> mixins = Utils.convertEntityMixinsToList(entity);
+                String kind = entity.getKind().getScheme() + entity.getKind().getTerm();
+                outputData.setKind(kind);
+                outputData.setMixins(mixins);
+                outputData.setAttrs(attrs);
+                occiResponse.getDatas().add(outputData);
+            }
+
+            IRequestParser outputParser = occiResponse.getOutputParser();
+            if (entities.isEmpty() && outputParser != null) {
+                outputParser.renderOutputEntities(entities);
+            }
+        } catch (ParseOCCIException ex) {
+            occiResponse.setExceptionMessage(ex.getMessage());
+            occiResponse.setExceptionThrown(ex);
+        }
+        return this.occiResponse;
     }
 
+    @Override
+    public boolean isCategoryTerm(final String categoryTerm) {
+        return this.getCategorySchemeTerm(categoryTerm) != null;
+    }
+
+    @Override
+    public String getCategorySchemeTerm(final String categoryTerm) {
+        return ConfigurationManager.findCategorySchemeTermFromTerm(categoryTerm, username);
+    }
+
+    @Override
+    public String getMixinTagSchemeTermFromLocation(String location) {
+        String result = null;
+        Mixin mixin = ConfigurationManager.getUserMixinFromLocation(location, username);
+        if (mixin != null) {
+            result = mixin.getScheme() + mixin.getTerm();
+        }
+        return result;
+    }
 
     @Override
     public OCCIResponse getInterface(final String categoryFilter) {

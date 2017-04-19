@@ -272,4 +272,41 @@ public class Data {
     public void setDatasOnlyOnPath(boolean datasOnlyOnPath) {
         this.datasOnlyOnPath = datasOnlyOnPath;
     }
+
+    public void printDataToOutput() {
+
+        System.out.println("Is for interface query : " + this.interfQuery);
+        System.out.println("Is for Entity query : " + this.entityQuery);
+        System.out.println("Is for Collection query : " + this.collectionQuery);
+        System.out.println("Is for Mixin tag query : " + this.mixinTagDefinitionRequest);
+        System.out.println("Is for Action invocation : " + this.actionInvocationQuery);
+        System.out.println("Is this data has attributes : " + this.attrs.isEmpty());
+        System.out.println("Is this data query on a path only : " + this.datasOnlyOnPath);
+
+        // Print values.
+        System.out.println("**************************");
+        if (this.entityQuery) {
+            System.out.println("Entity id: " + this.getEntityUUID());
+            System.out.println("Kind : " + this.getKind());
+            System.out.println("Location: " + this.getLocation());
+            if (this.getMixins() != null && !this.getMixins().isEmpty()) {
+                for (String mixinId : mixins) {
+                    System.out.println("Mixin : " + mixinId);
+                }
+            }
+            if (this.getAttrs() != null && !this.getAttrs().isEmpty()) {
+                for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+                    String value = (String) entry.getValue();
+                    System.out.println("Attribute : " + entry.getKey() + " --> " + value);
+                }
+            }
+
+        }
+        if (this.collectionQuery) {
+            System.out.println("Collection query...");
+        }
+
+
+
+    }
 }

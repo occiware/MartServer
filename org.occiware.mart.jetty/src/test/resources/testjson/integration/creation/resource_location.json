@@ -1,0 +1,18 @@
+{
+  "resources": [
+    {
+      "id": "urn:uuid:f89486b7-0632-482d-a184-a9195733ddd9",
+      "title": "test with location attribute",
+      "summary": "My compute",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+      "location": "/testlocation/f89486b7-0632-482d-a184-a9195733ddd9",
+      "attributes": {
+        "occi.compute.speed": 1.0,
+        "occi.compute.memory": 1.5,
+        "occi.compute.cores": 1,
+        "occi.compute.architecture": "x64",
+        "occi.compute.state": "active"
+      }
+    }
+  ]
+}

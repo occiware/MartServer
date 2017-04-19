@@ -33,6 +33,8 @@ public class Constants {
     public static final int DEFAULT_OPERATOR_VAL = 0; // operator equal by default if 1 : like mode.
     public static final String OPERATOR_KEY = "operator";
     public static final String CATEGORY_KEY = "category";
+    public static final String ATTRIBUTE_KEY = "attribute";
+    public static final String VALUE_KEY = "value";
 
     public static final String PATH_SEPARATOR = "/";
     public static final String CRLF = "\r\n";

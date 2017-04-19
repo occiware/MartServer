@@ -18,10 +18,12 @@
  */
 package org.occiware.mart.server.facade;
 
+import org.occiware.mart.MART;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.Data;
 import org.occiware.mart.server.parser.IRequestParser;
+import org.occiware.mart.server.utils.CollectionFilter;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -95,10 +97,10 @@ public interface OCCIRequest {
 
     /**
      * For entity collections query.
-     *
+     * @param filter A filtering collection object parameter, this is no mandatory, this can be null.
      * @return
      */
-    public OCCIResponse findEntities();
+    public OCCIResponse findEntities(final CollectionFilter filter);
 
 
     /**
@@ -167,8 +169,10 @@ public interface OCCIRequest {
      * Initialize MartServer configuration model engine.
      */
     public static void initMart() {
-        ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
-        ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
+        ConfigurationManager.initMart();
     }
 
+    public boolean isCategoryTerm(final String categoryTerm);
+    public String getCategorySchemeTerm(final String categoryTerm);
+    public String getMixinTagSchemeTermFromLocation(final String location);
 }

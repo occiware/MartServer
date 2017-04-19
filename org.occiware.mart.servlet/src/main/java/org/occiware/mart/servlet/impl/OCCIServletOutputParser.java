@@ -147,4 +147,12 @@ public class OCCIServletOutputParser extends AbstractOCCIResponse implements OCC
 
         return httpResponse;
     }
+
+    public HttpServletResponse getHttpResponse() {
+        return httpResponse;
+    }
+
+    public void setHttpResponse(HttpServletResponse httpResponse) {
+        this.httpResponse = httpResponse;
+    }
 }

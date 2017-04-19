@@ -16,20 +16,22 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.tests;
+package org.occiware.mart.server.parser;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Assert;
 import org.junit.Test;
+import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.facade.DummyRequest;
+import org.occiware.mart.server.facade.DummyResponse;
+import org.occiware.mart.server.facade.OCCIRequest;
+import org.occiware.mart.server.facade.OCCIResponse;
 import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.parser.json.render.ActionJson;
 import org.occiware.mart.server.parser.json.render.OcciMainJson;
-import org.occiware.mart.server.parser.Data;
-import org.occiware.mart.server.servlet.exception.AttributeParseException;
-import org.occiware.mart.server.servlet.exception.CategoryParseException;
+import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
-
-import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,10 +45,9 @@ import static org.junit.Assert.*;
 /**
  * @author Christophe Gourdin
  */
-public class JsonTest {
+public class JsonParserTest {
 
 
-    // TODO : Activate unit tests on travis deployment only build.
     @Test
     public void testJsonInputObject() {
         // load the input stream resources test json file.
@@ -79,15 +80,9 @@ public class JsonTest {
             ActionJson actionInvoc = mapper.readValue(in, ActionJson.class);
             assertNotNull(actionInvoc);
 
-            // Check if method parseMainInput works.
-            JsonOcciParser occiParser = new JsonOcciParser();
-            occiParser.parseMainInput(myRes3);
-            List<Data> datas = occiParser.getInputDatas();
-            assertNotNull(datas);
-            assertFalse(datas.isEmpty());
 
-        } catch (CategoryParseException | AttributeParseException | IOException ex) {
-            Logger.getLogger(JsonTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(JsonParserTest.class.getName()).log(Level.SEVERE, null, ex);
             throw new RuntimeException(ex);
 
         } finally {
@@ -95,6 +90,44 @@ public class JsonTest {
         }
 
     }
+    @Test
+    public void testJsonInputParser() {
+        File resourcesFileThree = getJsonResourceInput("/testjson/integration/creation/resource3.json");
+        try {
+            OCCIResponse response = new DummyResponse(Constants.MEDIA_TYPE_JSON, "christophe");
+            DummyRequest request = new DummyRequest(response, Constants.MEDIA_TYPE_JSON, "christophe");
+
+            InputStream in = new FileInputStream(resourcesFileThree);
+            String content;
+            try {
+                content = Utils.convertInputStreamToString(in);
+                // for Object occiRequest to be fully completed.
+                request.getInputParser().parseInputToDatas(content);
+
+            } catch (IOException ex) {
+                throw new ParseOCCIException("The server cant read the json file input --> " + ex.getMessage());
+            } finally {
+                Utils.closeQuietly(in);
+            }
+            List<Data> datas = request.getDatas();
+            assertNotNull(datas);
+            assertFalse(datas.isEmpty());
+
+            // Check if datas are correct.
+            for (Data data : datas) {
+                System.out.println("Data : ");
+                assertNotNull(data.getEntityUUID());
+
+            }
+
+
+        } catch (IOException | ParseOCCIException ex) {
+            Logger.getLogger(JsonParserTest.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
+        }
+
+    }
+
 
     private File getJsonResourceInput(String path) {
         File inputJsonFile = new File(this.getClass().getResource(path).getFile());

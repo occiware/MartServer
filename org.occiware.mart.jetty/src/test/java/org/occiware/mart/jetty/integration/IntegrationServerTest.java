@@ -16,25 +16,26 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.tests;
+package org.occiware.mart.jetty.integration;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.utils.Constants;
+import org.occiware.mart.servlet.MainServlet;
 
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.Response;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.nio.charset.Charset;
 
@@ -45,7 +46,7 @@ import static org.junit.Assert.*;
  *
  * @author christophe
  */
-public class ServerTest {
+public class IntegrationServerTest {
 
     private static Server server;
     private static HttpClient httpClient;
@@ -54,16 +55,28 @@ public class ServerTest {
     @BeforeClass
     public static void startJetty() throws Exception {
 
-        ResourceConfig config = new ResourceConfig();
-        config.packages("org.occiware.mart.server.servlet");
-        ServletHolder servlet = new ServletHolder(new ServletContainer(config));
+        // The ServletHandler is a dead simple way to create a context handler
+        // that is backed by an instance of a Servlet.
+        // This handler then needs to be registered with the Server object.
+        ServletHandler handler = new ServletHandler();
 
-        server = new Server(9090);
-        ServletContextHandler context = new ServletContextHandler(server, "/*");
-        context.addServlet(servlet, "/*");
 
-        // ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
-        // ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
+        // ResourceConfig config = new ResourceConfig();
+        // config.packages("org.occiware.mart.server.servlet");
+        // ServletHolder servlet = new ServletHolder(new ServletContainer(config));
+
+        Server server = new Server(9090);
+        server.setHandler(handler);
+
+        // ServletContextHandler context = new ServletContextHandler(server, "/*");
+        // context.addServlet(servlet, "/*");
+        // Passing in the class for the Servlet allows jetty to instantiate an
+        // instance of that Servlet and mount it on a given context path.
+
+        // IMPORTANT:
+        // This is a raw Servlet, not a Servlet that has been configured
+        // through a web.xml @WebServlet annotation, or anything similar.
+        handler.addServletWithMapping(MainServlet.class, "/*");
         server.start();
 
         // manage jetty http client.
@@ -125,7 +138,7 @@ public class ServerTest {
         int statusResponse = response.getStatus();
 
         // Must return "created" status. 
-        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_CREATED);
 
         // Check Create a bad resource (with a kind definition does not exist on extension / configuration).
         File badResource = getResourceInputFile("/testjson/integration/creation/bad_resource.json");
@@ -136,7 +149,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertTrue(statusResponse ==HttpServletResponse.SC_BAD_REQUEST);
         String result = response.getContentAsString();
         System.out.println(result);
 
@@ -152,7 +165,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_CREATED);
 
         File resource3 = getResourceInputFile("/testjson/integration/creation/resource3.json");
         response = httpClient.newRequest("localhost", 9090)
@@ -162,7 +175,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_CREATED);
 
         // Now test a resource single load without "resources" key.
         File resource4 = getResourceInputFile("/testjson/integration/creation/resourceonly.json");
@@ -173,7 +186,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_CREATED);
 
         File resource5 = getResourceInputFile("/testjson/integration/creation/resource_location.json");
         response = httpClient.newRequest("localhost", 9090)
@@ -183,7 +196,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_CREATED);
 
         File resource6 = getResourceInputFile("/testjson/integration/creation/resource_without_uuid.json");
         response = httpClient.newRequest("http://localhost:9090/test/")
@@ -193,7 +206,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.CREATED.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_CREATED);
 
 
     }
@@ -207,10 +220,10 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         int statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         String result = response.getContentAsString();
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("\"term\" : \"network\","));
+        Assert.assertFalse(result.isEmpty());
+        Assert.assertTrue(result.contains("\"term\" : \"network\","));
 
         System.out.println("GET Request on resource location : /testlocation/");
         // See file: resource_location.json.
@@ -219,9 +232,9 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertFalse(result.isEmpty());
+        Assert.assertFalse(result.isEmpty());
         System.out.println(result);
 
         System.out.println("GET Request on resource location : /test/");
@@ -231,10 +244,10 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains(Constants.URN_UUID_PREFIX));
+        Assert.assertFalse(result.isEmpty());
+        Assert.assertTrue(result.contains(Constants.URN_UUID_PREFIX));
         System.out.println(result);
 
         // Search on an invalid location path.
@@ -245,10 +258,10 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode()); // Warning, must be not found on other parsers than json.
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK); // Warning, must be not found on other parsers than json.
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
+        Assert.assertNotNull(result);
+        Assert.assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
         System.out.println(result);
 
         // Search on a relative path location with included key.
@@ -259,7 +272,7 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -273,7 +286,7 @@ public class ServerTest {
         statusResponse = response.getStatus();
         result = response.getContentAsString();
         System.out.println(result);
-        assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_NOT_FOUND);
 
 
         // Search on compute kind.
@@ -283,11 +296,11 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
 
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
+        Assert.assertNotNull(result);
+        Assert.assertFalse(result.isEmpty());
         System.out.println(result);
 
         // Test network kind.
@@ -297,10 +310,10 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
+        Assert.assertNotNull(result);
+        Assert.assertFalse(result.isEmpty());
         System.out.println(result);
 
         // Test network interface link.
@@ -310,10 +323,10 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
+        Assert.assertNotNull(result);
+        Assert.assertFalse(result.isEmpty());
         System.out.println(result);
 
         System.out.println("GET Request on mixin tag my_mixin2 kind... http://localhost:9090/my_mixin2/");
@@ -322,11 +335,11 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("f88486b7-0632-482d-a184-a9195733ddd0"));
+        Assert.assertNotNull(result);
+        Assert.assertFalse(result.isEmpty());
+        Assert.assertTrue(result.contains("f88486b7-0632-482d-a184-a9195733ddd0"));
         System.out.println(result);
 
         System.out.println("GET Request on mixin tag location ... http://localhost:9090/mixins/my_mixin2/");
@@ -335,11 +348,11 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("f88486b7-0632-482d-a184-a9195733ddd0"));
+        Assert.assertNotNull(result);
+        Assert.assertFalse(result.isEmpty());
+        Assert.assertTrue(result.contains("f88486b7-0632-482d-a184-a9195733ddd0"));
         System.out.println(result);
     }
 
@@ -356,7 +369,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         int statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
 
         // Check GET :
         System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
@@ -366,11 +379,11 @@ public class ServerTest {
                 .send();
         statusResponse = response.getStatus();
 
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         String result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
+        Assert.assertNotNull(result);
+        Assert.assertFalse(result.isEmpty());
+        Assert.assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
         System.out.println(result);
 
         // associate a mixin tag to a resource.
@@ -382,7 +395,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
 
         System.out.println("GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
         response = httpClient.newRequest("http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0")
@@ -391,11 +404,11 @@ public class ServerTest {
                 .send();
         statusResponse = response.getStatus();
 
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("\"http://occiware.org/occi/tags#my_mixin2\""));
+        Assert.assertNotNull(result);
+        Assert.assertFalse(result.isEmpty());
+        Assert.assertTrue(result.contains("\"http://occiware.org/occi/tags#my_mixin2\""));
         System.out.println(result);
 
 
@@ -410,7 +423,7 @@ public class ServerTest {
                 .send();
         statusResponse = response.getStatus();
         // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
-        assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -425,7 +438,7 @@ public class ServerTest {
                 .send();
         statusResponse = response.getStatus();
         // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
-        assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -441,7 +454,7 @@ public class ServerTest {
         statusResponse = response.getStatus();
 
         // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
-        assertTrue(statusResponse == Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -457,7 +470,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_BAD_REQUEST);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -472,7 +485,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_BAD_REQUEST);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -489,7 +502,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
 
         System.out.println("GET Request http://localhost:9090/compute/");
         response = httpClient.newRequest("http://localhost:9090/compute/")
@@ -497,7 +510,7 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -511,7 +524,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -521,7 +534,7 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -531,7 +544,7 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -544,7 +557,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -554,9 +567,9 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertTrue(result.contains("public"));
+        Assert.assertTrue(result.contains("public"));
         System.out.println(result);
 
 
@@ -572,7 +585,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
     }
@@ -589,7 +602,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         int statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         String result = response.getContentAsString();
         System.out.println(result);
 
@@ -600,9 +613,9 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertFalse(result.contains("http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"));
+        Assert.assertFalse(result.contains("http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"));
         System.out.println(result);
 
 
@@ -617,7 +630,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -627,9 +640,9 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin2"));
+        Assert.assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin2"));
         System.out.println(result);
 
 
@@ -643,7 +656,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -653,9 +666,9 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.NO_CONTENT.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin"));
+        Assert.assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin"));
         System.out.println(result);
 
 
@@ -669,7 +682,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -679,9 +692,9 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.NO_CONTENT.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_NO_CONTENT);
         result = response.getContentAsString();
-        assertFalse(result.contains("my_mixin2"));
+        Assert.assertFalse(result.contains("my_mixin2"));
         System.out.println(result);
 
 
@@ -692,7 +705,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         System.out.println(result);
 
         System.out.println("GET Request http://localhost:9090/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8");
@@ -701,7 +714,7 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.NOT_FOUND.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_NOT_FOUND);
         result = response.getContentAsString();
         System.out.println(result);
 
@@ -713,7 +726,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         System.out.println(result);
 
         System.out.println("GET Request http://localhost:9090/testlocation/");
@@ -722,11 +735,11 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
 
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
+        Assert.assertNotNull(result);
+        Assert.assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
         System.out.println(result);
 
 
@@ -737,7 +750,7 @@ public class ServerTest {
                 .agent("martclient")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         System.out.println(result);
 
         System.out.println("GET Request http://localhost:9090/compute/");
@@ -746,10 +759,10 @@ public class ServerTest {
                 .accept("application/json")
                 .send();
         statusResponse = response.getStatus();
-        assertTrue(statusResponse == Response.Status.OK.getStatusCode());
+        Assert.assertTrue(statusResponse == HttpServletResponse.SC_OK);
         result = response.getContentAsString();
-        assertNotNull(result);
-        assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
+        Assert.assertNotNull(result);
+        Assert.assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
         System.out.println(result);
 
     }

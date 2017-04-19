@@ -1,7 +1,9 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.HeaderPojo;
+import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.servlet.utils.ServletUtils;
 import org.slf4j.Logger;
@@ -177,6 +179,98 @@ public abstract class ServletEntry {
         return httpResponse;
     }
 
+    /**
+     * Build a collection filter.
+     * @return Must never return null.
+     */
+    public CollectionFilter buildCollectionFilter() {
+        String pageTmp = getRequestParameters().get(Constants.CURRENT_PAGE_KEY);
+        String itemsNumber = getRequestParameters().get(Constants.NUMBER_ITEMS_PER_PAGE_KEY);
+        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
+        int page = Constants.DEFAULT_CURRENT_PAGE;
+        if (pageTmp != null && !pageTmp.isEmpty()) {
+            // Set the value from request only if this is a number.
+            try {
+                items = Integer.valueOf(itemsNumber);
+            } catch (NumberFormatException ex) {
+                // Cant parse the number
+                LOGGER.error("The parameter \"number\" is not set correctly, please check the parameter, this must be a number.");
+                LOGGER.error("Default to " + items);
+            }
+            try {
+                page = Integer.valueOf(pageTmp);
+            } catch (NumberFormatException ex) {
+                LOGGER.error("The parameter \"page\" is not set correctly, please check the parameter, this must be a number.");
+                LOGGER.error("Default to " + page);
+            }
+        }
+        String operatorTmp = getRequestParameters().get(Constants.OPERATOR_KEY);
+        if (operatorTmp == null) {
+            operatorTmp = "0";
+        }
+        int operator = 0;
+        try {
+            operator = Integer.valueOf(operatorTmp);
+        } catch (NumberFormatException ex) {
+        }
+        String categoryFilter = getRequestParameters().get(Constants.CATEGORY_KEY);
+        String attributeFilter = getRequestParameters().get(Constants.ATTRIBUTE_KEY);
+        String attributeValue = getRequestParameters().get(Constants.VALUE_KEY);
+        CollectionFilter filter = new CollectionFilter();
+        filter.setOperator(operator);
+        filter.setNumberOfItemsPerPage(items);
+        filter.setCurrentPage(page);
+        filter.setCategoryFilter(categoryFilter);
+        filter.setAttributeFilter(attributeFilter);
+        filter.setValue(attributeValue);
+
+        // Collection on categories. // Like : get on myhost/compute/
+        boolean isCollectionOnCategoryPath = false;
+
+        // Remove starting slash and ending slash from path.
+        String pathTmp = path;
+        if (pathTmp.startsWith("/")) {
+            pathTmp = pathTmp.substring(1);
+        }
+        if (pathTmp.endsWith("/")) {
+            pathTmp = pathTmp.substring(0, pathTmp.length() - 1);
+        }
+        // Split values and get last word.
+        String categoryTermPath;
+        String categorySchemeTermFilter = null;
+        String[] words = pathTmp.split("/");
+        if (words.length >= 1) {
+            categoryTermPath = words[words.length - 1];
+            if (categoryTermPath != null && !categoryTermPath.trim().isEmpty()) {
+                // Check if this is really a category term.
+                categorySchemeTermFilter = occiRequest.getCategorySchemeTerm(categoryTermPath);
+                isCollectionOnCategoryPath = categorySchemeTermFilter != null;
+            }
+        }
+        if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
+            filter.setCategoryFilter(categorySchemeTermFilter);
+        } else {
+            filter.setFilterOnPath(path);
+        }
+
+        // Case of the mixin tag entities request.
+        String mixinTagSchemeTerm = occiRequest.getMixinTagSchemeTermFromLocation(path);
+        if (mixinTagSchemeTerm != null) {
+            if (categoryFilter == null) {
+                filter.setCategoryFilter(mixinTagSchemeTerm);
+                filter.setFilterOnPath(null);
+            }
+        }
+
+        return filter;
+    }
 
 
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
 }
