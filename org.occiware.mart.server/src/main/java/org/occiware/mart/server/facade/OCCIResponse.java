@@ -18,7 +18,7 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 
@@ -36,14 +36,14 @@ public interface OCCIResponse {
     public void setContentType(final String contentType);
 
 
-    public List<Data> getDatas();
+    public List<ContentData> getContentDatas();
 
     /**
      * For collections management.
      *
-     * @param datas
+     * @param contentDatas
      */
-    public void setDatas(final List<Data> datas);
+    public void setContentDatas(final List<ContentData> contentDatas);
 
     public QueryInterfaceData getQueryInterfaceData();
 

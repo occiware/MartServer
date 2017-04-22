@@ -20,7 +20,8 @@ package org.occiware.mart.servlet.impl;
 
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.exception.ConfigurationException;
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.utils.Constants;
@@ -62,13 +63,13 @@ public class GetQuery extends AbstractGetQuery {
             return response;
         }
 
-        List<Data> datas = inputParser.getDatas();
-        Data data = null;
-        if (!datas.isEmpty()) {
+        List<ContentData> contentDatas = inputParser.getDatas();
+        ContentData contentData = null;
+        if (!contentDatas.isEmpty()) {
             // Get only the first occurence. The others are ignored.
-            data = datas.get(0);
+            contentData = contentDatas.get(0);
         }
-        if (data == null) {
+        if (contentData == null) {
             try {
                 response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
                 return response;
@@ -77,7 +78,7 @@ public class GetQuery extends AbstractGetQuery {
             }
         }
 
-        PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
+        PathParser pathParser = new PathParser(contentData, path, inputParser.getRequestPameters());
 
         String location = pathParser.getLocation();
         if (location == null || location.trim().isEmpty()) {
@@ -103,10 +104,10 @@ public class GetQuery extends AbstractGetQuery {
         }
 
         Entity entity;
-        String entityId = data.getEntityUUID();
-        Map<String, String> attrs = data.getAttrs();
+        String entityId = contentData.getEntityUUID();
+        Map<String, String> attrs = contentData.getAttrs();
         if (entityId == null) {
-            entityId = Utils.getUUIDFromPath(location, attrs);
+            entityId = EntityManager.getUUIDFromPath(location, attrs);
         }
 
 
@@ -116,10 +117,10 @@ public class GetQuery extends AbstractGetQuery {
         if (pathParser.isEntityQuery()) {
 
             if (entityId == null) {
-                entity = ConfigurationManager.findEntityFromLocation(location);
+                entity = EntityManager.findEntityFromLocation(location);
 
             } else {
-                entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+                entity = EntityManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
                 if (entity == null) {
                     try {
                         response = outputParser.parseResponse("resource " + path + " not found", Response.Status.NOT_FOUND);
@@ -131,7 +132,7 @@ public class GetQuery extends AbstractGetQuery {
 
                 String locationTmp;
                 try {
-                    locationTmp = ConfigurationManager.getLocation(entityId);
+                    locationTmp = EntityManager.getLocation(entityId);
                     locationTmp = locationTmp.replace(entityId, "");
                 } catch (ConfigurationException ex) {
                     try {
@@ -145,7 +146,7 @@ public class GetQuery extends AbstractGetQuery {
                 String locationCompare = location.replace(entityId, "");
                 locationCompare = Utils.getPathWithoutPrefixSuffixSlash(locationCompare);
 
-                if (!locationCompare.equals(locationTmp) && !ConfigurationManager.isCategoryReferencedOnEntity(categoryId, entity)) {
+                if (!locationCompare.equals(locationTmp) && !EntityManager.isCategoryReferencedOnEntity(categoryId, entity)) {
                     try {
                         response = outputParser.parseResponse("resource on " + path + " not found, entity exist but it is on another location : " + locationTmp, Response.Status.NOT_FOUND);
                         return response;
@@ -160,7 +161,7 @@ public class GetQuery extends AbstractGetQuery {
 
                 if (getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
                     try {
-                        String locationTmp = ConfigurationManager.getLocation(entity);
+                        String locationTmp = EntityManager.getLocation(entity);
                         List<String> locations = new ArrayList<>();
                         locations.add(locationTmp);
                         response = outputParser.parseResponse(locations);
@@ -223,7 +224,7 @@ public class GetQuery extends AbstractGetQuery {
         // First we check params.
         if (categoryFilter == null || categoryFilter.trim().isEmpty()) {
             // Check if we need to filter for a category like /compute/-/, we get the term.
-            categoryFilter = Utils.getCategoryFilter(path, ConfigurationManager.DEFAULT_OWNER);
+            categoryFilter = ConfigurationManager.getCategoryFilter(path, ConfigurationManager.DEFAULT_OWNER);
             if (categoryFilter != null && !categoryFilter.trim().isEmpty()) {
                 LOGGER.warn("use a category filter: " + categoryFilter);
             }
@@ -253,7 +254,7 @@ public class GetQuery extends AbstractGetQuery {
                 List<String> locations = new LinkedList<>();
                 String location;
                 for (Entity entityTmp : entities) {
-                    location = ConfigurationManager.getLocation(entityTmp);
+                    location = EntityManager.getLocation(entityTmp);
                     locations.add(location);
                 }
                 if (locations.isEmpty()) {

@@ -21,10 +21,11 @@ package org.occiware.mart.servlet.impl;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.exception.ConfigurationException;
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.model.MixinManager;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.utils.Constants;
-import org.occiware.mart.server.utils.Utils;
 import org.occiware.mart.servlet.exception.ResponseParseException;
 import org.occiware.mart.servlet.facade.AbstractDeleteQuery;
 import org.slf4j.Logger;
@@ -61,12 +62,12 @@ public class DeleteQuery extends AbstractDeleteQuery {
             return response;
         }
 
-        List<Data> datas = inputParser.getDatas();
+        List<ContentData> contentDatas = inputParser.getDatas();
 
-        for (Data data : datas) {
+        for (ContentData contentData : contentDatas) {
             response = null;
 
-            PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
+            PathParser pathParser = new PathParser(contentData, path, inputParser.getRequestPameters());
 
             String location = pathParser.getLocation();
             if (location == null || location.trim().isEmpty()) {
@@ -95,20 +96,20 @@ public class DeleteQuery extends AbstractDeleteQuery {
             }
 
             // Manage mixins dissociation.
-            if (!data.getMixins().isEmpty()) {
-                for (String mixinId : data.getMixins()) {
-                    response = Response.fromResponse(dissociateMixinFromEntities(mixinId, ConfigurationManager.DEFAULT_OWNER, data, location)).build();
+            if (!contentData.getMixins().isEmpty()) {
+                for (String mixinId : contentData.getMixins()) {
+                    response = Response.fromResponse(dissociateMixinFromEntities(mixinId, ConfigurationManager.DEFAULT_OWNER, contentData, location)).build();
                 }
                 continue;
             }
 
             // Manage mixins tag remove definition.
             if (isMixinTagRequest) {
-                response = deleteMixin(data.getMixinTag(), ConfigurationManager.DEFAULT_OWNER, true);
+                response = deleteMixin(contentData.getMixinTag(), ConfigurationManager.DEFAULT_OWNER, true);
                 continue;
             }
 
-            Map<String, String> attrs = data.getAttrs();
+            Map<String, String> attrs = contentData.getAttrs();
 
             if (pathParser.isEntityQuery()) {
                 response = deleteEntity(location, attrs);
@@ -126,27 +127,27 @@ public class DeleteQuery extends AbstractDeleteQuery {
                 throw new InternalServerErrorException(ex);
             }
 
-        } // End for each data.
+        } // End for each contentData.
 
         return response;
     }
 
     @Override
-    public Response dissociateMixinFromEntities(String mixinId, String owner, Data data, String location) {
+    public Response dissociateMixinFromEntities(String mixinId, String owner, ContentData contentData, String location) {
         Response response;
         List<String> entityIds = new ArrayList<>();
-        List<String> xocciLocations = data.getXocciLocations();
+        List<String> xocciLocations = contentData.getXocciLocations();
 
-        String entityId = data.getEntityUUID();
+        String entityId = contentData.getEntityUUID();
         if (entityId == null) {
-            entityId = Utils.getUUIDFromPath(location, data.getAttrs());
+            entityId = EntityManager.getUUIDFromPath(location, contentData.getAttrs());
         }
         if (entityId != null) {
             entityIds.add(entityId);
         }
 
         for (String xOcciLocation : xocciLocations) {
-            String uuid = Utils.getUUIDFromPath(xOcciLocation, new HashMap<>());
+            String uuid = EntityManager.getUUIDFromPath(xOcciLocation, new HashMap<>());
             if (uuid != null) {
                 entityIds.add(uuid);
             }
@@ -164,7 +165,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
 
         // Build the list of entities to dissociate from this mixin.
         for (String uuid : entityIds) {
-            Entity entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
+            Entity entity = EntityManager.findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
             if (entity == null) {
                 try {
                     response = outputParser.parseResponse("the entity " + uuid + " doesnt exist anymore", Response.Status.BAD_REQUEST);
@@ -173,7 +174,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
                     throw new InternalServerErrorException("the entity " + uuid + "doesnt exist anymore, exception: " + ex.getMessage());
                 }
             }
-            ConfigurationManager.dissociateMixinFromEntity(owner, mixinId, entity);
+            MixinManager.dissociateMixinFromEntity(owner, mixinId, entity);
         }
 
         response = outputParser.parseEmptyResponse(Response.Status.OK);
@@ -185,11 +186,11 @@ public class DeleteQuery extends AbstractDeleteQuery {
     public Response deleteMixin(String mixinId, String owner, boolean isMixinTag) {
         Response response = null;
 
-        ConfigurationManager.removeOrDissociateFromConfiguration(owner, mixinId);
+        EntityManager.removeOrDissociateFromConfiguration(owner, mixinId);
         boolean hasError = false;
 
         // Check if mixinId is found in mixin tag area.
-        Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(mixinId, owner);
+        Mixin mixin = MixinManager.findUserMixinOnConfiguration(mixinId, owner);
         if (mixin != null) {
             // This is a mixin tag, defined in query without location !.
             isMixinTag = true;
@@ -205,7 +206,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
         // if mixin tag, remove the definition from Configuration object.
         if (isMixinTag) {
             try {
-                ConfigurationManager.removeUserMixinFromConfiguration(mixinId, ConfigurationManager.DEFAULT_OWNER);
+                MixinManager.removeUserMixinFromConfiguration(mixinId, ConfigurationManager.DEFAULT_OWNER);
             } catch (ConfigurationException ex) {
                 LOGGER.error("Error while removing a mixin tag from configuration object: " + mixinId + " --> " + ex.getMessage());
                 hasError = true;
@@ -240,7 +241,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
                 List<String> locations = new LinkedList<>();
                 String location;
                 for (Entity entityTmp : entities) {
-                    location = ConfigurationManager.getLocation(entityTmp);
+                    location = EntityManager.getLocation(entityTmp);
                     locations.add(location);
                 }
                 if (locations.isEmpty()) {
@@ -256,7 +257,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
 
                 for (Entity entityInf : entities) {
                     entityInf.occiDelete();
-                    ConfigurationManager.removeOrDissociateFromConfiguration(ConfigurationManager.DEFAULT_OWNER, entityInf.getId());
+                    EntityManager.removeOrDissociateFromConfiguration(ConfigurationManager.DEFAULT_OWNER, entityInf.getId());
                 }
                 response = outputParser.parseEmptyResponse(Response.Status.OK);
             }
@@ -272,17 +273,17 @@ public class DeleteQuery extends AbstractDeleteQuery {
     @Override
     public Response deleteEntity(String path, Map<String, String> attrs) {
 
-        boolean isEntityUUIDProvided = Utils.isEntityUUIDProvided(path, attrs);
+        boolean isEntityUUIDProvided = EntityManager.isEntityUUIDProvided(path, attrs);
         Entity entity;
         String entityId;
         Response response;
         String title;
         if (!isEntityUUIDProvided) {
-            entity = ConfigurationManager.findEntityFromLocation(path);
+            entity = EntityManager.findEntityFromLocation(path);
 
         } else {
-            entityId = Utils.getUUIDFromPath(path, attrs);
-            entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+            entityId = EntityManager.getUUIDFromPath(path, attrs);
+            entity = EntityManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
         }
 
         if (entity == null) {
@@ -298,7 +299,7 @@ public class DeleteQuery extends AbstractDeleteQuery {
         entityId = entity.getId();
         title = entity.getTitle();
         entity.occiDelete();
-        ConfigurationManager.removeOrDissociateFromConfiguration(ConfigurationManager.DEFAULT_OWNER, entityId);
+        EntityManager.removeOrDissociateFromConfiguration(ConfigurationManager.DEFAULT_OWNER, entityId);
         LOGGER.info("Remove entity: " + title + " --> " + entityId);
         response = outputParser.parseEmptyResponse(Response.Status.OK);
         return response;

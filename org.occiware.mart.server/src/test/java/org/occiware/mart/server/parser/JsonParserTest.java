@@ -20,14 +20,11 @@ package org.occiware.mart.server.parser;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assert;
 import org.junit.Test;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.facade.DummyRequest;
 import org.occiware.mart.server.facade.DummyResponse;
-import org.occiware.mart.server.facade.OCCIRequest;
 import org.occiware.mart.server.facade.OCCIResponse;
-import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.parser.json.render.ActionJson;
 import org.occiware.mart.server.parser.json.render.OcciMainJson;
 import org.occiware.mart.server.utils.Constants;
@@ -91,7 +88,7 @@ public class JsonParserTest {
 
     }
     @Test
-    public void testJsonInputParser() {
+    public void testJsonInputParserToDatas() {
         File resourcesFileThree = getJsonResourceInput("/testjson/integration/creation/resource3.json");
         try {
             OCCIResponse response = new DummyResponse(Constants.MEDIA_TYPE_JSON, "christophe");
@@ -109,17 +106,14 @@ public class JsonParserTest {
             } finally {
                 Utils.closeQuietly(in);
             }
-            List<Data> datas = request.getDatas();
-            assertNotNull(datas);
-            assertFalse(datas.isEmpty());
+            List<ContentData> contentDatas = request.getContentDatas();
+            assertNotNull(contentDatas);
+            assertFalse(contentDatas.isEmpty());
 
-            // Check if datas are correct.
-            for (Data data : datas) {
-                System.out.println("Data : ");
-                assertNotNull(data.getEntityUUID());
-
+            for (ContentData contentData : contentDatas) {
+                System.out.println("ContentData : ");
+                contentData.printDataToOutput();
             }
-
 
         } catch (IOException | ParseOCCIException ex) {
             Logger.getLogger(JsonParserTest.class.getName()).log(Level.SEVERE, null, ex);

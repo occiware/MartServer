@@ -2,7 +2,10 @@ package org.occiware.mart.servlet;
 
 import org.occiware.mart.server.facade.OCCIRequest;
 import org.occiware.mart.server.parser.HeaderPojo;
+import org.occiware.mart.servlet.impl.DeleteWorker;
 import org.occiware.mart.servlet.impl.GetWorker;
+import org.occiware.mart.servlet.impl.PostWorker;
+import org.occiware.mart.servlet.impl.PutWorker;
 import org.occiware.mart.servlet.utils.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +30,6 @@ public class MainServlet extends HttpServlet {
 
         // Create a default configuration object (default user) to initialize it.
         LOGGER.info("Init MART main servlet.");
-        OCCIRequest.initMart();
     }
 
     /**
@@ -57,16 +59,44 @@ public class MainServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         super.doPost(req, resp);
+        String requestPath = req.getPathInfo();
+        HeaderPojo headers = ServletUtils.getRequestHeaders(req);
+        URI serverURI = ServletUtils.getServerURI(req);
+
+        LOGGER.debug("doPost method for path: " + requestPath);
+
+        PostWorker worker = new PostWorker(serverURI, resp, headers, req, requestPath);
+
+        resp = worker.executeQuery();
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         super.doPut(req, resp);
+        String requestPath = req.getPathInfo();
+        HeaderPojo headers = ServletUtils.getRequestHeaders(req);
+        URI serverURI = ServletUtils.getServerURI(req);
+
+        LOGGER.debug("doPut method for path: " + requestPath);
+
+        PutWorker worker = new PutWorker(serverURI, resp, headers, req, requestPath);
+
+        resp = worker.executeQuery();
     }
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         super.doDelete(req, resp);
+        String requestPath = req.getPathInfo();
+        HeaderPojo headers = ServletUtils.getRequestHeaders(req);
+        URI serverURI = ServletUtils.getServerURI(req);
+
+        LOGGER.debug("doDelete method for path: " + requestPath);
+
+        DeleteWorker worker = new DeleteWorker(serverURI, resp, headers, req, requestPath);
+
+        resp = worker.executeQuery();
+
     }
 
 

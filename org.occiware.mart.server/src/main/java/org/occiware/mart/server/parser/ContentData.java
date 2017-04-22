@@ -28,7 +28,7 @@ import java.util.*;
  *
  * @author Christophe Gourdin
  */
-public class Data {
+public class ContentData {
 
     private Map<String, Object> attrs = new LinkedHashMap<>();
     /**
@@ -60,11 +60,6 @@ public class Data {
     private HeaderPojo header;
 
     /**
-     * If location path query only.
-     */
-    private boolean datasOnlyOnPath = false;
-
-    /**
      * Location of a resource/link or a mixin tag.
      */
     private String location = null;
@@ -83,10 +78,9 @@ public class Data {
     /**
      * Utility method to convert a Map (String, Object) to Map(String, String).
      *
-     * @param attrs attributes converted.
      * @return
      */
-    public Map<String, String> getAttrsValStr(Map<String, Object> attrs) {
+    public Map<String, String> getAttrsValStr() {
         if (attrs == null) {
             attrs = new LinkedHashMap<>();
         }
@@ -202,111 +196,42 @@ public class Data {
         this.header = header;
     }
 
-    /**
-     * Mixin definition request (linked to PUT and GET interface method).
-     */
-    private boolean mixinTagDefinitionRequest;
-
-    private boolean entityQuery;
-
-    /**
-     * Define if this is a collection query.
-     */
-    private boolean collectionQuery;
-
-    /**
-     * Define if the path is an interface query /-/.
-     */
-    private boolean interfQuery;
-
-    /**
-     * Define if the query is an action query.
-     */
-    private boolean actionInvocationQuery;
 
 
-    public boolean isMixinTagDefinitionRequest() {
-        return mixinTagDefinitionRequest;
-    }
-
-    public void setMixinTagDefinitionRequest(boolean mixinTagDefinitionRequest) {
-        this.mixinTagDefinitionRequest = mixinTagDefinitionRequest;
-    }
-
-    public boolean isEntityQuery() {
-        return entityQuery;
-    }
-
-    public void setEntityQuery(boolean entityQuery) {
-        this.entityQuery = entityQuery;
-    }
-
-    public boolean isCollectionQuery() {
-        return collectionQuery;
-    }
-
-    public void setCollectionQuery(boolean collectionQuery) {
-        this.collectionQuery = collectionQuery;
-    }
-
-    public boolean isInterfQuery() {
-        return interfQuery;
-    }
-
-    public void setInterfQuery(boolean interfQuery) {
-        this.interfQuery = interfQuery;
-    }
-
-    public boolean isActionInvocationQuery() {
-        return actionInvocationQuery;
-    }
-
-    public void setActionInvocationQuery(boolean actionInvocationQuery) {
-        this.actionInvocationQuery = actionInvocationQuery;
-    }
-
-    public boolean isDatasOnlyOnPath() {
-        return datasOnlyOnPath;
-    }
-
-    public void setDatasOnlyOnPath(boolean datasOnlyOnPath) {
-        this.datasOnlyOnPath = datasOnlyOnPath;
-    }
-
-    public void printDataToOutput() {
-
-        System.out.println("Is for interface query : " + this.interfQuery);
-        System.out.println("Is for Entity query : " + this.entityQuery);
-        System.out.println("Is for Collection query : " + this.collectionQuery);
-        System.out.println("Is for Mixin tag query : " + this.mixinTagDefinitionRequest);
-        System.out.println("Is for Action invocation : " + this.actionInvocationQuery);
-        System.out.println("Is this data has attributes : " + this.attrs.isEmpty());
-        System.out.println("Is this data query on a path only : " + this.datasOnlyOnPath);
-
-        // Print values.
-        System.out.println("**************************");
-        if (this.entityQuery) {
-            System.out.println("Entity id: " + this.getEntityUUID());
-            System.out.println("Kind : " + this.getKind());
-            System.out.println("Location: " + this.getLocation());
-            if (this.getMixins() != null && !this.getMixins().isEmpty()) {
-                for (String mixinId : mixins) {
-                    System.out.println("Mixin : " + mixinId);
-                }
-            }
-            if (this.getAttrs() != null && !this.getAttrs().isEmpty()) {
-                for (Map.Entry<String, Object> entry : attrs.entrySet()) {
-                    String value = (String) entry.getValue();
-                    System.out.println("Attribute : " + entry.getKey() + " --> " + value);
-                }
-            }
-
-        }
-        if (this.collectionQuery) {
-            System.out.println("Collection query...");
-        }
-
-
-
-    }
+//    public void printDataToOutput() {
+//
+//        System.out.println("Is for interface query : " + this.interfQuery);
+//        System.out.println("Is for Entity query : " + this.entityQuery);
+//        System.out.println("Is for Collection query : " + this.collectionQuery);
+//        System.out.println("Is for Mixin tag query : " + this.mixinTagDefinitionRequest);
+//        System.out.println("Is for Action invocation : " + this.actionInvocationQuery);
+//        System.out.println("Is this data has attributes : " + this.attrs.isEmpty());
+//        System.out.println("Is this data query on a path only : " + this.datasOnlyOnPath);
+//
+//        // Print values.
+//        System.out.println("**************************");
+//        if (this.entityQuery) {
+//            System.out.println("Entity id: " + this.getEntityUUID());
+//            System.out.println("Kind : " + this.getKind());
+//            System.out.println("Location: " + this.getLocation());
+//            if (this.getMixins() != null && !this.getMixins().isEmpty()) {
+//                for (String mixinId : mixins) {
+//                    System.out.println("Mixin : " + mixinId);
+//                }
+//            }
+//            if (this.getAttrs() != null && !this.getAttrs().isEmpty()) {
+//                for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+//                    String value = (String) entry.getValue();
+//                    System.out.println("Attribute : " + entry.getKey() + " --> " + value);
+//                }
+//            }
+//
+//        }
+//        if (this.collectionQuery) {
+//            System.out.println("Collection query...");
+//        }
+//
+//
+//
+//    }
 }

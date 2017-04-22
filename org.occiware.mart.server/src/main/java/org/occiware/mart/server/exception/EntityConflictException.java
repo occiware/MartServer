@@ -16,20 +16,26 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.servlet.exception;
-
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.core.Response;
+package org.occiware.mart.server.exception;
 
 /**
  * @author Christophe Gourdin
  */
-public class EntityConflictException extends ClientErrorException {
+public class EntityConflictException extends Exception {
 
-
-    public EntityConflictException(String message, Response.Status status) {
-        super(message, status);
+    public EntityConflictException() {
     }
 
+    public EntityConflictException(String message) {
+        super(message);
+    }
+
+    public EntityConflictException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public EntityConflictException(Throwable cause) {
+        super(cause);
+    }
 
 }

@@ -23,7 +23,8 @@ import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.facade.OCCIRequest;
 import org.occiware.mart.server.facade.OCCIResponse;
 import org.occiware.mart.server.model.ConfigurationManager;
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.utils.Constants;
@@ -60,7 +61,7 @@ public class TextOcciParser implements IRequestParser {
     //*************************
 
     /**
-     * Parse the input query in multiple Data objects (or only one if one thing defined).
+     * Parse the input query in multiple ContentData objects (or only one if one thing defined).
      *
      * @param contentObj This is the content json.
      * @throws ParseOCCIException
@@ -90,7 +91,7 @@ public class TextOcciParser implements IRequestParser {
      */
     private void parseOcciCategories(HeaderPojo contentHeader) throws ParseOCCIException {
         Map<String, List<String>> map = contentHeader.getHeaderMap();
-        Data data = new Data();
+        ContentData contentData = new ContentData();
 
         List<String> values;
         List<String> mixinsToAdd = new ArrayList<>();
@@ -125,14 +126,14 @@ public class TextOcciParser implements IRequestParser {
 
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_KIND)) {
                             // Assign the kind.
-                            data.setKind(scheme + term);
+                            contentData.setKind(scheme + term);
                             continue;
                         }
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_MIXIN)) {
                             if (matcher.group(Constants.GROUP_LOCATION) != null) {
                                 // is a mixin tag.
-                                data.setLocation(matcher.group(Constants.GROUP_LOCATION));
-                                data.setMixinTag(scheme + term);
+                                contentData.setLocation(matcher.group(Constants.GROUP_LOCATION));
+                                contentData.setMixinTag(scheme + term);
 
                             } else {
                                 // is a simple mixin.
@@ -141,16 +142,16 @@ public class TextOcciParser implements IRequestParser {
                             continue;
                         }
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_ACTION)) {
-                            data.setAction(scheme + term);
+                            contentData.setAction(scheme + term);
                         }
                     }
                 }
             }
         }
         if (!mixinsToAdd.isEmpty()) {
-            data.setMixins(mixinsToAdd);
+            contentData.setMixins(mixinsToAdd);
         }
-        occiRequest.getDatas().add(data);
+        occiRequest.getContentDatas().add(contentData);
     }
 
     /**
@@ -160,10 +161,10 @@ public class TextOcciParser implements IRequestParser {
      * @throws ParseOCCIException
      */
     private void parseOcciAttributes(HeaderPojo contentHeader) throws ParseOCCIException {
-        if (occiRequest.getDatas().isEmpty()) {
+        if (occiRequest.getContentDatas().isEmpty()) {
             throw new ParseOCCIException("No kind or mixins, so no attributes.");
         }
-        Data data = occiRequest.getDatas().get(0);
+        ContentData contentData = occiRequest.getContentDatas().get(0);
         Map<String, List<String>> map = contentHeader.getHeaderMap();
 
         List<String> values;
@@ -184,7 +185,7 @@ public class TextOcciParser implements IRequestParser {
                                 attr[0] = attr[0].substring(1); // remove starting space.
                             }
                             attr[1] = attr[1].replace("\"", "");
-                            data.getAttrs().put(attr[0], attr[1]);
+                            contentData.getAttrs().put(attr[0], attr[1]);
                         }
                     }
 
@@ -194,7 +195,7 @@ public class TextOcciParser implements IRequestParser {
                 for (String value : values) {
                     String[] valuesTmp = value.split(",");
                     for (String valueTmp : valuesTmp) {
-                        data.addXocciLocation(valueTmp);
+                        contentData.addXocciLocation(valueTmp);
                     }
                     break;
                 }
@@ -329,7 +330,7 @@ public class TextOcciParser implements IRequestParser {
      * @return An array of Link to set to header.
      */
     private List<String> renderActionLinksHeader(final Entity entity) {
-        String location = ConfigurationManager.getLocation(entity);
+        String location = EntityManager.getLocation(entity);
         List<String> actionLinks = new LinkedList<>();
         LOGGER.info("Entity location : " + location);
         int linkSize = 1;
@@ -557,7 +558,7 @@ public class TextOcciParser implements IRequestParser {
      * @return
      */
     private String renderXOCCILocationAttr(final Entity entity) {
-        return ConfigurationManager.getLocation(entity);
+        return EntityManager.getLocation(entity);
     }
 
     /**
@@ -574,9 +575,9 @@ public class TextOcciParser implements IRequestParser {
         sb.append(coreId);
         if (entity instanceof Link) {
             Link link = (Link) entity;
-            String source = Constants.OCCI_CORE_SOURCE + "=\"" + ConfigurationManager.getLocation(link.getSource()) + "\"" + "," + Constants.CRLF;
+            String source = Constants.OCCI_CORE_SOURCE + "=\"" + EntityManager.getLocation(link.getSource()) + "\"" + "," + Constants.CRLF;
             sb.append(source);
-            String target = Constants.OCCI_CORE_TARGET + "=\"" + ConfigurationManager.getLocation(link.getTarget()) + "\"" + "," + Constants.CRLF;
+            String target = Constants.OCCI_CORE_TARGET + "=\"" + EntityManager.getLocation(link.getTarget()) + "\"" + "," + Constants.CRLF;
             sb.append(target);
         }
 
@@ -587,8 +588,8 @@ public class TextOcciParser implements IRequestParser {
             }
             String value = null;
 
-            String valStr = ConfigurationManager.getAttrValueStr(entity, name);
-            Number valNumber = ConfigurationManager.getAttrValueNumber(entity, name);
+            String valStr = EntityManager.getAttrValueStr(entity, name);
+            Number valNumber = EntityManager.getAttrValueNumber(entity, name);
 
             if (valStr != null) {
                 value = "\"" + valStr + "\"";

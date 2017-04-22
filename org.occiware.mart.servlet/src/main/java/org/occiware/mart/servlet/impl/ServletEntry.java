@@ -273,4 +273,20 @@ public abstract class ServletEntry {
     public void setPath(String path) {
         this.path = path;
     }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
+    public String getAcceptType() {
+        return acceptType;
+    }
+
+    public void setAcceptType(String acceptType) {
+        this.acceptType = acceptType;
+    }
 }

@@ -22,9 +22,10 @@ import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.facade.OCCIRequest;
 import org.occiware.mart.server.facade.OCCIResponse;
 import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.model.MixinManager;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
-import org.occiware.mart.server.utils.Utils;
 import org.occiware.mart.servlet.impl.OCCIServletInputParser;
 import org.occiware.mart.servlet.impl.OCCIServletOutputParser;
 import org.occiware.mart.servlet.utils.ServletUtils;
@@ -261,7 +262,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
         boolean isMixinTagRequest = ServletUtils.isMixinTagRequest(path, ConfigurationManager.DEFAULT_OWNER);
         if (isMixinTagRequest) {
             LOGGER.info("Mixin tag request... ");
-            Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
+            Mixin mixin = MixinManager.getUserMixinFromLocation(path, ConfigurationManager.DEFAULT_OWNER);
             if (mixin == null) {
                 throw new ConfigurationException("The mixin location : " + path + " is not defined");
             }
@@ -271,7 +272,7 @@ public abstract class AbstractEntryPoint implements IEntryPoint {
             }
         }
 
-        entities = ConfigurationManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, filter);
+        entities = EntityManager.findAllEntities(ConfigurationManager.DEFAULT_OWNER, filter);
         return entities;
 
     }

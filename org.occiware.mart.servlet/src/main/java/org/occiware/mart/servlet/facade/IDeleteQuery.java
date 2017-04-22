@@ -18,7 +18,7 @@
  */
 package org.occiware.mart.servlet.facade;
 
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.parser.ContentData;
 
 import javax.ws.rs.core.Response;
 import java.util.Map;
@@ -55,5 +55,5 @@ interface IDeleteQuery extends IEntryPoint {
      */
     Response deleteMixin(String mixinId, String owner, boolean isMixinTag);
 
-    Response dissociateMixinFromEntities(String mixinId, String owner, Data data, String location);
+    Response dissociateMixinFromEntities(String mixinId, String owner, ContentData contentData, String location);
 }

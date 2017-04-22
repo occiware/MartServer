@@ -25,7 +25,7 @@ public class DummyRequest extends AbstractOCCIRequest implements OCCIRequest {
     }
 
     @Override
-    public void validateRequest() {
+    public void validateDataContentRequest() {
         // DO nothing...
     }
 }

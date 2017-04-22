@@ -3,6 +3,7 @@ package org.occiware.mart.server.model;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.occiware.clouddesigner.occi.Configuration;
 
 import static org.junit.Assert.*;
 
@@ -11,9 +12,11 @@ import static org.junit.Assert.*;
  */
 public class ConfigurationManagerTest {
 
+    public String username = "christophe";
+
     @Before
     public void setUp() throws Exception {
-
+        ConfigurationManager.getConfigurationForOwner(username);
     }
 
     @After
@@ -23,10 +26,8 @@ public class ConfigurationManagerTest {
 
     @Test
     public void testGetConfigurationForOwner() throws Exception {
-        ConfigurationManager.initMart();
-        String username = "christophe";
-        assertNotNull(ConfigurationManager.getConfigurationForOwner(username));
-        ConfigurationManager.useAllExtensionForConfigurationInClasspath(username);
+        Configuration configuration = ConfigurationManager.getConfigurationForOwner(username);
+        assertNotNull(configuration);
     }
 
     @Test

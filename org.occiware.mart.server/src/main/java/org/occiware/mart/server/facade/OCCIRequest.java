@@ -18,10 +18,9 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.mart.MART;
+import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.model.ConfigurationManager;
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.utils.CollectionFilter;
 
@@ -44,9 +43,9 @@ public interface OCCIRequest {
      */
     public void setOCCIResponse(OCCIResponse occiResponse);
 
-    public List<Data> getDatas();
+    public List<ContentData> getContentDatas();
 
-    public void setDatas(final List<Data> datas);
+    public void setContentDatas(final List<ContentData> contentDatas);
 
     /**
      * Assign a user for all operations with this object. Default is "anonymous".
@@ -148,9 +147,8 @@ public interface OCCIRequest {
     /**
      * Validate input request not mandatory for implementations (used for servlet and http generic implementation).
      *
-     * @throws ParseOCCIException
      */
-    public void validateRequest();
+    public OCCIResponse validateDataContentRequest();
 
     /**
      * Get the current inputParser, this is built on constructor phase.
@@ -164,15 +162,31 @@ public interface OCCIRequest {
      */
     public void setInputParser(IRequestParser inputParser);
 
-
-    /**
-     * Initialize MartServer configuration model engine.
-     */
-    public static void initMart() {
-        ConfigurationManager.initMart();
-    }
-
     public boolean isCategoryTerm(final String categoryTerm);
     public String getCategorySchemeTerm(final String categoryTerm);
     public String getMixinTagSchemeTermFromLocation(final String location);
+
+    /**
+     * Check if the location is a category location (without mixin tag location).
+     * @param location
+     * @return a boolean true if the location is a category collection location.
+     */
+    public boolean isCategoryLocation(final String location);
+
+    /**
+     * Check if the location is a mixin tag location.
+     * @param location
+     * @return
+     */
+    public boolean isMixinTagLocation(final String location);
+
+    /**
+     * Check if the location is an entity location.
+     * @param location
+     * @return
+     */
+    public boolean isEntityLocation(final String location);
+
+    public OCCIResponse defineMixinTags();
+
 }

@@ -1,6 +1,6 @@
 package org.occiware.mart.servlet.impl;
 
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
@@ -28,36 +28,30 @@ public class GetWorker extends ServletEntry {
         if (occiResponse.hasExceptions()) {
             return resp;
         }
-        occiRequest.validateRequest();
 
-        List<Data> datas = occiRequest.getDatas();
-        Data data = null;
-        if (!datas.isEmpty()) {
-            // Get only the first occurence. The others are ignored.
-            data = datas.get(0);
+        if (!occiRequest.getContentDatas().isEmpty()) {
+            return occiResponse.parseMessage("Input content are not accepted with GET method", HttpServletResponse.SC_BAD_REQUEST);
         }
-        // TODO : Manage calls on occiRequest for findEntity, getCollections etc..
-        if (data == null) {
-            return occiResponse.parseMessage("resource " + getPath() + " not found", HttpServletResponse.SC_NOT_FOUND);
-        }
-        if (data.isActionInvocationQuery()) {
+
+        if (occiRequest.isActionInvocationQuery()) {
             LOGGER.warn("Querying action invocation on GET method.");
-            return occiResponse.parseMessage("You cannot use an action with GET method.", HttpServletResponse.SC_BAD_REQUEST);
+            return occiResponse.parseMessage("You cannot use an action with GET method", HttpServletResponse.SC_BAD_REQUEST);
         }
 
-        if (data.isInterfQuery()) {
+        // TODO : support URI-list combined with other output type like this : uri-list; application/json.
+        if (occiRequest.isInterfQuery()) {
             LOGGER.info("Querying the interface on path : " + getPath());
             occiRequest.getInterface(getRequestParameters().get(Constants.CATEGORY_KEY));
             return occiResponse.getHttpResponse();
         }
 
-        if (data.isEntityQuery()) {
+        if (occiRequest.isEntityLocation(getPath())) {
             LOGGER.info("Querying an entity on path : " + getPath());
             occiRequest.findEntity();
             return occiResponse.getHttpResponse();
         }
 
-        if (data.isCollectionQuery()) {
+        if (occiRequest.isCollectionQuery()) {
             // Query on collections of entities.
             CollectionFilter filter = buildCollectionFilter();
             occiRequest.findEntities(filter);

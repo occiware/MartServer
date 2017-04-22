@@ -19,7 +19,7 @@
 package org.occiware.mart.servlet.facade;
 
 import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.parser.ContentData;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -34,20 +34,20 @@ interface IPostQuery extends IEntryPoint {
      *
      * @param path
      * @param entity
-     * @param data
+     * @param contentData
      * @return
      */
-    Response updateEntity(String path, Entity entity, Data data);
+    Response updateEntity(String path, Entity entity, ContentData contentData);
 
     /**
      * Update the entities attributes and call occiUpdate() for each entity.
      *
      * @param path
      * @param entities
-     * @param data
+     * @param contentData
      * @return
      */
-    Response updateEntityCollection(String path, List<Entity> entities, Data data);
+    Response updateEntityCollection(String path, List<Entity> entities, ContentData contentData);
 
     /**
      * Update mixin tag association location.
@@ -63,11 +63,11 @@ interface IPostQuery extends IEntryPoint {
      *
      * @param action
      * @param entity
-     * @param data
+     * @param contentData
      * @return a response builder to build a response after calling this method.
      */
-    Response executeAction(String action, Entity entity, Data data);
+    Response executeAction(String action, Entity entity, ContentData contentData);
 
 
-    Response executeActionsOnEntities(String actionKind, List<Entity> entities, Data data);
+    Response executeActionsOnEntities(String actionKind, List<Entity> entities, ContentData contentData);
 }

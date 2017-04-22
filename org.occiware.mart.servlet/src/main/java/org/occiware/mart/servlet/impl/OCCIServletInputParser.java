@@ -1,10 +1,11 @@
 package org.occiware.mart.servlet.impl;
 
+import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.facade.AbstractOCCIRequest;
 import org.occiware.mart.server.facade.OCCIRequest;
 import org.occiware.mart.server.facade.OCCIResponse;
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
@@ -31,11 +32,44 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
     private String requestPath;
     private Map<String, String> requestParameters;
 
+    private boolean onMixinTagLocation = false;
+
+    private boolean onEntityLocation = false;
+
+
+    /**
+     * Define if this is a collection query.
+     */
+    private boolean collectionQuery;
+    private boolean onBoundedLocation = false;
+    private boolean onCategoryLocation = false;
+
+    /**
+     * Define if the path is an interface query /-/.
+     */
+    private boolean interfQuery;
+
+    /**
+     * Define if the query is an action query.
+     */
+    private boolean actionInvocationQuery;
+    /**
+     * Define if there is no content datas, the query is defined with a path (for Get and Delete methods).
+     */
+    private boolean datasOnlyOnPath;
+
     public OCCIServletInputParser(OCCIResponse response, String contentType, String username, HttpServletRequest req, HeaderPojo headers, Map<String, String> requestParameters) {
-        super(response, contentType, username);
+        super(response, contentType, req.getPathInfo(), username);
         this.headers = headers;
         this.request = req;
+
         this.requestPath = req.getPathInfo();
+        if (!requestPath.startsWith("/")) {
+            requestPath = "/" + requestPath;
+        }
+        if (!requestPath.endsWith("/")) {
+            requestPath = requestPath + "/";
+        }
         this.requestParameters = requestParameters;
     }
 
@@ -46,144 +80,86 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
     public void parseInput() throws ParseOCCIException {
 
         String content = null;
-
-        switch (contentType) {
-            case Constants.MEDIA_TYPE_JSON:
-            case Constants.MEDIA_TYPE_JSON_OCCI:
-            case Constants.MEDIA_TYPE_TEXT_PLAIN:
-                // For all media type that have content occi build like json, xml, text plain, yml etc..
-                if (request == null) {
-                    throw new ParseOCCIException("No request to parse.");
-                }
-
-                InputStream in = null;
-                LOGGER.info("Parsing input uploaded datas...");
-                try {
-                    in = request.getInputStream();
-                    if (in == null) {
-                        throw new ParseOCCIException("The input has no content delivered.");
-                    } else {
-                        content = Utils.convertInputStreamToString(in);
-                    }
-                    // for Object occiRequest to be fully completed.
-                    getInputParser().parseInputToDatas(content);
-
-                } catch (IOException ex) {
-                    throw new ParseOCCIException("The server cant read the json file input --> " + ex.getMessage());
-                } finally {
-                    Utils.closeQuietly(in);
-                }
-                break;
-            case Constants.MEDIA_TYPE_TEXT_OCCI:
-                // For all media type that have header definition only, known for now is text/occi.
-                if (headers == null) {
-                    throw new ParseOCCIException("Cannot parse for " + contentType + " cause: no request header.");
-                }
-
-                // for object occiRequest to be fully completed, the parameter is Map<String, List<String>> encapsulated on MultivaluedMap.)
-                getInputParser().parseInputToDatas(headers);
-
-                break;
-            default:
-                throw new ParseOCCIException("Cannot parse for " + contentType + " cause: unknown parser");
+        // For all media type that have content occi build like json, xml, text plain, yml etc..
+        if (request == null) {
+            throw new ParseOCCIException("No request to parse.");
         }
+        // Parse the path
+        parsePath();
+
+        if (!interfQuery) {
+            // Parse the content body if any.
+            switch (contentType) {
+                case Constants.MEDIA_TYPE_JSON:
+                case Constants.MEDIA_TYPE_JSON_OCCI:
+                case Constants.MEDIA_TYPE_TEXT_PLAIN:
+                    InputStream in = null;
+                    LOGGER.info("Parsing input uploaded datas...");
+                    try {
+                        in = request.getInputStream();
+                        if (in != null) {
+                            // throw new ParseOCCIException("The input has no content delivered.");
+                            content = Utils.convertInputStreamToString(in);
+                            // for Object occiRequest to be fully completed.
+                            getInputParser().parseInputToDatas(content);
+                        }
+                    } catch (IOException ex) {
+                        throw new ParseOCCIException("The server cant read the content input --> " + ex.getMessage());
+                    } finally {
+                        Utils.closeQuietly(in);
+                    }
+                    break;
+                case Constants.MEDIA_TYPE_TEXT_OCCI:
+                    // For all media type that have header definition only, known for now is text/occi.
+                    if (headers != null && !headers.getHeaderMap().isEmpty()) {
+                        // for object occiRequest to be fully completed, the parameter is Map<String, List<String>> encapsulated on MultivaluedMap.)
+                        getInputParser().parseInputToDatas(headers);
+                    }
+                    break;
+                default:
+                    throw new ParseOCCIException("Cannot parse for " + contentType + " cause: unknown parser");
+            }
+        }
+
 
     }
 
+    /**
+     * Parse the path to a data object. a path may have /category/myresource/
+     */
+    private void  parsePath() {
+        // This section is important for Get query and Delete query.
 
-    @Override
-    public void validateRequest() {
-        // Validate this request.
-        // TODO : in abstract class for models validation..
-        // Is the kinds exists on this configuration's extensions ?
-        // Is the mixins (with attributes ==> not a mixintag) exist on configuration's extensions ?
-        // Is this request is an occi compliant request ?
+        // Detect if this is an interface request.
+        if (requestPath.equals("/.well-known/org/ogf/occi/-/") || requestPath.endsWith("/-/")) {
+            interfQuery = true;
+            return;
+        }
 
-        // Define the operations to be done with parsed datas.
-        for (Data data : this.getDatas()) {
-            boolean hasLocationSet = false;
-            boolean entityQuery = false;
-            boolean mixinTagDefinitionRequest = false;
-            boolean interfQuery = false;
-            String locationWithoutUUID = null;
-            String pathWithoutUUID = null;
+        // Detect if this is an action invocation request
+        if (requestParameters != null && requestParameters.get("action") != null) {
+            actionInvocationQuery = true;
+            return;
+        }
 
-            String uuid;
-            if (data.getLocation() != null && !data.getLocation().isEmpty()) {
-                hasLocationSet = true;
-                uuid = ServletUtils.getUUIDFromPath(data.getLocation(), data.getAttrs());
-                if (uuid != null) {
-                    locationWithoutUUID = data.getLocation().replace(uuid, "");
-                } else {
-                    locationWithoutUUID = data.getLocation();
-                }
+        // Detect if this path is on an existing entity path.
+        if (this.isEntityLocation(requestPath)) {
+            onEntityLocation = true;
+            return;
+        }
 
-            } else {
-                // No location attribute is set so use the request relative path directly.
-                uuid = ServletUtils.getUUIDFromPath(requestPath, data.getAttrs());
-                if (uuid != null) {
-                    pathWithoutUUID = requestPath.replace(uuid, "");
-                } else {
-                    pathWithoutUUID = requestPath;
-                }
-            }
+        // Detect if this path is on an existing mixin tag definition location.
+        if (this.isMixinTagLocation(requestPath)) {
+            onMixinTagLocation = true;
+            return;
+        }
 
-            // Detect if this is a mixin tag request definition or an interface query (/-/).
-            String pathTmp = "/" + requestPath + "/";
-            if (pathTmp.equals("/.well-known/org/ogf/occi/-/") || pathTmp.endsWith("/-/")) {
-                if (hasLocationSet && data.getMixinTag() != null && !data.getMixinTag().isEmpty()) {
-                    data.setMixinTagDefinitionRequest(true);
-                } else {
-                    data.setInterfQuery(true);
-                }
-                continue;
-            }
-            if (hasLocationSet && data.getMixinTag() != null && !data.getMixinTag().isEmpty()) {
-                data.setMixinTagDefinitionRequest(true);
-                continue;
-            }
-
-            // Determine if this is an action invocation.
-            if (data.getAction() != null && !data.getAction().isEmpty() || (requestParameters != null && requestParameters.get("action") != null)) {
-                data.setActionInvocationQuery(true);
-                continue;
-            }
-            // Is the path is an entity path ?
-            //  if a location is defined, this replace the given path.
-            if (hasLocationSet) {
-                // the attributes is used if occi.core.id is defined for the current data to work with.
-                entityQuery = ServletUtils.isEntityUUIDProvided(data.getLocation(), data.getAttrs());
-            } else {
-                entityQuery = ServletUtils.isEntityUUIDProvided(requestPath, data.getAttrs());
-            }
-            if (entityQuery) {
-                data.setEntityQuery(true);
-                continue;
-            }
-
-            // Detect if entity query or collections.
-            entityQuery = data.getEntityUUID() != null;
-            if (!entityQuery) {
-                boolean pathHasEntitiesBehind;
-                // Check if location has entities behind.
-                List<String> uuids;
-                if (hasLocationSet) {
-                    uuids = ServletUtils.getEntityUUIDsFromPath(data.getLocation());
-
-                } else {
-                    uuids = ServletUtils.getEntityUUIDsFromPath(requestPath);
-                }
-
-                // Check if a kind is defined in inputdata, if this is the case, it must be an entity query.
-                if (data.getKind() != null && !uuids.isEmpty()) {
-                    data.setEntityQuery(true);
-                    continue;
-                }
-            }
-
-            if (!entityQuery) {
-                data.setCollectionQuery(true);
-            }
+        // Detect if the path is on a category (mixin, kind) like /myconnector/compute/ or /ipnetwork/ or on known path parent (bounded path).
+        collectionQuery = true;
+        if (this.isCategoryLocation(requestPath)) {
+            onCategoryLocation = true;
+        } else {
+            onBoundedLocation = true;
         }
 
     }
@@ -210,5 +186,38 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
 
     public void setRequestPath(String requestPath) {
         this.requestPath = requestPath;
+    }
+
+
+    public boolean isCollectionQuery() {
+        return collectionQuery;
+    }
+
+    public void setCollectionQuery(boolean collectionQuery) {
+        this.collectionQuery = collectionQuery;
+    }
+
+    public boolean isInterfQuery() {
+        return interfQuery;
+    }
+
+    public void setInterfQuery(boolean interfQuery) {
+        this.interfQuery = interfQuery;
+    }
+
+    public boolean isActionInvocationQuery() {
+        return actionInvocationQuery;
+    }
+
+    public void setActionInvocationQuery(boolean actionInvocationQuery) {
+        this.actionInvocationQuery = actionInvocationQuery;
+    }
+
+    public boolean isDatasOnlyOnPath() {
+        return datasOnlyOnPath;
+    }
+
+    public void setDatasOnlyOnPath(boolean datasOnlyOnPath) {
+        this.datasOnlyOnPath = datasOnlyOnPath;
     }
 }

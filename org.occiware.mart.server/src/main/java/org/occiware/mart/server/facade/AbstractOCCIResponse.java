@@ -18,7 +18,7 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.parser.DummyParser;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.QueryInterfaceData;
@@ -42,9 +42,9 @@ public abstract class AbstractOCCIResponse implements OCCIResponse {
      */
     protected String contentType;
     /**
-     * Collections of datas to render on output.
+     * Collections of contentDatas to render on output.
      */
-    private List<Data> datas;
+    private List<ContentData> contentDatas;
     /**
      * Main response message. Used principally for HTTP to render String output (html, json, text etc.).
      */
@@ -116,13 +116,13 @@ public abstract class AbstractOCCIResponse implements OCCIResponse {
     }
 
     @Override
-    public List<Data> getDatas() {
-        return datas;
+    public List<ContentData> getContentDatas() {
+        return contentDatas;
     }
 
     @Override
-    public void setDatas(List<Data> datas) {
-        this.datas = datas;
+    public void setContentDatas(List<ContentData> contentDatas) {
+        this.contentDatas = contentDatas;
     }
 
     @Override

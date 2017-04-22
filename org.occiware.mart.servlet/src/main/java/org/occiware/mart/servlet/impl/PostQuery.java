@@ -24,7 +24,10 @@ import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.server.exception.ConfigurationException;
-import org.occiware.mart.server.parser.Data;
+import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.model.KindManager;
+import org.occiware.mart.server.model.MixinManager;
+import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
@@ -69,11 +72,11 @@ public class PostQuery extends AbstractPostQuery {
             }
         }
 
-        List<Data> datas = inputParser.getDatas();
+        List<ContentData> contentDatas = inputParser.getDatas();
 
-        for (Data data : datas) {
+        for (ContentData contentData : contentDatas) {
 
-            PathParser pathParser = new PathParser(data, path, inputParser.getRequestPameters());
+            PathParser pathParser = new PathParser(contentData, path, inputParser.getRequestPameters());
 
             if (pathParser.isInterfQuery()) {
                 try {
@@ -89,8 +92,8 @@ public class PostQuery extends AbstractPostQuery {
                 location = pathParser.getPath();
             }
 
-            String actionId = data.getAction();
-            Map<String, String> attrs = data.getAttrs();
+            String actionId = contentData.getAction();
+            Map<String, String> attrs = contentData.getAttrs();
             List<Entity> entities;
             Entity entity;
             String categoryId = pathParser.getCategoryId();
@@ -109,19 +112,19 @@ public class PostQuery extends AbstractPostQuery {
 
 
                 // Is action is scheme + term or only a term parameter.
-                if (ConfigurationManager.getExtensionForAction(ConfigurationManager.DEFAULT_OWNER, actionId) == null) {
+                if (EntityManager.getExtensionForAction(ConfigurationManager.DEFAULT_OWNER, actionId) == null) {
                     // This is maybe an action term only.
                     actionId = actionTerm;
                 }
 
                 // action invocation may be invoke on an entity or a collection.
                 if (pathParser.isEntityQuery()) {
-                    String entityId = data.getEntityUUID();
+                    String entityId = contentData.getEntityUUID();
                     if (entityId == null) {
-                        entityId = Utils.getUUIDFromPath(location, attrs);
+                        entityId = EntityManager.getUUIDFromPath(location, attrs);
                     }
 
-                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+                    entity = EntityManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
 
                     if (entity == null || entityId == null) {
                         try {
@@ -135,7 +138,7 @@ public class PostQuery extends AbstractPostQuery {
                     // Check if location path correspond to entity registered path.
                     String locationTmp;
                     try {
-                        locationTmp = ConfigurationManager.getLocation(entityId);
+                        locationTmp = EntityManager.getLocation(entityId);
                         locationTmp = locationTmp.replace(entityId, "");
                     } catch (ConfigurationException ex) {
                         try {
@@ -149,13 +152,13 @@ public class PostQuery extends AbstractPostQuery {
                     // Check if location is a category location and not an entity location.
                     if (!locationCompare.equals(locationTmp)) {
 
-                        Category cat = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                        Category cat = KindManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
                         if (cat == null) {
-                            cat = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                            cat = MixinManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
                         }
                         if (cat == null) {
                             // Find user mixin tag.
-                            cat = ConfigurationManager.getUserMixinFromLocation(locationTmp, ConfigurationManager.DEFAULT_OWNER);
+                            cat = MixinManager.getUserMixinFromLocation(locationTmp, ConfigurationManager.DEFAULT_OWNER);
                         }
                         if (cat == null) {
                             try {
@@ -166,29 +169,29 @@ public class PostQuery extends AbstractPostQuery {
                             }
                         }
                     }
-                    response = executeAction(actionId, entity, data);
+                    response = executeAction(actionId, entity, contentData);
                     continue;
                 }
 
                 // path like /compute/
                 if (pathParser.isCollectionOnCategory()) {
                     LOGGER.info("Collection --> Executing action: " + actionId + " on Category: " + categoryId);
-                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
-                    response = executeActionsOnEntities(actionId, entities, data);
+                    entities = EntityManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                    response = executeActionsOnEntities(actionId, entities, contentData);
                     continue;
                 }
 
                 // path like /mycustompath/myentities/
                 if (pathParser.isCollectionCustomPath()) {
                     LOGGER.info("Collection --> Executing action: " + actionId + " on inbound path: " + location);
-                    entities = ConfigurationManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, actionId);
+                    entities = EntityManager.findAllEntitiesForCategory(ConfigurationManager.DEFAULT_OWNER, actionId);
                     // Remove entities that have not their location equals to path.
                     Iterator<Entity> it = entities.iterator();
                     while (it.hasNext()) {
                         Entity entityTmp = it.next();
                         String entityLocation;
                         try {
-                            entityLocation = ConfigurationManager.getLocation(entityTmp.getId());
+                            entityLocation = EntityManager.getLocation(entityTmp.getId());
 
                         } catch (ConfigurationException ex) {
                             try {
@@ -214,7 +217,7 @@ public class PostQuery extends AbstractPostQuery {
                         }
 
                     }
-                    response = executeActionsOnEntities(actionId, entities, data);
+                    response = executeActionsOnEntities(actionId, entities, contentData);
                     continue;
                 }
             } // end if action query part.
@@ -222,14 +225,14 @@ public class PostQuery extends AbstractPostQuery {
 
             // Update mixins, tags, attributes etc. on an entity.
             if (pathParser.isEntityQuery()) {
-                String entityId = data.getEntityUUID();
+                String entityId = contentData.getEntityUUID();
                 if (entityId == null) {
-                    entityId = Utils.getUUIDFromPath(location, attrs);
+                    entityId = EntityManager.getUUIDFromPath(location, attrs);
                 }
                 if (entityId == null) {
-                    if (data.getKind() != null) {
+                    if (contentData.getKind() != null) {
                         // Search if entities below on the given location/path.
-                        List<String> entitiesUUIDs = Utils.getEntityUUIDsFromPath(location);
+                        List<String> entitiesUUIDs = EntityManager.getEntityUUIDsFromPath(location);
                         if (entitiesUUIDs.size() == 1) {
                             entityId = entitiesUUIDs.get(0);
                         }
@@ -250,7 +253,7 @@ public class PostQuery extends AbstractPostQuery {
                 // Check if location path correspond to entity registered path.
                 String locationTmp;
                 try {
-                    locationTmp = ConfigurationManager.getLocation(entityId);
+                    locationTmp = EntityManager.getLocation(entityId);
                     locationTmp = locationTmp.replace(entityId, "");
                     locationTmp = Utils.getPathWithoutPrefixSuffixSlash(locationTmp);
                 } catch (ConfigurationException ex) {
@@ -267,12 +270,12 @@ public class PostQuery extends AbstractPostQuery {
 
                 // Check if location is a category location and not an entity location.
                 if (!locationCompare.equals(locationTmp)) {
-                    Category cat = ConfigurationManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                    Category cat = KindManager.findKindFromExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
                     if (cat == null) {
-                        cat = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
+                        cat = MixinManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, categoryId);
                     }
                     if (cat == null) {
-                        cat = ConfigurationManager.getUserMixinFromLocation(locationTmp, ConfigurationManager.DEFAULT_OWNER);
+                        cat = MixinManager.getUserMixinFromLocation(locationTmp, ConfigurationManager.DEFAULT_OWNER);
                     }
                     if (cat == null) {
                         try {
@@ -284,8 +287,8 @@ public class PostQuery extends AbstractPostQuery {
                     }
                 }
 
-                if ((attrs != null && !attrs.isEmpty()) || !data.getMixins().isEmpty()) {
-                    entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
+                if ((attrs != null && !attrs.isEmpty()) || !contentData.getMixins().isEmpty()) {
+                    entity = EntityManager.findEntity(ConfigurationManager.DEFAULT_OWNER, entityId);
                     if (entity == null) {
                         try {
                             response = outputParser.parseResponse("The entity : " + entityId + " doest exit on path : " + path, Response.Status.NOT_FOUND);
@@ -295,7 +298,7 @@ public class PostQuery extends AbstractPostQuery {
                         }
                     }
 
-                    response = updateEntity(path, entity, data);
+                    response = updateEntity(path, entity, contentData);
 
                 } else {
                     try {
@@ -309,7 +312,7 @@ public class PostQuery extends AbstractPostQuery {
             }
 
             if (pathParser.isCollectionQuery()) {
-                response = executeUpdateOnCollection(data, location, pathParser);
+                response = executeUpdateOnCollection(contentData, location, pathParser);
                 continue;
             }
 
@@ -323,9 +326,9 @@ public class PostQuery extends AbstractPostQuery {
 
         }
 
-        if (datas.isEmpty()) {
+        if (contentDatas.isEmpty()) {
             try {
-                response = outputParser.parseResponse("Request is invalid, no datas set, nor resources, please check your query", Response.Status.BAD_REQUEST);
+                response = outputParser.parseResponse("Request is invalid, no contentDatas set, nor resources, please check your query", Response.Status.BAD_REQUEST);
                 return response;
             } catch (ResponseParseException ex) {
                 throw new InternalServerErrorException(ex);
@@ -340,11 +343,11 @@ public class PostQuery extends AbstractPostQuery {
      *
      * @param path
      * @param entity
-     * @param data   Data object, must be never null.
+     * @param contentData   ContentData object, must be never null.
      * @return
      */
     @Override
-    public Response updateEntity(String path, Entity entity, Data data) {
+    public Response updateEntity(String path, Entity entity, ContentData contentData) {
         Response response;
 
         if (entity == null) {
@@ -357,11 +360,11 @@ public class PostQuery extends AbstractPostQuery {
             }
         }
 
-        List<String> mixins = data.getMixins();
+        List<String> mixins = contentData.getMixins();
         if (mixins != null && !mixins.isEmpty()) {
 
             try {
-                ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, false);
+                MixinManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, false);
             } catch (ConfigurationException ex) {
                 // Already logged in sub method.
                 try {
@@ -372,11 +375,11 @@ public class PostQuery extends AbstractPostQuery {
             }
         }
 
-        Map<String, String> attrs = data.getAttrs();
+        Map<String, String> attrs = contentData.getAttrs();
 
         // update attributes .
-        entity = ConfigurationManager.updateAttributesToEntity(entity, attrs);
-        ConfigurationManager.updateVersion(ConfigurationManager.DEFAULT_OWNER, path + entity.getId());
+        entity = EntityManager.updateAttributesToEntity(entity, attrs);
+        EntityManager.updateVersion(ConfigurationManager.DEFAULT_OWNER, path + entity.getId());
         entity.occiUpdate();
         // entity.occiRetrieve();
         // TODO : to see if this case is important to retrieve from provider the entity before returning it in response object.
@@ -394,15 +397,15 @@ public class PostQuery extends AbstractPostQuery {
     /**
      * @param path
      * @param entities
-     * @param data
+     * @param contentData
      * @return
      */
     @Override
-    public Response updateEntityCollection(String path, List<Entity> entities, Data data) {
+    public Response updateEntityCollection(String path, List<Entity> entities, ContentData contentData) {
         Response response = null;
         Response.ResponseBuilder responseBuilder = null;
         for (Entity entity : entities) {
-            responseBuilder = Response.fromResponse(updateEntity(path, entity, data));
+            responseBuilder = Response.fromResponse(updateEntity(path, entity, contentData));
         }
         if (responseBuilder != null) {
             response = responseBuilder.build();
@@ -433,7 +436,7 @@ public class PostQuery extends AbstractPostQuery {
         List<String> mixins = new ArrayList<>();
         mixins.add(mixinTag);
 
-        String uuid = Utils.getUUIDFromPath(relativeLocationApply, new HashMap<>());
+        String uuid = EntityManager.getUUIDFromPath(relativeLocationApply, new HashMap<>());
         if (uuid == null) {
             try {
                 response = outputParser.parseResponse(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore", Response.Status.BAD_REQUEST);
@@ -442,7 +445,7 @@ public class PostQuery extends AbstractPostQuery {
                 throw new BadRequestException(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore, exception: " + ex.getMessage());
             }
         }
-        Entity entity = ConfigurationManager.findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
+        Entity entity = EntityManager.findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
         if (entity == null) {
             try {
                 response = outputParser.parseResponse(Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore", Response.Status.BAD_REQUEST);
@@ -453,7 +456,7 @@ public class PostQuery extends AbstractPostQuery {
         }
 
         try {
-            ConfigurationManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, false);
+            MixinManager.addMixinsToEntity(entity, mixins, ConfigurationManager.DEFAULT_OWNER, false);
         } catch (ConfigurationException ex) {
             try {
                 response = outputParser.parseResponse(ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
@@ -476,11 +479,11 @@ public class PostQuery extends AbstractPostQuery {
      *
      * @param actionId
      * @param entity
-     * @param data
+     * @param contentData
      * @return
      */
     @Override
-    public Response executeAction(String actionId, Entity entity, Data data) {
+    public Response executeAction(String actionId, Entity entity, ContentData contentData) {
         Response response;
 
         if (entity == null) {
@@ -495,14 +498,14 @@ public class PostQuery extends AbstractPostQuery {
 
         String[] actionParameters = null;
 
-        if (data != null && data.getAttrs() != null) {
-            actionParameters = Utils.getActionParametersArray(data.getAttrs());
+        if (contentData != null && contentData.getAttrs() != null) {
+            actionParameters = Utils.getActionParametersArray(contentData.getAttrs());
         }
 
         Action actionKind = null;
 
         try {
-            actionKind = ConfigurationManager.getActionFromEntityWithActionId(entity, actionId);
+            actionKind = EntityManager.getActionFromEntityWithActionId(entity, actionId);
         } catch (ConfigurationException ex) {
             LOGGER.warn(ex.getMessage());
         }
@@ -511,7 +514,7 @@ public class PostQuery extends AbstractPostQuery {
 
             // Search for this action with the term only on the entity Kind and Mixins.
             try {
-                actionKind = ConfigurationManager.getActionFromEntityWithActionTerm(entity, actionId);
+                actionKind = EntityManager.getActionFromEntityWithActionTerm(entity, actionId);
             } catch (ConfigurationException ex) {
                 LOGGER.error(ex.getMessage());
                 try {
@@ -569,11 +572,11 @@ public class PostQuery extends AbstractPostQuery {
     }
 
     @Override
-    public Response executeActionsOnEntities(String actionKind, List<Entity> entities, Data data) {
+    public Response executeActionsOnEntities(String actionKind, List<Entity> entities, ContentData contentData) {
         Response response = null;
         Response.ResponseBuilder responseBuilder = null;
         for (Entity entity : entities) {
-            responseBuilder = Response.fromResponse(executeAction(actionKind, entity, data));
+            responseBuilder = Response.fromResponse(executeAction(actionKind, entity, contentData));
         }
 
         if (responseBuilder != null) {
@@ -596,21 +599,21 @@ public class PostQuery extends AbstractPostQuery {
     /**
      * Execute update (mixin tag asso + request on entities collection).
      *
-     * @param data
+     * @param contentData
      * @param location
      * @param pathParser
      * @return
      */
-    private Response executeUpdateOnCollection(Data data, String location, PathParser pathParser) {
+    private Response executeUpdateOnCollection(ContentData contentData, String location, PathParser pathParser) {
         Response response = null;
         String categoryId = pathParser.getCategoryId();
         try {
             // Define if update on mixin tag association.
             if (pathParser.isCollectionOnCategory()) {
-                Mixin mixin = ConfigurationManager.findUserMixinOnConfiguration(categoryId, ConfigurationManager.DEFAULT_OWNER);
+                Mixin mixin = MixinManager.findUserMixinOnConfiguration(categoryId, ConfigurationManager.DEFAULT_OWNER);
                 if (mixin != null) {
                     LOGGER.info("Mixin tag association query...");
-                    List<String> xocciLocations = data.getXocciLocations();
+                    List<String> xocciLocations = contentData.getXocciLocations();
                     if (!xocciLocations.isEmpty()) {
                         for (String xocciLocation : xocciLocations) {
                             LOGGER.info("On X-OCCI-Location: " + xocciLocation);
@@ -629,7 +632,7 @@ public class PostQuery extends AbstractPostQuery {
 
                 if (!entities.isEmpty()) {
                     LOGGER.info("Update entities collection on : " + location);
-                    response = updateEntityCollection(location, entities, data);
+                    response = updateEntityCollection(location, entities, contentData);
                 } else {
                     // No entities to update.
                     response = outputParser.parseResponse("No entities to update.", Response.Status.NOT_FOUND);

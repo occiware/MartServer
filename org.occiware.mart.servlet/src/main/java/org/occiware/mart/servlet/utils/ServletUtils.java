@@ -22,6 +22,9 @@ import org.apache.commons.io.IOUtils;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.model.KindManager;
+import org.occiware.mart.server.model.MixinManager;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
@@ -425,8 +428,8 @@ public class ServletUtils {
      * null.
      */
     public static String getCategoryFilter(final String path, final String user) {
-        List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(user);
-        List<Mixin> mixins = ConfigurationManager.getAllConfigurationMixins(user);
+        List<Kind> kinds = KindManager.getAllConfigurationKind(user);
+        List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
         String term;
 
         for (Kind kind : kinds) {
@@ -464,8 +467,8 @@ public class ServletUtils {
      * null.
      */
     public static String getCategoryFilterSchemeTerm(final String path, final String user) {
-        List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(user);
-        List<Mixin> mixins = ConfigurationManager.getAllConfigurationMixins(user);
+        List<Kind> kinds = KindManager.getAllConfigurationKind(user);
+        List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
         String term;
         String scheme;
         String id;
@@ -523,8 +526,8 @@ public class ServletUtils {
      */
     public static boolean checkIfCategorySchemeTerm(String categoryFilter, String user) {
 
-        List<Kind> kinds = ConfigurationManager.getAllConfigurationKind(user);
-        List<Mixin> mixins = ConfigurationManager.getAllConfigurationMixins(user);
+        List<Kind> kinds = KindManager.getAllConfigurationKind(user);
+        List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
         String term;
         String scheme;
         String id;
@@ -592,9 +595,9 @@ public class ServletUtils {
 
         Mixin mixinTmp;
         for (String mixinId : mixins) {
-            mixinTmp = ConfigurationManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, mixinId);
+            mixinTmp = MixinManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, mixinId);
             if (mixinTmp == null) {
-                mixinTmp = ConfigurationManager.findUserMixinOnConfiguration(mixinId, ConfigurationManager.DEFAULT_OWNER);
+                mixinTmp = MixinManager.findUserMixinOnConfiguration(mixinId, ConfigurationManager.DEFAULT_OWNER);
                 if (mixinTmp == null) {
                     throw new ConfigurationException("Mixin : " + mixinId + " not found on used extensions models");
                 }
@@ -630,7 +633,7 @@ public class ServletUtils {
             pathCompare = path.substring(1);
         }
 
-        Map<String, String> entitiesPath = ConfigurationManager.getEntitiesLocation();
+        Map<String, String> entitiesPath = EntityManager.getEntitiesLocation();
         String uuid;
         String pathTmp;
         for (Map.Entry<String, String> entry : entitiesPath.entrySet()) {
@@ -664,7 +667,7 @@ public class ServletUtils {
      */
     public static boolean isMixinTagRequest(final String path, final String owner) {
         boolean result;
-        Mixin mixin = ConfigurationManager.getUserMixinFromLocation(path, owner);
+        Mixin mixin = MixinManager.getUserMixinFromLocation(path, owner);
         result = mixin != null;
         return result;
     }

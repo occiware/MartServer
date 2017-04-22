@@ -19,7 +19,7 @@
 package org.occiware.mart.server.utils.tests;
 
 import org.junit.Test;
-import org.occiware.mart.server.utils.Utils;
+import org.occiware.mart.server.model.EntityManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,28 +40,28 @@ public class UtilsTest {
         Map<String, Object> attr = new HashMap<>();
         String path = "/tmp/testuuid/f88486b7-0632-482d-a184-a9195733ddd0";
 
-        uuidResult = Utils.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr);
 
         assertEquals(uuidToTest, uuidResult);
 
         path = "/tmp/testuuid/";
 
-        uuidResult = Utils.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr);
         assertNull(uuidResult);
 
         attr.put("occi.core.id", "urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0");
 
-        uuidResult = Utils.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr);
         assertEquals(uuidToTest, uuidResult);
 
         attr.put("occi.core.id", "f88486b7-0632-482d-a184-a9195733ddd0");
 
-        uuidResult = Utils.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr);
         assertEquals(uuidToTest, uuidResult);
 
         attr.put("occi.core.id", "urn:uuid:test/toto/");
 
-        uuidResult = Utils.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr);
         assertNull(uuidResult);
     }
 
