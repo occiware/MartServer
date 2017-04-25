@@ -16,7 +16,7 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.utils;
+package org.occiware.mart.server.utils.logging;
 
 import org.apache.log4j.*;
 import org.apache.log4j.varia.LevelRangeFilter;

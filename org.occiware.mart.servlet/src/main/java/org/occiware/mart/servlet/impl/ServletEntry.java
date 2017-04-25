@@ -1,7 +1,6 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
@@ -129,8 +128,6 @@ public abstract class ServletEntry {
         LOGGER.debug("Context root : " + contextRoot);
         LOGGER.debug("URI relative path: " + path);
 
-
-
         // Load the parsers.
         // check content-type header.
         contentType = headers.getFirst(Constants.HEADER_CONTENT_TYPE);
@@ -151,6 +148,8 @@ public abstract class ServletEntry {
 
         // TODO : Manage authentication and pass username to MART engine.
         // validateAuth().
+
+
 
         occiResponse = new OCCIServletOutputParser(acceptType, "anonymous", httpResponse);
         occiRequest = new OCCIServletInputParser(occiResponse, contentType, "anonymous", httpRequest, headers, this.getRequestParameters());

@@ -1,7 +1,9 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.facade.AbstractOCCIApiResponse;
 import org.occiware.mart.server.facade.AbstractOCCIResponse;
+import org.occiware.mart.server.facade.OCCIApiResponse;
 import org.occiware.mart.server.facade.OCCIResponse;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
@@ -18,7 +20,7 @@ import java.util.Map;
  * Created by cgourdin on 11/04/2017.
  * Implementation for Servlet output with parser (text/occi, application/json etc.)
  */
-public class OCCIServletOutputParser extends AbstractOCCIResponse implements OCCIResponse {
+public class OCCIServletOutputParser extends AbstractOCCIApiResponse implements OCCIApiResponse {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OCCIServletOutputParser.class);
     private HttpServletResponse httpResponse;

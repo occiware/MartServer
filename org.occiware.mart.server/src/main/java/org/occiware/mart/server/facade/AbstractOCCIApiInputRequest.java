@@ -1,0 +1,721 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
+package org.occiware.mart.server.facade;
+
+import org.occiware.clouddesigner.occi.Action;
+import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.clouddesigner.occi.Mixin;
+import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.exception.ResourceNotFoundException;
+import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.model.MixinManager;
+import org.occiware.mart.server.parser.IRequestParser;
+import org.occiware.mart.server.parser.QueryInterfaceData;
+import org.occiware.mart.server.utils.CollectionFilter;
+import org.occiware.mart.server.utils.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+
+/**
+ * This abstract class has generic methods to address OCCI runtime core model managers.
+ * Concrete implementation may have more methods to manage datas in input and output.
+ * Created by cgourdin on 24/04/2017.
+ */
+public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractOCCIApiInputRequest.class);
+
+    private final String username;
+    private OCCIApiResponse occiApiResponse;
+
+    public AbstractOCCIApiInputRequest(String username, OCCIApiResponse occiApiResponse) {
+        if (username == null) {
+            username = ConfigurationManager.DEFAULT_OWNER;
+        }
+        this.username = username;
+        this.occiApiResponse = occiApiResponse;
+    }
+
+
+    @Override
+    public OCCIApiResponse getModelsInterface(String categoryFilter, String extensionFilter) {
+        QueryInterfaceData interfData = new QueryInterfaceData();
+
+        interfData.setCategoryFilter(categoryFilter);
+        try {
+            ConfigurationManager.applyFilterOnInterface(categoryFilter, interfData, username);
+
+            // Render output.
+            occiApiResponse.getOutputParser().getInterface(interfData, username);
+
+        } catch (ConfigurationException | ParseOCCIException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+
+        return this.occiApiResponse;
+    }
+
+    @Override
+    public OCCIApiResponse createEntity(final String kind, final List<String> mixins, final Map<String, String> attributes, final String location) {
+        String message;
+        if (location == null || location.trim().isEmpty()) {
+            message = "No location set for the entity : " + kind;
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+        if (kind == null || kind.trim().isEmpty()) {
+            message = "Cant create entity without kind.";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        boolean isResource = EntityManager.checkIfEntityIsResourceOrLinkFromAttributes(attributes);
+
+        // Define full overwrite of an existing entity.
+        boolean overwrite = false;
+
+        Entity entity = EntityManager.findEntity(location, username);
+        String entityId = null;
+        if (entity != null) {
+            LOGGER.debug("Entity : " + location + " exist");
+            overwrite = true;
+            entityId = entity.getId();
+            LOGGER.info("Overwriting entity : " + location);
+        } else {
+            LOGGER.info("Creating entity : " + location + " with kind : " + kind);
+        }
+        if (entityId == null) {
+            entityId = EntityManager.getUUIDFromPath(location, attributes);
+        }
+
+
+        // Check if entityId is null or there is a uuid on path, if this is not the case, generate the uuid.
+        if (entityId == null || entityId.trim().isEmpty()) {
+            // Create a new uuid.
+            entityId = ConfigurationManager.createUUID();
+        }
+
+        LOGGER.info("Create entity with location: " + location + " with id : " + entityId);
+        LOGGER.debug("Kind: " + kind);
+        for (String mixin : mixins) {
+            LOGGER.debug("Mixin : " + mixin);
+        }
+        LOGGER.debug("Attributes: ");
+        for (Map.Entry<String, String> entry : attributes.entrySet()) {
+            LOGGER.debug(entry.getKey() + " ---> " + entry.getValue());
+        }
+
+        // check the uuid validity
+        if (!EntityManager.isUUIDValid(entityId)) {
+            message = "Entity uuid is not valid : " + entityId + ", check the entity identifier, it must be set to a uuid v4 format, like -> f88486b7-0632-482d-a184-a9195733ddd0 ";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+
+        // Check if there is a conflict between declared entityUUID and attribute uuid (core.id) if any.
+        if (entity != null && attributes.containsKey(Constants.OCCI_CORE_ID)) {
+            // check if this is the same id, if not there is a conflict..
+            String coreIdObj = attributes.get(Constants.OCCI_CORE_ID);
+            if (coreIdObj == null) {
+                // Get the id attribute.
+                coreIdObj = attributes.get("id");
+            }
+
+            // Check if urn:uuid: is set.
+            if (coreIdObj != null) {
+                String coreId = coreIdObj;
+                if (coreId.contains(Constants.URN_UUID_PREFIX)) {
+                    coreId = coreId.replace(Constants.URN_UUID_PREFIX, "");
+                }
+                if (!coreId.equals(entityId)) {
+                    message = "The attribute occi.core.id value is not the same as the uuid specified in location or entity.";
+                    parseConfigurationExceptionMessageOutput(message);
+                    return occiApiResponse;
+                }
+            }
+        }
+
+        try {
+            String coreId = Constants.URN_UUID_PREFIX + entityId;
+            attributes.put("occi.core.id", coreId);
+            if (isResource) {
+                EntityManager.addResourceToConfiguration(entityId, kind, mixins, attributes, username, location);
+            } else {
+                String src = attributes.get(Constants.OCCI_CORE_SOURCE);
+                String target = attributes.get(Constants.OCCI_CORE_TARGET);
+
+                if (src == null) {
+                    message = "No source provided for this link : " + entityId;
+                    parseConfigurationExceptionMessageOutput(message);
+                    return occiApiResponse;
+                }
+                if (target == null) {
+                    message = "No target provided for this link : " + entityId;
+                    parseConfigurationExceptionMessageOutput(message);
+                    return occiApiResponse;
+                }
+                EntityManager.addLinkToConfiguration(entityId, kind, mixins, src, target, attributes, username, location);
+            }
+        } catch (ConfigurationException ex) {
+            message = "The entity has not been added, it may be produce if you use non referenced attributes. Message: " + ex.getMessage();
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+
+        // Execute model CRUD method.
+        entity = EntityManager.findEntity(entityId, username);
+        if (entity != null) {
+            if (overwrite) {
+                entity.occiUpdate();
+                LOGGER.info("Update entity done returning location : " + location + " with id: " + entityId);
+            } else {
+                entity.occiCreate();
+                LOGGER.info("Create entity done returning location : " + location + " with id: " + entityId);
+            }
+            renderEntityOutput(entity);
+
+        } else {
+            message = "Entity " + entityId + " was not created on object model, please check your query.";
+            parseConfigurationExceptionMessageOutput(message);
+        }
+        return this.occiApiResponse;
+    }
+
+    private void parseConfigurationExceptionMessageOutput(final String message) {
+        occiApiResponse.setExceptionMessage(message);
+        occiApiResponse.setExceptionThrown(new ConfigurationException(message));
+        occiApiResponse.parseResponseMessage(message);
+        LOGGER.error(message);
+    }
+
+    private void parseNotFoundExceptionMessageOutput(final String message) {
+        occiApiResponse.setExceptionMessage(message);
+        occiApiResponse.setExceptionThrown(new ResourceNotFoundException(message));
+        occiApiResponse.parseResponseMessage(message);
+        LOGGER.info(message);
+    }
+
+    /**
+     * Parse output response for an entity.
+     *
+     * @param entity an entity object to render in output via a parser setted in concrete implementation.
+     */
+    private void renderEntityOutput(final Entity entity) {
+        IRequestParser outputParser = occiApiResponse.getOutputParser();
+        if (outputParser != null) {
+            try {
+                // Launch the parsing output (for json, text/occi and other implementations).
+                occiApiResponse.setResponseMessage(outputParser.renderOutputEntity(entity));
+
+            } catch (ParseOCCIException ex) {
+                String message = "Exception thrown when rendering entity response, message: " + ex.getMessage();
+                LOGGER.error(message);
+                occiApiResponse.setExceptionMessage(message);
+                occiApiResponse.setExceptionThrown(ex);
+                occiApiResponse.parseResponseMessage(message);
+            }
+        }
+    }
+
+    /**
+     * Render entities location.
+     *
+     * @param entities the entities to render.
+     */
+    private void renderEntitiesLocationOutput(final List<Entity> entities) {
+        IRequestParser outputParser = occiApiResponse.getOutputParser();
+        if (outputParser != null) {
+            try {
+                List<String> locations = new LinkedList<>();
+                // Launch the parsing output (for json, text/occi and other implementations).
+                for (Entity entity : entities) {
+                    String location = EntityManager.getLocation(entity);
+                    locations.add(location);
+                }
+                occiApiResponse.setResponseMessage(outputParser.renderOutputEntitiesLocations(locations));
+
+            } catch (ParseOCCIException ex) {
+                String message = "Exception thrown when rendering entity response, message: " + ex.getMessage();
+                LOGGER.error(message);
+                occiApiResponse.setExceptionMessage(message);
+                occiApiResponse.setExceptionThrown(ex);
+                occiApiResponse.parseResponseMessage(message);
+            }
+        }
+    }
+
+    /**
+     * Parse output response for an entity.
+     *
+     * @param entities List of entities to render in output via a parser setted on concrete implementation.
+     */
+    private void renderEntitiesOutput(final List<Entity> entities) {
+        IRequestParser outputParser = occiApiResponse.getOutputParser();
+        if (outputParser != null) {
+            try {
+                // Launch the parsing output (for json, text/occi and other implementations).
+                occiApiResponse.setResponseMessage(outputParser.renderOutputEntities(entities));
+
+            } catch (ParseOCCIException ex) {
+                String message = "Exception thrown when rendering entity response, message: " + ex.getMessage();
+                LOGGER.error(message);
+                occiApiResponse.setExceptionMessage(message);
+                occiApiResponse.setExceptionThrown(ex);
+                occiApiResponse.parseResponseMessage(message);
+            }
+        }
+    }
+
+
+    @Override
+    public OCCIApiResponse updateEntity(final List<String> mixins, final Map<String, String> attributes, final String location, final String mixinTag, final List<String> xocciLocations) {
+        String message;
+        if (mixins.isEmpty() && attributes.isEmpty()) {
+            message = "No attributes to update or mixins to apply to entities";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        if (occiApiResponse.hasExceptions()) {
+            return occiApiResponse;
+        }
+
+        // Find entities with location set.
+        if (location == null || location.trim().isEmpty()) {
+            message = "No location is set for entity to update.";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        // Load the entity with location.
+        Entity entity = EntityManager.findEntityFromLocation(location, username);
+
+        if (entity == null) {
+            message = "Entity on location: " + location + " doesnt exist.";
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        // update attributes .
+        entity = EntityManager.updateAttributesToEntity(entity, attributes, username);
+        entity.occiUpdate();
+
+        if (!mixins.isEmpty()) {
+            try {
+                MixinManager.addMixinsToEntity(entity, mixins, username, false);
+            } catch (ConfigurationException ex) {
+                message = ex.getMessage();
+                parseConfigurationExceptionMessageOutput(message);
+                return occiApiResponse;
+            }
+        }
+
+        if (mixinTag != null) {
+            List<String> mixinTags = new ArrayList<>();
+            mixinTags.add(mixinTag);
+            // Update mixin tags association.
+            for (String xocciLocation : xocciLocations) {
+                entity = EntityManager.findEntity(xocciLocation, username);
+                if (entity == null) {
+                    message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
+                    parseConfigurationExceptionMessageOutput(message);
+                    return occiApiResponse;
+                }
+                try {
+                    MixinManager.addMixinsToEntity(entity, mixinTags, username, false);
+                } catch (ConfigurationException ex) {
+                    message = ex.getMessage();
+                    parseConfigurationExceptionMessageOutput(message);
+                    return occiApiResponse;
+                }
+            }
+        }
+
+        return occiApiResponse;
+    }
+
+    /**
+     * Delete an entity from the user configuration (and execute occiDelete()).
+     *
+     * @param location the location like /mylocation/myentity.
+     * @return
+     */
+    @Override
+    public OCCIApiResponse deleteEntity(final String location) {
+        Entity entity = EntityManager.findEntityFromLocation(location, username);
+        String message;
+        String entityId;
+        String title;
+        if (entity == null) {
+            message = "Entity not found on location: " + location;
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        entityId = entity.getId();
+        title = entity.getTitle();
+        entity.occiDelete();
+        EntityManager.removeOrDissociateFromConfiguration(entityId, username);
+        LOGGER.info("Remove entity: " + title + " --> " + entityId + " on location: " + location);
+
+        // No response to parse for a delete.
+
+        return occiApiResponse;
+    }
+
+    /**
+     * Find an entity or a collection of entities, outputparser will render the output to the good type.
+     *
+     * @param location the location like /mylocation/myentity/ or a category location like /compute/ or bounded path like /mycollections/myentities/
+     * @param filter   filter the output entities if this is a collection so may be null if none.
+     * @return an occiApiResponse object defined by concrete implementation.
+     */
+    @Override
+    public OCCIApiResponse findEntities(final String location, CollectionFilter filter) {
+        String message;
+        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
+        int page = Constants.DEFAULT_CURRENT_PAGE;
+
+        if (filter == null) {
+            // Build a default filter.
+            filter = new CollectionFilter();
+            filter.setCurrentPage(page);
+            filter.setNumberOfItemsPerPage(items);
+            filter.setOperator(0);
+        }
+        List<Entity> entities;
+        // Important to note : filters are defined in concrete implementation (categoryFilter, attributes filter, filter on a value etc.)
+
+        String categoryFilter = filter.getCategoryFilter();
+        // Determine if this is a collection or an entity location.
+        // Collection on categories. // Like : get on myhost/compute/
+        boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
+        if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
+            filter.setCategoryFilter(ConfigurationManager.getCategoryFilterSchemeTerm(location, username));
+        } else {
+            filter.setFilterOnPath(location);
+        }
+
+        // Case of the mixin tag entities request.
+        boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
+        if (isMixinTagRequest) {
+            LOGGER.info("Mixin tag request... ");
+            Mixin mixin = MixinManager.getUserMixinFromLocation(location, username);
+            if (mixin == null) {
+                message = "The mixin location : " + location + " is not defined";
+                parseConfigurationExceptionMessageOutput(message);
+                return occiApiResponse;
+            }
+            if (categoryFilter == null) {
+                filter.setCategoryFilter(mixin.getTerm());
+                filter.setFilterOnPath(null);
+            }
+        }
+
+        entities = EntityManager.findAllEntities(filter, username);
+
+        for (Entity entity : entities) {
+            // Refresh object.
+            entity.occiRetrieve();
+        }
+
+        if (entities.size() > 1) {
+            this.renderEntitiesOutput(entities);
+        } else if (entities.size() == 1) {
+            this.renderEntityOutput(entities.get(0));
+        } else {
+            // Not found answer.
+            parseNotFoundExceptionMessageOutput("Resource not found on location : " + location);
+        }
+
+
+        return this.occiApiResponse;
+    }
+
+    /**
+     * Same as findEntities method but render locations link replacing entities data.
+     *
+     * @param location the collection location like /mylocation/myentity.
+     * @param filter   filter the output entities if this is a collection so may be null if none.
+     * @return a response object container with response message to publish.
+     */
+    @Override
+    public OCCIApiResponse findEntitiesLocations(final String location, CollectionFilter filter) {
+        String message;
+        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
+        int page = Constants.DEFAULT_CURRENT_PAGE;
+
+        if (filter == null) {
+            // Build a default filter.
+            filter = new CollectionFilter();
+            filter.setCurrentPage(page);
+            filter.setNumberOfItemsPerPage(items);
+            filter.setOperator(0);
+        }
+        List<Entity> entities;
+        // Important to note : filters are defined in concrete implementation (categoryFilter, attributes filter, filter on a value etc.)
+
+        String categoryFilter = filter.getCategoryFilter();
+        // Determine if this is a collection or an entity location.
+        // Collection on categories. // Like : get on myhost/compute/
+        boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
+        if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
+            filter.setCategoryFilter(ConfigurationManager.getCategoryFilterSchemeTerm(location, username));
+        } else {
+            filter.setFilterOnPath(location);
+        }
+
+        // Case of the mixin tag entities request.
+        boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
+        if (isMixinTagRequest) {
+            LOGGER.info("Mixin tag request... ");
+            Mixin mixin = MixinManager.getUserMixinFromLocation(location, username);
+            if (mixin == null) {
+                message = "The mixin location : " + location + " is not defined";
+                parseConfigurationExceptionMessageOutput(message);
+                return occiApiResponse;
+            }
+            if (categoryFilter == null) {
+                filter.setCategoryFilter(mixin.getTerm());
+                filter.setFilterOnPath(null);
+            }
+        }
+
+        entities = EntityManager.findAllEntities(filter, username);
+
+        for (Entity entity : entities) {
+
+            // Refresh object.
+            entity.occiRetrieve();
+        }
+
+        if (!entities.isEmpty()) {
+            this.renderEntitiesLocationOutput(entities);
+        } else {
+            // Not found answer.
+            parseNotFoundExceptionMessageOutput("Resource not found on location : " + location);
+        }
+        return this.occiApiResponse;
+    }
+
+    /**
+     * Create a new mixin tag and associate it on entities if locations are given in parameter.
+     *
+     * @param title     a title for this mixin tag.
+     * @param mixinTag  mixin scheme+term.
+     * @param location
+     * @param locations an optional list of entities location, if set this associate the mixin on these locations.  @return a response object given by implemented concrete request class.
+     */
+    @Override
+    public OCCIApiResponse createMixinTag(final String title, final String mixinTag, final String location, final List<String> locations) {
+        String message;
+        if (mixinTag == null || mixinTag.trim().isEmpty()) {
+            message = "No mixin tag id, cannot create mixin tag";
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+        if (location == null) {
+            message = "No mixin tag location set.";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        try {
+
+            MixinManager.addUserMixinOnConfiguration(mixinTag, title, location, username);
+
+            if (locations != null && !locations.isEmpty()) {
+
+                // Get the mixin scheme+term from path.
+                String categoryId = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
+                if (categoryId == null) {
+                    throw new ConfigurationException("Category is not defined");
+                }
+
+                List<String> entities = new ArrayList<>();
+
+                for (String xOcciLocation : locations) {
+                    // Build a list of entities from xoccilocations defined.
+                    if (EntityManager.isEntityUUIDProvided(xOcciLocation, new HashMap<>())) {
+                        // One entity.
+                        String uuid = EntityManager.getUUIDFromPath(xOcciLocation, new HashMap<>());
+                        if (uuid == null) {
+                            message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
+                            parseConfigurationExceptionMessageOutput(message);
+                            return occiApiResponse;
+                        }
+                        Entity entity = EntityManager.findEntity(uuid, ConfigurationManager.DEFAULT_OWNER);
+                        if (entity == null) {
+                            message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
+                            parseConfigurationExceptionMessageOutput(message);
+                            return occiApiResponse;
+                        }
+                        entities.add(entity.getId());
+                    } else {
+                        // Maybe a collection on inbound or outbound path.
+                        List<String> entitiesTmp = EntityManager.getEntityUUIDsFromPath(xOcciLocation);
+                        if (!entitiesTmp.isEmpty()) {
+                            entities.addAll(entitiesTmp);
+                        }
+                    }
+                }
+                // Full update mode.
+                if (!entities.isEmpty()) {
+                    MixinManager.saveMixinForEntities(categoryId, entities, true, username);
+                }
+            }
+        } catch (ConfigurationException ex) {
+            message = ex.getMessage();
+            parseConfigurationExceptionMessageOutput(message);
+        }
+
+        // if all ok, return no response (ok response).
+
+        return this.occiApiResponse;
+    }
+
+    /**
+     * Remove definitively the mixin tag and remove all its association.
+     *
+     * @param mixinTag mixin tag scheme + term.
+     * @return a response object.
+     */
+    @Override
+    public OCCIApiResponse deleteMixinTag(final String mixinTag) {
+        String message;
+        if (mixinTag == null) {
+            message = "No mixin tag to delete.";
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        EntityManager.removeOrDissociateFromConfiguration(mixinTag, username);
+        Mixin mixin = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
+        if (mixin == null) {
+            message = "The mixin tag : " + mixinTag + " is already removed.";
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+        try {
+            MixinManager.removeUserMixinFromConfiguration(mixinTag, username);
+        } catch (ConfigurationException ex) {
+            message = "Error while removing a mixin tag from configuration object: " + mixinTag + " --> " + ex.getMessage();
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+
+        // empty response ==> ok.
+
+        return occiApiResponse;
+    }
+
+    /**
+     * Remove mixin associations with specified locations. if locations is null or empty, all associations will be removed.
+     *
+     * @param mixin     the mixin scheme + term.
+     * @param locations the location of the entity where to remove the mixin.
+     * @return an occiApiResponse object.
+     */
+    @Override
+    public OCCIApiResponse removeMixinAssociations(final String mixin, List<String> locations) {
+        String message;
+        if (mixin == null) {
+            message = "no mixin associations to remove, there is no mixin defined";
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+        Mixin mixinModel = MixinManager.findMixinOnExtension(username, mixin);
+        if (mixinModel == null) {
+            message = "no mixin associations to remove, there is no mixin defined on model for : " + mixin;
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+        if (locations == null || locations.isEmpty()) {
+            LOGGER.info("Remove all associations with this mixin : " + mixin);
+            EntityManager.removeOrDissociateFromConfiguration(mixin, username);
+        } else {
+            Entity entity;
+            for (String currentLocation : locations) {
+                LOGGER.info("Remove association with mixin : " + mixin + " entity location : " + currentLocation);
+                entity = EntityManager.findEntityFromLocation(currentLocation, username);
+                if (entity != null) {
+                    MixinManager.dissociateMixinFromEntity(username, mixin, entity);
+                } else {
+                    LOGGER.warn("Entity on location: " + currentLocation + " not found for mixin dissociation : " + mixin);
+                }
+            }
+        }
+        return occiApiResponse;
+    }
+
+    /**
+     * Execute an action operation on entities location.
+     *
+     * @param action           the action category scheme+term.
+     * @param actionAttributes the action attributes in a map of String, String.
+     * @param locations        entities locations defined where to execute action.
+     * @return
+     */
+    @Override
+    public OCCIApiResponse executeActionOnEntities(final String action, final Map<String, String> actionAttributes, final List<String> locations) {
+        String message;
+        if (action == null || action.trim().isEmpty()) {
+            // No action defined.
+            message = "Action is not defined";
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        if (locations == null || locations.isEmpty()) {
+            // No entities defined to execute the action.
+            message = "Entity locations are not set.";
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        // Find action category on model.
+        Action actionModel = ConfigurationManager.findActionOnExtensions(action, username);
+        if (actionModel == null) {
+            message = "Action : " + action + " not found on referenced extensions";
+            parseNotFoundExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        // Execute the action.
+        for (String location : locations) {
+            try {
+                EntityManager.executeActionOnlocation(location, action, actionAttributes, username);
+            } catch (ConfigurationException ex) {
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
+                return occiApiResponse;
+            }
+
+        }
+
+        return occiApiResponse;
+    }
+
+
+}

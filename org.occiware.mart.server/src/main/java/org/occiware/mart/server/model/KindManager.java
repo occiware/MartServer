@@ -1,3 +1,21 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.server.model;
 
 import org.eclipse.emf.common.util.EList;
@@ -40,11 +58,11 @@ public class KindManager {
     /**
      * Search for a kind.
      *
-     * @param owner
      * @param id
+     * @param owner
      * @return
      */
-    static Kind findKindFromEntities(final String owner, final String id) {
+    static Kind findKindFromEntities(final String id, final String owner) {
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
         Kind kind = null;
         EList<Link> links;
@@ -76,11 +94,11 @@ public class KindManager {
     /**
      * Search for a kind from referenced extension model.
      *
-     * @param owner
      * @param kindId
+     * @param owner
      * @return
      */
-    public static Kind findKindFromExtension(final String owner, final String kindId) {
+    public static Kind findKindFromExtension(final String kindId, final String owner) {
         Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
         Kind kindToReturn = null;
         EList<Kind> kinds;
@@ -132,11 +150,11 @@ public class KindManager {
     /**
      * Get used extension with this kind.
      *
-     * @param owner owner of the configuration
      * @param kind  (represent a Kind Scheme+term)
+     * @param owner owner of the configuration
      * @return
      */
-    public static Extension getExtensionForKind(String owner, String kind) {
+    public static Extension getExtensionForKind(String kind, String owner) {
         Extension extRet = null;
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
         EList<Extension> exts = configuration.getUse();

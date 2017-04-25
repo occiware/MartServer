@@ -1,6 +1,5 @@
 package org.occiware.mart.servlet.impl;
 
-import org.occiware.mart.server.parser.ContentData;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
@@ -10,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
-import java.util.List;
 
 /**
  * Created by cgourdin on 13/04/2017.
@@ -29,7 +27,7 @@ public class GetWorker extends ServletEntry {
             return resp;
         }
 
-        if (!occiRequest.getContentDatas().isEmpty()) {
+        if (!occiRequest.getOCCIRequestData().isEmpty()) {
             return occiResponse.parseMessage("Input content are not accepted with GET method", HttpServletResponse.SC_BAD_REQUEST);
         }
 

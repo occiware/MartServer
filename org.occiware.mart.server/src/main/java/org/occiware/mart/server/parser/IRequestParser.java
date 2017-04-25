@@ -33,11 +33,13 @@ public interface IRequestParser {
     /**
      * Get the model interface description.
      *
+     *
+     * @param interfaceData
      * @param user (the authorized username)
      * @return an Object, this may be a String (for json or plain/text), this may be a Header Map object (for text/occi) or specific objects if other implementations (sextuple etc.).
      * @throws ParseOCCIException if anything goes wrong (in Model@runtime or in Parser).
      */
-    public Object getInterface(final String user) throws ParseOCCIException;
+    public Object getInterface(QueryInterfaceData interfaceData, final String user) throws ParseOCCIException;
 
     /**
      * To render message in appropriate format. if there is an error, this method will be used to render a response message.
@@ -45,7 +47,7 @@ public interface IRequestParser {
      * @param message
      * @return
      */
-    public String parseMessage(final String message, final Integer statusCode) throws ParseOCCIException;
+    public String parseMessage(final String message) throws ParseOCCIException;
 
     /**
      * Parse input request to OCCIRequest datas (this set datas on OCCIRequest object).
@@ -61,4 +63,7 @@ public interface IRequestParser {
 
     public Object renderOutputEntity(final Entity entity) throws ParseOCCIException;
 
+    List<OCCIRequestData> getInputDatas();
+
+    void setInputDatas(List<OCCIRequestData> inputDatas);
 }

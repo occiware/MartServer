@@ -16,28 +16,22 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.servlet.facade;
+package org.occiware.mart.server.facade;
 
-import org.occiware.mart.server.parser.ContentData;
-
-import javax.ws.rs.core.Response;
-import java.util.Map;
+import org.occiware.mart.server.parser.IRequestParser;
 
 /**
- * @author Christophe Gourdin
+ * Created by christophe on 19/04/2017.
  */
-public abstract class AbstractDeleteQuery extends AbstractEntryPoint implements IDeleteQuery {
+public class DefaultOCCIResponse extends AbstractOCCIApiResponse implements OCCIApiResponse {
+
+    public DefaultOCCIResponse(String username, IRequestParser outputParser) {
+        super(username, outputParser);
+    }
 
     @Override
-    public abstract Response deleteMixin(String mixinId, String owner, boolean isMixinTag);
-
-    @Override
-    public abstract Response deleteEntityCollection(String path);
-
-    @Override
-    public abstract Response deleteEntity(String path, Map<String, String> attrs);
-
-    @Override
-    public abstract Response dissociateMixinFromEntities(String mixinId, String owner, ContentData contentData, String location);
+    public String getResponseMessage() {
+        return (String)super.getResponseMessage();
+    }
 
 }

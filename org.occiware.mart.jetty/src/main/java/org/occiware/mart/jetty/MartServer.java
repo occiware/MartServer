@@ -21,7 +21,7 @@ package org.occiware.mart.jetty;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.occiware.mart.server.exception.ConfigurationException;
-import org.occiware.mart.server.utils.LoggerConfig;
+import org.occiware.mart.server.utils.logging.LoggerConfig;
 import org.occiware.mart.server.utils.Utils;
 import org.occiware.mart.servlet.MainServlet;
 

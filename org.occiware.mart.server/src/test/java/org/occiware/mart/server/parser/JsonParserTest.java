@@ -22,9 +22,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.facade.DummyRequest;
-import org.occiware.mart.server.facade.DummyResponse;
-import org.occiware.mart.server.facade.OCCIResponse;
 import org.occiware.mart.server.parser.json.render.ActionJson;
 import org.occiware.mart.server.parser.json.render.OcciMainJson;
 import org.occiware.mart.server.utils.Constants;
@@ -43,7 +40,6 @@ import static org.junit.Assert.*;
  * @author Christophe Gourdin
  */
 public class JsonParserTest {
-
 
     @Test
     public void testJsonInputObject() {
@@ -87,32 +83,33 @@ public class JsonParserTest {
         }
 
     }
+
+
     @Test
     public void testJsonInputParserToDatas() {
         File resourcesFileThree = getJsonResourceInput("/testjson/integration/creation/resource3.json");
         try {
-            OCCIResponse response = new DummyResponse(Constants.MEDIA_TYPE_JSON, "christophe");
-            DummyRequest request = new DummyRequest(response, Constants.MEDIA_TYPE_JSON, "christophe");
-
+            IRequestParser jsonParser = ParserFactory.build(Constants.MEDIA_TYPE_JSON);
             InputStream in = new FileInputStream(resourcesFileThree);
             String content;
             try {
                 content = Utils.convertInputStreamToString(in);
+
                 // for Object occiRequest to be fully completed.
-                request.getInputParser().parseInputToDatas(content);
+                jsonParser.parseInputToDatas(content);
 
             } catch (IOException ex) {
                 throw new ParseOCCIException("The server cant read the json file input --> " + ex.getMessage());
             } finally {
                 Utils.closeQuietly(in);
             }
-            List<ContentData> contentDatas = request.getContentDatas();
-            assertNotNull(contentDatas);
-            assertFalse(contentDatas.isEmpty());
 
-            for (ContentData contentData : contentDatas) {
-                System.out.println("ContentData : ");
-                contentData.printDataToOutput();
+            // Get the input worker and container data object.
+            List<OCCIRequestData> occiRequestDatas = jsonParser.getInputDatas();
+            assertNotNull(occiRequestDatas);
+            assertFalse(occiRequestDatas.isEmpty());
+            for (OCCIRequestData data : occiRequestDatas) {
+                data.printDataToOutput();
             }
 
         } catch (IOException | ParseOCCIException ex) {

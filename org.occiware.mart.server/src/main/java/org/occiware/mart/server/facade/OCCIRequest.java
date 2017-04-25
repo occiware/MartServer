@@ -18,20 +18,19 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.parser.ContentData;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.utils.CollectionFilter;
 
 import java.util.List;
-import java.util.concurrent.Future;
 
 /**
  * Created by Christophe Gourdin on 10/04/2017.
  * This interface is the input point from input protocols like http, dbus and others.
  * This must be implemented with delegation on input protocols modules (servlet, dbus, http).
  */
+@Deprecated
 public interface OCCIRequest {
 
     public void setContentType(final String contentType);
@@ -43,9 +42,9 @@ public interface OCCIRequest {
      */
     public void setOCCIResponse(OCCIResponse occiResponse);
 
-    public List<ContentData> getContentDatas();
+    public List<OCCIRequestData> getOCCIRequestData();
 
-    public void setContentDatas(final List<ContentData> contentDatas);
+    public void setOCCIRequestData(final List<OCCIRequestData> OCCIRequestData);
 
     /**
      * Assign a user for all operations with this object. Default is "anonymous".
@@ -79,13 +78,6 @@ public interface OCCIRequest {
      * @return
      */
     public OCCIResponse executeAction();
-
-    /**
-     * Execute an action asynchronously in a thread task and get his future object.
-     *
-     * @return
-     */
-    public Future<OCCIResponse> executeAsyncAction();
 
     /**
      * Get an entity from location, location property must be set before calling this method.

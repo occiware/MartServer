@@ -22,33 +22,33 @@ import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.model.EntityManager;
 import org.occiware.mart.server.model.KindManager;
 import org.occiware.mart.server.model.MixinManager;
-import org.occiware.mart.server.parser.ContentData;
-import org.occiware.mart.server.parser.DummyParser;
+import org.occiware.mart.server.parser.DefaultParser;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.parser.text.TextOcciParser;
-import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.Future;
 
 /**
  * Created by cgourdin on 10/04/2017.
  */
+@Deprecated
 public abstract class AbstractOCCIRequest implements OCCIRequest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractOCCIRequest.class);
 
     protected String contentType;
-    private List<ContentData> contentDatas = new LinkedList<>();
+    private List<OCCIRequestData> OCCIRequestData = new LinkedList<>();
     private OCCIResponse occiResponse;
 
     private String location = null;
@@ -127,38 +127,38 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
     }
 
     @Override
-    public List<ContentData> getContentDatas() {
-        if (contentDatas == null) {
-            contentDatas = new LinkedList<>();
+    public List<OCCIRequestData> getOCCIRequestData() {
+        if (OCCIRequestData == null) {
+            OCCIRequestData = new LinkedList<>();
         }
-        return contentDatas;
+        return OCCIRequestData;
     }
 
     @Override
-    public void setContentDatas(List<ContentData> contentDatas) {
-        if (contentDatas == null) {
-            this.contentDatas = new LinkedList<>();
+    public void setOCCIRequestData(List<OCCIRequestData> OCCIRequestData) {
+        if (OCCIRequestData == null) {
+            this.OCCIRequestData = new LinkedList<>();
         } else {
-            this.contentDatas = contentDatas;
+            this.OCCIRequestData = OCCIRequestData;
         }
     }
 
     @Override
     public OCCIResponse findEntity() {
 
-        for (ContentData contentData : contentDatas) {
+        for (OCCIRequestData OCCIRequestData : this.OCCIRequestData) {
 
             Entity entity;
             try {
-                if (contentData.getEntityUUID() == null || contentData.getEntityUUID().trim().isEmpty()) {
+                if (OCCIRequestData.getEntityUUID() == null || OCCIRequestData.getEntityUUID().trim().isEmpty()) {
                     // Try to find entity by its location
                     entity = EntityManager.findEntityFromLocation(location, username);
                 } else {
                     // Try to find entity by its id.
-                    entity = EntityManager.findEntity(username, location);
+                    entity = EntityManager.findEntity(OCCIRequestData.getEntityUUID(), username);
                 }
                 if (entity == null) {
-                    throw new ConfigurationException("Entity on location: " + contentData.getLocation() + " doesnt exist.");
+                    throw new ConfigurationException("Entity on location: " + OCCIRequestData.getLocation() + " doesnt exist.");
                 }
                 // Load entity attributes, mixins and kind to output.
                 entity.occiRetrieve(); // Refresh values.
@@ -177,21 +177,21 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
     @Override
     public OCCIResponse findEntities(CollectionFilter filter) {
         try {
-            List<Entity> entities = EntityManager.findAllEntities(username, filter);
+            List<Entity> entities = EntityManager.findAllEntities(filter, username);
 
             for (Entity entity : entities) {
                 // Refresh object.
                 entity.occiRetrieve();
 
-                // Build contentDatas output.
-                ContentData outputContentData = new ContentData();
+                // Build OCCIRequestData output.
+                OCCIRequestData outputOCCIRequestData = new OCCIRequestData();
                 Map<String, Object> attrs = EntityManager.convertEntityAttributesToMap(entity);
                 List<String> mixins = MixinManager.convertEntityMixinsToList(entity);
                 String kind = entity.getKind().getScheme() + entity.getKind().getTerm();
-                outputContentData.setKind(kind);
-                outputContentData.setMixins(mixins);
-                outputContentData.setAttrs(attrs);
-                occiResponse.getContentDatas().add(outputContentData);
+                outputOCCIRequestData.setKind(kind);
+                outputOCCIRequestData.setMixins(mixins);
+                outputOCCIRequestData.setAttrs(attrs);
+                occiResponse.getOCCIRequestData().add(outputOCCIRequestData);
             }
 
             IRequestParser outputParser = occiResponse.getOutputParser();
@@ -234,7 +234,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
             ConfigurationManager.applyFilterOnInterface(categoryFilter, interfData, username);
             occiResponse.setQueryInterfaceData(interfData);
             // Render output.
-            occiResponse.getOutputParser().getInterface(username);
+            occiResponse.getOutputParser().getInterface(interfData, username);
 
         } catch (ConfigurationException | ParseOCCIException ex) {
             occiResponse.setExceptionMessage(ex.getMessage());
@@ -246,12 +246,12 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
 
     @Override
     public OCCIResponse createEntity() {
-        if (contentDatas.isEmpty()) {
+        if (OCCIRequestData.isEmpty()) {
             occiResponse.setExceptionMessage("Cant create entity without entity data.");
             occiResponse.setExceptionThrown(new ConfigurationException("Cant create entity"));
             return occiResponse;
         }
-        ContentData data = contentDatas.get(0);
+        OCCIRequestData data = OCCIRequestData.get(0);
         // Create entity with data content.
         Entity entity = createEntityOnConfig(data);
         if (entity == null || occiResponse.hasExceptions()) {
@@ -265,14 +265,14 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
     @Override
     public OCCIResponse defineMixinTags() {
         String message;
-        if (contentDatas.isEmpty()) {
+        if (OCCIRequestData.isEmpty()) {
             message = "No datas defined for defining with mixin tag.";
             occiResponse.setExceptionMessage(message);
             occiResponse.setExceptionThrown(new ConfigurationException(message));
             return occiResponse;
         }
 
-        for (ContentData data : contentDatas) {
+        for (OCCIRequestData data : OCCIRequestData) {
             defineMixinTag(data);
         }
 
@@ -281,9 +281,10 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
 
     /**
      * Define or apply mixin tags...
+     *
      * @param data
      */
-    private void defineMixinTag(final ContentData data) {
+    private void defineMixinTag(final OCCIRequestData data) {
         String message;
         if (data == null) {
             message = "No datas defined for creation with mixin tag.";
@@ -335,7 +336,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
                             occiResponse.setExceptionThrown(new ConfigurationException(message));
                             return;
                         }
-                        Entity entity = EntityManager.findEntity(ConfigurationManager.DEFAULT_OWNER, uuid);
+                        Entity entity = EntityManager.findEntity(uuid, ConfigurationManager.DEFAULT_OWNER);
                         if (entity == null) {
                             message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
                             occiResponse.setExceptionMessage(message);
@@ -347,9 +348,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
                         // Maybe a collection on inbound or outbound path.
                         List<String> entitiesTmp = EntityManager.getEntityUUIDsFromPath(xOcciLocation);
                         if (!entitiesTmp.isEmpty()) {
-                            for (String entity : entitiesTmp) {
-                                entities.add(entity);
-                            }
+                            entities.addAll(entitiesTmp);
                         }
                     }
                 }
@@ -372,7 +371,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
         List<Entity> createdEntities = new LinkedList<>();
 
 
-        for (ContentData data : contentDatas) {
+        for (OCCIRequestData data : OCCIRequestData) {
             Entity entity;
             if (data.getMixinTag() != null) {
                 // There are mixin tag definition in the collection.
@@ -404,18 +403,17 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
         }
 
 
-
         return occiResponse;
     }
 
-    private Entity createEntityOnConfig(final ContentData data) {
+    private Entity createEntityOnConfig(final OCCIRequestData data) {
         String location = data.getLocation();
         if (location == null || location.trim().isEmpty()) {
             LOGGER.warn("No location attribute set, rely on global location path");
             location = this.location;
         }
 
-        boolean isResource = EntityManager.checkIfEntityIsResourceOrLinkFromAttributes(data.getAttrs());
+        boolean isResource = EntityManager.checkIfEntityIsResourceOrLinkFromAttributes(data.getAttrsValStr());
         // Define full overwrite of an existing entity.
         boolean overwrite = false;
 
@@ -523,7 +521,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
 
 
         // Execute model CRUD method.
-        Entity entity = EntityManager.findEntity(username, entityId);
+        Entity entity = EntityManager.findEntity(entityId, username);
         if (entity != null) {
             if (overwrite) {
                 entity.occiUpdate();
@@ -550,21 +548,175 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
 
     @Override
     public OCCIResponse executeAction() {
-        return null;
+        String message;
+        if (OCCIRequestData.isEmpty()) {
+            message = "No action definition scheme to execute";
+            LOGGER.error(message);
+            occiResponse.setExceptionMessage(message);
+            occiResponse.setExceptionThrown(new ConfigurationException(message));
+            return occiResponse;
+        }
+        if (occiResponse.hasExceptions()) {
+            return occiResponse;
+        }
+        // Current content data are for action attributes and actionId.
+        OCCIRequestData actionData = OCCIRequestData.get(0);
+        String action = actionData.getAction();
+        if (actionData.getAction() == null) {
+            message = "No action scheme defined";
+            LOGGER.error(message);
+            occiResponse.setExceptionMessage(message);
+            occiResponse.setExceptionThrown(new ConfigurationException(message));
+            return occiResponse;
+        }
+        Map<String, String> actionAttrs = actionData.getAttrsValStr();
+
+        // OcciResponse is built with datas output when finding entities at upper level.
+        List<OCCIRequestData> datas = occiResponse.getOCCIRequestData();
+        if (datas == null || datas.isEmpty()) {
+            message = "no target for the action : " + action;
+            LOGGER.error(message);
+            occiResponse.setExceptionMessage(message);
+            occiResponse.setExceptionThrown(new ConfigurationException(message));
+            return occiResponse;
+        }
+
+        // Execute the action.
+        Entity entity;
+
+        for (OCCIRequestData data : datas) {
+            // Load the entity.
+            entity = EntityManager.findEntity(data.getEntityUUID(), username);
+
+            if (entity == null) {
+                message = "entity " + data.getEntityUUID() + " is not found on configuration";
+                LOGGER.error(message);
+                occiResponse.setExceptionMessage(message);
+                occiResponse.setExceptionThrown(new ConfigurationException(message));
+                return occiResponse;
+            }
+            try {
+                // Execute the action.
+                EntityManager.executeActionOnEntity(entity.getId(), action, actionAttrs, username);
+            } catch (Exception ex) {
+                message = ex.getMessage();
+                LOGGER.error(message);
+                occiResponse.setExceptionMessage(message);
+                occiResponse.setExceptionThrown(ex);
+                return occiResponse;
+            }
+
+        }
+
+        // Render the response.
+        try {
+            occiResponse.getOutputParser().parseMessage("ok");
+        } catch (ParseOCCIException ex) {
+            occiResponse.setExceptionMessage(ex.getMessage());
+            occiResponse.setExceptionThrown(ex);
+        }
+        return occiResponse;
     }
 
-    @Override
-    public Future<OCCIResponse> executeAsyncAction() {
-        return null;
-    }
 
     @Override
     public OCCIResponse updateEntities() {
-        return null;
+        String message;
+        if (OCCIRequestData.isEmpty()) {
+            message = "No attributes to update or mixins to apply to entities";
+            LOGGER.error(message);
+            occiResponse.setExceptionMessage(message);
+            occiResponse.setExceptionThrown(new ConfigurationException(message));
+            return occiResponse;
+        }
+
+        if (occiResponse.hasExceptions()) {
+            return occiResponse;
+        }
+
+        if (OCCIRequestData.isEmpty()) {
+            message = "No entities found to update";
+            LOGGER.error(message);
+            occiResponse.setExceptionMessage(message);
+            occiResponse.setExceptionThrown(new ConfigurationException(message));
+        }
+
+        String entityUUID;
+        List<String> mixins;
+        String mixinTag;
+        Map<String, String> attrs;
+        Entity entity;
+
+        for (OCCIRequestData OCCIRequestData : this.OCCIRequestData) {
+            entityUUID = OCCIRequestData.getEntityUUID();
+            mixins = OCCIRequestData.getMixins();
+            mixinTag = OCCIRequestData.getMixinTag();
+            attrs = OCCIRequestData.getAttrsValStr();
+
+            if (OCCIRequestData.getEntityUUID() == null || OCCIRequestData.getEntityUUID().trim().isEmpty()) {
+                // Try to find entity by its location
+                entity = EntityManager.findEntityFromLocation(location, username);
+            } else {
+                // Try to find entity by its id.
+                entity = EntityManager.findEntity(OCCIRequestData.getEntityUUID(), username);
+            }
+            if (entity == null) {
+                message = "Entity on location: " + OCCIRequestData.getLocation() + " doesnt exist.";
+                LOGGER.error(message);
+                occiResponse.setExceptionMessage(message);
+                occiResponse.setExceptionThrown(new ConfigurationException(message));
+                return occiResponse;
+            }
+            attrs = OCCIRequestData.getAttrsValStr();
+            // update attributes .
+            entity = EntityManager.updateAttributesToEntity(entity, attrs, username);
+            entity.occiUpdate();
+
+
+            if (!mixins.isEmpty()) {
+                try {
+                    MixinManager.addMixinsToEntity(entity, mixins, username, false);
+                } catch (ConfigurationException ex) {
+                    message = ex.getMessage();
+                    occiResponse.setExceptionThrown(ex);
+                    occiResponse.setExceptionMessage(message);
+                    return occiResponse;
+                }
+            }
+
+            if (mixinTag != null) {
+                List<String> mixinTags = new ArrayList<>();
+                mixinTags.add(mixinTag);
+                // Update mixin tags association.
+                List<String> xocciLocations = OCCIRequestData.getXocciLocations();
+                for (String xocciLocation : xocciLocations) {
+                    entity = EntityManager.findEntity(xocciLocation, username);
+                    if (entity == null) {
+                        message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
+                        occiResponse.setExceptionMessage(message);
+                        occiResponse.setExceptionThrown(new ConfigurationException(message));
+                        return occiResponse;
+                    }
+                    try {
+                        MixinManager.addMixinsToEntity(entity, mixinTags, username, false);
+                    } catch (ConfigurationException ex) {
+                        message = ex.getMessage();
+                        occiResponse.setExceptionThrown(ex);
+                        occiResponse.setExceptionMessage(message);
+                        return occiResponse;
+                    }
+                }
+            }
+        }
+
+        return occiResponse;
     }
 
     @Override
     public OCCIResponse deleteEntity() {
+
+
+
         return null;
     }
 
@@ -601,7 +753,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
         // TODO : Control input value datatype with models.
         Object attrValue;
         boolean found;
-        for (ContentData content : contentDatas) {
+        for (OCCIRequestData content : OCCIRequestData) {
             // Is the kind exist on this configuration's extensions ?
             kind = content.getKind();
             attrs = content.getAttrs();
@@ -614,7 +766,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
 
             if (kind != null) {
                 // Check the scheme+term on extensions.
-                kindModel = KindManager.findKindFromExtension(username, kind);
+                kindModel = KindManager.findKindFromExtension(kind, username);
                 if (kindModel == null) {
                     this.occiResponse.setExceptionMessage("The kind : " + kind + " doesnt exist on extensions.");
                     this.occiResponse.setExceptionThrown(new ModelValidatorException("The kind : " + kind + " doesnt exist on extensions."));
@@ -644,7 +796,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
                 if (action != null) {
                     Action actionModelWork = null;
                     Kind currentKind = kindModel;
-                    while(currentKind != null && !found) {
+                    while (currentKind != null && !found) {
 
                         for (Action actionModel : currentKind.getActions()) {
                             if ((actionModel.getScheme() + actionModel.getTerm()).equals(action)) {
@@ -781,35 +933,36 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
 
     /**
      * Build a parser relative to contentType input.
+     *
      * @return
      */
     private IRequestParser buildParser() {
         if (contentType == null) {
             // Default content type if none on headers.
-            return new JsonOcciParser(this);
+            return new JsonOcciParser();
         }
         switch (contentType) {
             case Constants.MEDIA_TYPE_TEXT_OCCI:
                 LOGGER.info("Parser request: TextOcciParser");
-                return new TextOcciParser(this);
+                return new TextOcciParser();
 
             case Constants.MEDIA_TYPE_JSON:
             case Constants.MEDIA_TYPE_JSON_OCCI:
                 LOGGER.info("Parser request: JsonOcciParser");
-                return new JsonOcciParser(this);
+                return new JsonOcciParser();
             // You can add here all other parsers you need without updating class like GetQuery, PostQuery etc.
             case Constants.MEDIA_TYPE_TEXT_PLAIN:
                 // TODO : plain text parser.
-                return new DummyParser(this);
+                return new DefaultParser();
 
             case Constants.MEDIA_TYPE_TEXT_URI_LIST:
                 // TODO : test uri list parser and combined parsers (json + uri list for example).
-                return new DummyParser(this);
+                return new DefaultParser();
 
             default:
                 // No parser.
                 LOGGER.warn("The parser for " + contentType + " doesnt exist !");
-                return new DummyParser(this);
+                return new DefaultParser();
             // throw new ParseOCCIException("The parser for " + contentType + " doesnt exist !");
         }
 
@@ -868,18 +1021,19 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
 
     /**
      * Parse output response for an entity.
+     *
      * @param entity
      */
     private void renderEntityOutput(final Entity entity) {
         // Render output entity.
-        ContentData outputContentData = new ContentData();
+        OCCIRequestData outputOCCIRequestData = new OCCIRequestData();
         Map<String, Object> entityAttrs = EntityManager.convertEntityAttributesToMap(entity);
         List<String> entityMixins = MixinManager.convertEntityMixinsToList(entity);
         String entityKind = entity.getKind().getScheme() + entity.getKind().getTerm();
-        outputContentData.setKind(entityKind);
-        outputContentData.setMixins(entityMixins);
-        outputContentData.setAttrs(entityAttrs);
-        occiResponse.getContentDatas().add(outputContentData);
+        outputOCCIRequestData.setKind(entityKind);
+        outputOCCIRequestData.setMixins(entityMixins);
+        outputOCCIRequestData.setAttrs(entityAttrs);
+        occiResponse.getOCCIRequestData().add(outputOCCIRequestData);
 
         IRequestParser outputParser = occiResponse.getOutputParser();
         if (outputParser != null) {

@@ -18,46 +18,12 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.IRequestParser;
-import org.occiware.mart.server.parser.QueryInterfaceData;
-
-import java.util.List;
 
 /**
- * Created by cgourdin on 10/04/2017.
- * This interface is the output point to response protocols like http, dbus and others.
- * This must be implemented with delegation on output protocols modules (servlet, dbus, http etc.).
+ * Created by cgourdin on 24/04/2017.
  */
-@Deprecated
-public interface OCCIResponse {
-
-    // Generics.
-
-    public void setContentType(final String contentType);
-
-
-    public List<OCCIRequestData> getOCCIRequestData();
-
-    /**
-     * For collections management.
-     *
-     * @param OCCIRequestData
-     */
-    public void setOCCIRequestData(final List<OCCIRequestData> OCCIRequestData);
-
-    public QueryInterfaceData getQueryInterfaceData();
-
-    public void setQueryInterfaceData(final QueryInterfaceData interfData);
-
-    /**
-     * Return a response message to be used by the facade (servlet, dbus, http etc.).
-     *
-     * @return
-     */
-    public Object getResponse();
-
-    public void setResponse(Object response);
+public interface OCCIApiResponse {
 
 
     /**
@@ -85,15 +51,23 @@ public interface OCCIResponse {
     public void setExceptionThrown(final Exception ex);
 
     /**
-     * Assign a user for all operations with this object. Default is "anonymous".
+     *
+     * @return a parsed response message.
      */
-    public void setUsername(final String username);
+    public Object getResponseMessage();
 
+    /**
+     * Parse a response message, used when an exception is thrown or to say "ok" to output message.
+     * @param message a String simple message to be parsed on output message object.
+     */
+    public void parseResponseMessage(String message);
+
+    /**
+     * May be string or other object type, depends on implementation.
+     * @param responseMessage
+     */
+    public void setResponseMessage(Object responseMessage);
 
     public IRequestParser getOutputParser();
-
-    public void setOutputParser(IRequestParser outputParser);
-
-
 
 }

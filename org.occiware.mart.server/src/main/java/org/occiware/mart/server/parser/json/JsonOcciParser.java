@@ -27,14 +27,14 @@ import org.eclipse.emf.ecore.EEnum;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.facade.OCCIRequest;
-import org.occiware.mart.server.facade.OCCIResponse;
 import org.occiware.mart.server.model.EntityManager;
 import org.occiware.mart.server.model.KindManager;
 import org.occiware.mart.server.model.MixinManager;
-import org.occiware.mart.server.parser.ContentData;
+import org.occiware.mart.server.parser.AbstractRequestParser;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.occiware.mart.server.parser.json.render.*;
 import org.occiware.mart.server.parser.json.render.queryinterface.*;
 import org.occiware.mart.server.utils.Constants;
@@ -48,28 +48,17 @@ import java.util.*;
 /**
  * @author Christophe Gourdin
  */
-public class JsonOcciParser implements IRequestParser {
+public class JsonOcciParser extends AbstractRequestParser implements IRequestParser {
 
     public static final String EMPTY_JSON = "{ }";
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonOcciParser.class);
-    private OCCIRequest occiRequest;
-    private OCCIResponse occiResponse;
-
-    public JsonOcciParser(OCCIRequest occiRequest) {
-        this.occiRequest = occiRequest;
-    }
-
-    public JsonOcciParser(OCCIResponse occiResponse) {
-        this.occiResponse = occiResponse;
-    }
-
 
     //*************************
     // Read input content part
     //*************************
 
     /**
-     * Parse the input query in multiple ContentData objects (or only one if one thing defined).
+     * Parse the input query in multiple OCCIRequestData objects (or only one if one thing defined).
      *
      * @param contentObj This is the content json.
      * @throws ParseOCCIException
@@ -160,10 +149,9 @@ public class JsonOcciParser implements IRequestParser {
 
         } else {
             // We parse here only the path.
-            List<ContentData> contentDatas = occiRequest.getContentDatas();
-            ContentData contentData = new ContentData();
-            contentData.setDatasOnlyOnPath(true);
-            contentDatas.add(contentData);
+            List<OCCIRequestData> occiRequestDatas = super.getInputDatas();
+            OCCIRequestData occiRequestData = new OCCIRequestData();
+            occiRequestDatas.add(occiRequestData);
         }
     }
 
@@ -232,14 +220,14 @@ public class JsonOcciParser implements IRequestParser {
      */
     private void parseResourceJsonInput(ResourceJson resource) throws ParseOCCIException {
         Map<String, Object> attrs;
-        ContentData contentData = new ContentData();
+        OCCIRequestData data = new OCCIRequestData();
         String title = resource.getTitle();
         String summary = resource.getSummary();
         String id = resource.getId();
         String kind = resource.getKind();
         String location = resource.getLocation();
         attrs = resource.getAttributes();
-        List<ContentData> contentDatas = occiRequest.getContentDatas();
+        List<OCCIRequestData> occiRequestDatas = super.getInputDatas();
         if (attrs == null) {
             attrs = new HashMap<>();
         }
@@ -251,7 +239,7 @@ public class JsonOcciParser implements IRequestParser {
                 attrs.put(Constants.OCCI_CORE_ID, id);
                 id = id.replace(Constants.URN_UUID_PREFIX, "");
             }
-            contentData.setEntityUUID(id);
+            data.setEntityUUID(id);
         }
         if (title != null && !title.isEmpty()) {
             attrs.put(Constants.OCCI_CORE_TITLE, title);
@@ -259,46 +247,46 @@ public class JsonOcciParser implements IRequestParser {
         if (summary != null && !summary.isEmpty()) {
             attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
         }
-        contentData.setAttrs(attrs);
+        data.setAttrs(attrs);
 
         if (kind == null) {
             throw new ParseOCCIException("Kind is not defined for resource: " + id);
         }
-        contentData.setKind(kind);
+        data.setKind(kind);
 
-        contentData.setLocation(location);
+        data.setLocation(location);
 
         List<String> mixinsRes = resource.getMixins();
         if (mixinsRes != null && !mixinsRes.isEmpty()) {
-            contentData.setMixins(mixinsRes);
+            data.setMixins(mixinsRes);
         }
         List<String> actionRes = resource.getActions();
         if (actionRes != null && !actionRes.isEmpty()) {
-            contentData.setAction(actionRes.get(0));
+            data.setAction(actionRes.get(0));
             // We set the first action.
             // TODO : Define if actions is assigned to a resource if we must execute them...
         }
-        contentDatas.add(contentData);
-        // If there are links defined on this resource, we add them to the input contentDatas linked list.
-        // We add the links on input contentData after the resources to be sure they are all exists if we are in create mode or update mode.
+        occiRequestDatas.add(data);
+        // If there are links defined on this resource, we add them to the input OCCIRequestData linked list.
+        // We add the links on input OCCIRequestData after the resources to be sure they are all exists if we are in create mode or update mode.
         if (resource.getLinks() != null && !resource.getLinks().isEmpty()) {
             List<LinkJson> links = resource.getLinks();
             for (LinkJson link : links) {
                 parseLinkJsonInput(link);
             }
         }
-        occiRequest.setContentDatas(contentDatas);
+        super.setInputDatas(occiRequestDatas);
     }
 
     /**
-     * Parse a single link input and return the corresponding ContentData object.
+     * Parse a single link input and return the corresponding OCCIRequestData object.
      *
      * @param link json link object.
      * @throws ParseOCCIException
      */
     private void parseLinkJsonInput(LinkJson link) throws ParseOCCIException {
         Map<String, Object> attrs;
-        ContentData contentData = new ContentData();
+        OCCIRequestData data = new OCCIRequestData();
         String title = link.getTitle();
         String summary = link.getSummary();
         String id = link.getId();
@@ -309,7 +297,7 @@ public class JsonOcciParser implements IRequestParser {
         String sourceLocation;
         String targetLocation;
         attrs = link.getAttributes();
-        List<ContentData> contentDatas = occiRequest.getContentDatas();
+        List<OCCIRequestData> occiRequestDatas = super.getInputDatas();
         if (attrs == null) {
             attrs = new HashMap<>();
         }
@@ -321,7 +309,7 @@ public class JsonOcciParser implements IRequestParser {
                 attrs.put(Constants.OCCI_CORE_ID, id);
                 id = id.replace(Constants.URN_UUID_PREFIX, "");
             }
-            contentData.setEntityUUID(id);
+            data.setEntityUUID(id);
         }
         if (title != null && !title.isEmpty()) {
             attrs.put(Constants.OCCI_CORE_TITLE, title);
@@ -345,22 +333,22 @@ public class JsonOcciParser implements IRequestParser {
         }
         attrs.put(Constants.OCCI_CORE_TARGET, targetLocation);
         attrs.put(Constants.OCCI_CORE_SOURCE, sourceLocation);
-        contentData.setAttrs(attrs);
+        data.setAttrs(attrs);
 
         if (kind == null) {
             throw new ParseOCCIException("Kind is not defined for resource: " + id);
         }
-        contentData.setKind(kind);
+        data.setKind(kind);
 
-        contentData.setLocation(location);
+        data.setLocation(location);
 
         List<String> mixinsRes = link.getMixins();
         if (mixinsRes != null && !mixinsRes.isEmpty()) {
-            contentData.setMixins(mixinsRes);
+            data.setMixins(mixinsRes);
         }
 
-        contentDatas.add(contentData);
-        occiRequest.setContentDatas(contentDatas);
+        occiRequestDatas.add(data);
+        super.setInputDatas(occiRequestDatas);
     }
 
     /**
@@ -370,7 +358,7 @@ public class JsonOcciParser implements IRequestParser {
      * @throws ParseOCCIException
      */
     private void parseMixinJsonTagInput(MixinJson mixinTag) throws ParseOCCIException {
-        List<ContentData> contentDatas = occiRequest.getContentDatas();
+        List<OCCIRequestData> occiRequestDatas = super.getInputDatas();
         String title = mixinTag.getTitle();
         String term = mixinTag.getTerm();
         String location = mixinTag.getLocation();
@@ -388,14 +376,14 @@ public class JsonOcciParser implements IRequestParser {
         if (scheme == null || scheme.trim().isEmpty()) {
             throw new ParseOCCIException("A scheme must be set for a mixin tag.");
         }
-        // Set the input contentData object and add it to the global list.
-        ContentData contentData = new ContentData();
-        contentData.setAttrs(attrs);
-        contentData.setMixinTag(scheme + term);
-        contentData.setMixinTagTitle(title);
-        contentData.setLocation(location);
-        contentDatas.add(contentData);
-        occiRequest.setContentDatas(contentDatas);
+        // Set the input OCCIRequestData object and add it to the global list.
+        OCCIRequestData data = new OCCIRequestData();
+        data.setAttrs(attrs);
+        data.setMixinTag(scheme + term);
+        data.setMixinTagTitle(title);
+        data.setLocation(location);
+        occiRequestDatas.add(data);
+        super.setInputDatas(occiRequestDatas);
     }
 
     /**
@@ -404,12 +392,12 @@ public class JsonOcciParser implements IRequestParser {
      * @param action
      */
     private void parseActionJsonInvocationInput(ActionJson action) {
-        List<ContentData> contentDatas = occiRequest.getContentDatas();
-        ContentData contentData = new ContentData();
-        contentData.setAction(action.getAction());
-        contentData.setAttrs(action.getAttributes());
-        contentDatas.add(contentData);
-        occiRequest.setContentDatas(contentDatas);
+        List<OCCIRequestData> occiRequestDatas = super.getInputDatas();
+        OCCIRequestData data = new OCCIRequestData();
+        data.setAction(action.getAction());
+        data.setAttrs(action.getAttributes());
+        occiRequestDatas.add(data);
+        super.setInputDatas(occiRequestDatas);
     }
 
 
@@ -420,18 +408,20 @@ public class JsonOcciParser implements IRequestParser {
     /**
      * Get interface models.
      *
+     *
+     * @param interfaceData
      * @param user (the authorized username)
      * @return a string content.
      * @throws ParseOCCIException
      */
-    public String getInterface(final String user) throws ParseOCCIException {
+    public String getInterface(final QueryInterfaceData interfaceData, final String user) throws ParseOCCIException {
 
         String resultJson;
 
         StringBuilder sb;
 
-        List<Kind> kinds = occiResponse.getQueryInterfaceData().getKinds();
-        List<Mixin> mixins = occiResponse.getQueryInterfaceData().getMixins();
+        List<Kind> kinds = interfaceData.getKinds();
+        List<Mixin> mixins = interfaceData.getMixins();
 
         if (kinds.isEmpty() && mixins.isEmpty()) {
             LOGGER.warn("No kinds and no mixin to render on interface /-/, if you use a filter this may be not found on the current configuration.");
@@ -464,7 +454,6 @@ public class JsonOcciParser implements IRequestParser {
         }
 
         resultJson = sb.toString();
-        occiResponse.setResponse(resultJson);
         return resultJson;
     }
 
@@ -609,7 +598,7 @@ public class JsonOcciParser implements IRequestParser {
             }
             kindInterfaceJson.setActions(actions);
             ModelInterfaceJson modelJson = null;
-            Extension ext = KindManager.getExtensionForKind(user, kind.getScheme() + kind.getTerm());
+            Extension ext = KindManager.getExtensionForKind(kind.getScheme() + kind.getTerm(), user);
 
             if (models.isEmpty()) {
                 modelJson = new ModelInterfaceJson();
@@ -795,16 +784,16 @@ public class JsonOcciParser implements IRequestParser {
     }
 
     @Override
-    public String parseMessage(final String message, final Integer statusMessage) throws ParseOCCIException {
+    public String parseMessage(final String message) throws ParseOCCIException {
         MessageJson msgJson = new MessageJson();
-        msgJson.setStatus(statusMessage);
+        msgJson.setMessage(message);
+        msgJson.setStatus(0);
         String jsonResult;
         try {
             jsonResult = msgJson.toStringJson();
         } catch (JsonProcessingException ex) {
             throw new ParseOCCIException(ex.getMessage(), ex);
         }
-        occiResponse.setResponse(jsonResult);
         return jsonResult;
     }
 
@@ -820,7 +809,6 @@ public class JsonOcciParser implements IRequestParser {
         List<Entity> entities = new LinkedList<>();
         entities.add(entity);
         response = renderOutputEntities(entities);
-        occiResponse.setResponse(response);
         return response;
     }
 
@@ -877,7 +865,6 @@ public class JsonOcciParser implements IRequestParser {
         } catch (JsonProcessingException ex) {
             throw new ParseOCCIException(ex.getMessage(), ex);
         }
-        occiResponse.setResponse(response);
         return response;
     }
 
@@ -903,7 +890,6 @@ public class JsonOcciParser implements IRequestParser {
         } else {
             throw new ParseOCCIException("No entities locations were found.");
         }
-        occiResponse.setResponse(response);
         return response;
     }
 

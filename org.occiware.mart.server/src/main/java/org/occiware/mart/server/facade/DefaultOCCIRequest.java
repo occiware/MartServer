@@ -16,24 +16,17 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.exception;
+package org.occiware.mart.server.facade;
+
+import org.occiware.mart.server.exception.ParseOCCIException;
 
 /**
- * Created by cgourdin on 11/04/2017.
+ * Created by christophe on 19/04/2017.
  */
-public class ParseOCCIException extends Exception {
-    public ParseOCCIException() {
+public class DefaultOCCIRequest extends AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
+
+    public DefaultOCCIRequest(String username, OCCIApiResponse occiApiResponse) {
+        super(username, occiApiResponse);
     }
 
-    public ParseOCCIException(String message) {
-        super(message);
-    }
-
-    public ParseOCCIException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public ParseOCCIException(Throwable cause) {
-        super(cause);
-    }
 }

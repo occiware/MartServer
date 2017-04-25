@@ -1,6 +1,6 @@
 package org.occiware.mart.servlet.impl;
 
-import org.occiware.mart.server.parser.ContentData;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
@@ -35,8 +35,8 @@ public class PutWorker extends ServletEntry {
         // There is content so check it.
         occiRequest.validateDataContentRequest();
 
-        List<ContentData> contentDatas = occiRequest.getContentDatas();
-        if (contentDatas.isEmpty()) {
+        List<OCCIRequestData> OCCIRequestData = occiRequest.getOCCIRequestData();
+        if (OCCIRequestData.isEmpty()) {
             return occiResponse.parseMessage("No content to put.", HttpServletResponse.SC_BAD_REQUEST);
         }
 

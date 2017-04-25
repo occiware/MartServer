@@ -18,8 +18,8 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.mart.server.parser.ContentData;
-import org.occiware.mart.server.parser.DummyParser;
+import org.occiware.mart.server.parser.DefaultParser;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.occiware.mart.server.parser.json.JsonOcciParser;
@@ -34,6 +34,7 @@ import java.util.List;
 /**
  * Created by cgourdin on 10/04/2017.
  */
+@Deprecated
 public abstract class AbstractOCCIResponse implements OCCIResponse {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractOCCIRequest.class);
@@ -42,9 +43,9 @@ public abstract class AbstractOCCIResponse implements OCCIResponse {
      */
     protected String contentType;
     /**
-     * Collections of contentDatas to render on output.
+     * Collections of OCCIRequestData to render on output.
      */
-    private List<ContentData> contentDatas;
+    private List<OCCIRequestData> OCCIRequestData;
     /**
      * Main response message. Used principally for HTTP to render String output (html, json, text etc.).
      */
@@ -116,13 +117,13 @@ public abstract class AbstractOCCIResponse implements OCCIResponse {
     }
 
     @Override
-    public List<ContentData> getContentDatas() {
-        return contentDatas;
+    public List<OCCIRequestData> getOCCIRequestData() {
+        return OCCIRequestData;
     }
 
     @Override
-    public void setContentDatas(List<ContentData> contentDatas) {
-        this.contentDatas = contentDatas;
+    public void setOCCIRequestData(List<OCCIRequestData> OCCIRequestData) {
+        this.OCCIRequestData = OCCIRequestData;
     }
 
     @Override
@@ -145,25 +146,25 @@ public abstract class AbstractOCCIResponse implements OCCIResponse {
         if (contentType == null) {
             // Default content type if none on headers.
             LOGGER.warn("No content type in output, so no parsers available.");
-            return new DummyParser(this);
+            return new DefaultParser();
         }
         switch (contentType) {
             case Constants.MEDIA_TYPE_TEXT_OCCI:
                 LOGGER.info("Parser request: TextOcciParser");
-                return new TextOcciParser(this);
+                return new TextOcciParser();
 
             case Constants.MEDIA_TYPE_JSON:
             case Constants.MEDIA_TYPE_JSON_OCCI:
                 LOGGER.info("Parser request: JsonOcciParser");
-                return new JsonOcciParser(this);
+                return new JsonOcciParser();
             // You can add here all other parsers you need without updating facade classes.
             case Constants.MEDIA_TYPE_TEXT_PLAIN:
-                return new DummyParser(this);
+                return new DefaultParser();
 
             default:
                 // No parser, this could be setted via setOutputParser method.
                 LOGGER.warn("The parser for " + contentType + " doesnt exist !");
-                return new DummyParser(this);
+                return new DefaultParser();
             // throw new ParseOCCIException("The parser for " + contentType + " doesnt exist !");
         }
     }

@@ -510,16 +510,14 @@ public class ConfigurationManager {
     }
 
     /**
-     * Is that path is on a category ? like compute/
+     * Is that location path is on a category ? like compute/
      *
-     * @param path
+     * @param location the location path : like /compute/ or entity path.
      * @return
      */
-    public static boolean isCollectionOnCategory(String path) {
-        String categoryId = getCategoryFilterSchemeTerm(path, DEFAULT_OWNER);
-
+    public static boolean isCollectionOnCategory(final String location, final String owner) {
+        String categoryId = getCategoryFilterSchemeTerm(location, owner);
         return categoryId != null;
-
     }
 
     /**

@@ -20,13 +20,9 @@ package org.occiware.mart.server.parser.text;
 
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.facade.OCCIRequest;
-import org.occiware.mart.server.facade.OCCIResponse;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.model.EntityManager;
-import org.occiware.mart.server.parser.ContentData;
-import org.occiware.mart.server.parser.HeaderPojo;
-import org.occiware.mart.server.parser.IRequestParser;
+import org.occiware.mart.server.parser.*;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,20 +36,9 @@ import java.util.regex.Matcher;
  *
  * @author Christophe Gourdin
  */
-public class TextOcciParser implements IRequestParser {
+public class TextOcciParser extends AbstractRequestParser implements IRequestParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TextOcciParser.class);
-
-    private OCCIRequest occiRequest;
-    private OCCIResponse occiResponse;
-
-    public TextOcciParser(OCCIRequest occiRequest) {
-        this.occiRequest = occiRequest;
-    }
-
-    public TextOcciParser(OCCIResponse occiResponse) {
-        this.occiResponse = occiResponse;
-    }
 
 
     //*************************
@@ -61,7 +46,7 @@ public class TextOcciParser implements IRequestParser {
     //*************************
 
     /**
-     * Parse the input query in multiple ContentData objects (or only one if one thing defined).
+     * Parse the input query in multiple OCCIRequestData objects (or only one if one thing defined).
      *
      * @param contentObj This is the content json.
      * @throws ParseOCCIException
@@ -91,7 +76,7 @@ public class TextOcciParser implements IRequestParser {
      */
     private void parseOcciCategories(HeaderPojo contentHeader) throws ParseOCCIException {
         Map<String, List<String>> map = contentHeader.getHeaderMap();
-        ContentData contentData = new ContentData();
+        OCCIRequestData data = new OCCIRequestData();
 
         List<String> values;
         List<String> mixinsToAdd = new ArrayList<>();
@@ -126,14 +111,14 @@ public class TextOcciParser implements IRequestParser {
 
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_KIND)) {
                             // Assign the kind.
-                            contentData.setKind(scheme + term);
+                            data.setKind(scheme + term);
                             continue;
                         }
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_MIXIN)) {
                             if (matcher.group(Constants.GROUP_LOCATION) != null) {
                                 // is a mixin tag.
-                                contentData.setLocation(matcher.group(Constants.GROUP_LOCATION));
-                                contentData.setMixinTag(scheme + term);
+                                data.setLocation(matcher.group(Constants.GROUP_LOCATION));
+                                data.setMixinTag(scheme + term);
 
                             } else {
                                 // is a simple mixin.
@@ -142,16 +127,16 @@ public class TextOcciParser implements IRequestParser {
                             continue;
                         }
                         if (categoryClass.equalsIgnoreCase(Constants.CLASS_ACTION)) {
-                            contentData.setAction(scheme + term);
+                            data.setAction(scheme + term);
                         }
                     }
                 }
             }
         }
         if (!mixinsToAdd.isEmpty()) {
-            contentData.setMixins(mixinsToAdd);
+            data.setMixins(mixinsToAdd);
         }
-        occiRequest.getContentDatas().add(contentData);
+        super.getInputDatas().add(data);
     }
 
     /**
@@ -161,10 +146,10 @@ public class TextOcciParser implements IRequestParser {
      * @throws ParseOCCIException
      */
     private void parseOcciAttributes(HeaderPojo contentHeader) throws ParseOCCIException {
-        if (occiRequest.getContentDatas().isEmpty()) {
+        if (super.getInputDatas().isEmpty()) {
             throw new ParseOCCIException("No kind or mixins, so no attributes.");
         }
-        ContentData contentData = occiRequest.getContentDatas().get(0);
+        OCCIRequestData data = super.getInputDatas().get(0);
         Map<String, List<String>> map = contentHeader.getHeaderMap();
 
         List<String> values;
@@ -185,7 +170,7 @@ public class TextOcciParser implements IRequestParser {
                                 attr[0] = attr[0].substring(1); // remove starting space.
                             }
                             attr[1] = attr[1].replace("\"", "");
-                            contentData.getAttrs().put(attr[0], attr[1]);
+                            data.getAttrs().put(attr[0], attr[1]);
                         }
                     }
 
@@ -195,7 +180,7 @@ public class TextOcciParser implements IRequestParser {
                 for (String value : values) {
                     String[] valuesTmp = value.split(",");
                     for (String valueTmp : valuesTmp) {
-                        contentData.addXocciLocation(valueTmp);
+                        data.addXocciLocation(valueTmp);
                     }
                     break;
                 }
@@ -206,14 +191,16 @@ public class TextOcciParser implements IRequestParser {
     /**
      * Build interface /-/ for accept type : text/occi.
      *
+     *
+     * @param interfaceData
      * @param user (the authorized username)
      * @return interface to set in header.
      */
     @Override
-    public HeaderPojo getInterface(final String user) throws ParseOCCIException {
+    public HeaderPojo getInterface(final QueryInterfaceData interfaceData, final String user) throws ParseOCCIException {
 
-        List<Kind> kinds = occiResponse.getQueryInterfaceData().getKinds();
-        List<Mixin> mixins = occiResponse.getQueryInterfaceData().getMixins();
+        List<Kind> kinds = interfaceData.getKinds();
+        List<Mixin> mixins = interfaceData.getMixins();
 
         StringBuilder sb = renderOcciKindsActions(kinds, true);
 
@@ -231,15 +218,12 @@ public class TextOcciParser implements IRequestParser {
         List<String> interfaces = new LinkedList<>();
         interfaces.add(msg);
         headerMap.put("interface", interfaces);
-        HeaderPojo header = new HeaderPojo(headerMap);
-        occiResponse.setResponse(header);
-        return header;
+        return new HeaderPojo(headerMap);
     }
 
     @Override
-    public String parseMessage(String message, Integer statusCode) throws ParseOCCIException {
+    public String parseMessage(String message) throws ParseOCCIException {
         // This may be rendered in header and in content if this is an error message.
-        occiResponse.setResponse(message);
         return message;
     }
 
@@ -247,9 +231,7 @@ public class TextOcciParser implements IRequestParser {
     public HeaderPojo renderOutputEntity(Entity entity) throws ParseOCCIException {
         if (entity == null) {
             Map<String, List<String>> header = new LinkedHashMap<>();
-            HeaderPojo result = new HeaderPojo(header);
-            occiResponse.setResponse(result);
-            return result;
+            return new HeaderPojo(header);
         }
         String categories = renderCategory(entity.getKind(), false);
 
@@ -283,9 +265,7 @@ public class TextOcciParser implements IRequestParser {
         headerMap.put(Constants.X_OCCI_LOCATION, xOcciLocation);
         headerMap.put(Constants.LINK, links);
 
-        HeaderPojo header = new HeaderPojo(headerMap);
-        occiResponse.setResponse(header);
-        return header;
+        return new HeaderPojo(headerMap);
     }
 
 
@@ -295,12 +275,10 @@ public class TextOcciParser implements IRequestParser {
         // We render only the first entity found, cause to limit size of header.
         if (entities != null && !entities.isEmpty()) {
             result = renderOutputEntity(entities.get(0));
-            occiResponse.setResponse(result);
             return result;
         }
         Map<String, List<String>> header = new LinkedHashMap<>();
         result = new HeaderPojo(header);
-        occiResponse.setResponse(result);
         return result;
     }
 
@@ -314,11 +292,9 @@ public class TextOcciParser implements IRequestParser {
             // responseBuilder.header(Constants.X_OCCI_LOCATION, absLocation);
             headerMap.put(Constants.X_OCCI_LOCATION, locations);
             header = new HeaderPojo(headerMap);
-            occiResponse.setResponse(header);
             return header;
         } else {
             header = new HeaderPojo(headerMap);
-            occiResponse.setResponse(header);
         }
         return header;
     }

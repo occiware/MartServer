@@ -1,11 +1,13 @@
 package org.occiware.mart.servlet.impl;
 
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.HeaderPojo;
+import org.occiware.mart.server.utils.Constants;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Created by cgourdin on 13/04/2017.
@@ -19,10 +21,29 @@ public class DeleteWorker extends ServletEntry {
     public HttpServletResponse executeQuery() {
         HttpServletResponse resp = buildInputDatas();
 
-        // TODO : occi methods call.
+        if (occiResponse.hasExceptions()) {
+            return resp;
+        }
+        // There is content so check it.
+        occiRequest.validateDataContentRequest();
+
+        if (occiRequest.isInterfQuery()) {
+            return occiResponse.parseMessage("you cannot use interface query on DELETE method", HttpServletResponse.SC_BAD_REQUEST);
+        }
+        if (occiRequest.isActionInvocationQuery()) {
+            return occiResponse.parseMessage("You cannot use an action with DELETE method.", HttpServletResponse.SC_BAD_REQUEST);
+        }
+
+        if (getContentType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+            return occiResponse.parseMessage("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/", HttpServletResponse.SC_BAD_REQUEST);
+        }
+
+        List<OCCIRequestData> datas = occiRequest.getOCCIRequestData();
 
 
-
+        // Against data, we call the removeFromModel method.
+        occiRequest.removeFromModel();
+        resp = occiResponse.getHttpResponse();
         return resp;
     }
 }

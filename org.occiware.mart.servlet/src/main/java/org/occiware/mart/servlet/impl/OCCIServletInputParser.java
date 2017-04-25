@@ -1,29 +1,23 @@
 package org.occiware.mart.servlet.impl;
 
-import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.facade.AbstractOCCIRequest;
-import org.occiware.mart.server.facade.OCCIRequest;
-import org.occiware.mart.server.facade.OCCIResponse;
-import org.occiware.mart.server.parser.ContentData;
+import org.occiware.mart.server.facade.*;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
-import org.occiware.mart.servlet.utils.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Created by cgourdin on 11/04/2017.
  *
  */
-public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIRequest {
+public class OCCIServletInputParser extends AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OCCIServletInputParser.class);
 
@@ -53,10 +47,10 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
      * Define if the query is an action query.
      */
     private boolean actionInvocationQuery;
-    /**
-     * Define if there is no content datas, the query is defined with a path (for Get and Delete methods).
-     */
-    private boolean datasOnlyOnPath;
+//    /**
+//     * Define if there is no content datas, the query is defined with a path (for Get and Delete methods).
+//     */
+//    private boolean datasOnlyOnPath;
 
     public OCCIServletInputParser(OCCIResponse response, String contentType, String username, HttpServletRequest req, HeaderPojo headers, Map<String, String> requestParameters) {
         super(response, contentType, req.getPathInfo(), username);
@@ -139,7 +133,7 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
         // Detect if this is an action invocation request
         if (requestParameters != null && requestParameters.get("action") != null) {
             actionInvocationQuery = true;
-            return;
+            // No return because we must know if this is a mixin Tag location path or an entity path or an entity collection path.
         }
 
         // Detect if this path is on an existing entity path.
@@ -213,11 +207,11 @@ public class OCCIServletInputParser extends AbstractOCCIRequest implements OCCIR
         this.actionInvocationQuery = actionInvocationQuery;
     }
 
-    public boolean isDatasOnlyOnPath() {
-        return datasOnlyOnPath;
-    }
+// public boolean isDatasOnlyOnPath() {
+    //    return datasOnlyOnPath;
+    // }
 
-    public void setDatasOnlyOnPath(boolean datasOnlyOnPath) {
-        this.datasOnlyOnPath = datasOnlyOnPath;
-    }
+    // public void setDatasOnlyOnPath(boolean datasOnlyOnPath) {
+    //    this.datasOnlyOnPath = datasOnlyOnPath;
+    // }
 }

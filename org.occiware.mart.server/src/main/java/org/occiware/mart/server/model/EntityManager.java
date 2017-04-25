@@ -1,3 +1,21 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.server.model;
 
 import org.eclipse.emf.common.util.EList;
@@ -11,9 +29,11 @@ import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
+import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -140,12 +160,12 @@ public class EntityManager {
     /**
      * Search an entity (link or resource) on the current configuration.
      *
-     * @param owner
      * @param id    (entityId is unique for all owners)
+     * @param owner
      * @return an OCCI Entity, could be null, if entity has is not found.
      * @throws ConfigurationException
      */
-    public static Entity findEntity(String owner, final String id) {
+    public static Entity findEntity(final String id, String owner) {
         Entity entity = null;
         if (owner == null) {
             owner = ConfigurationManager.DEFAULT_OWNER;
@@ -171,7 +191,7 @@ public class EntityManager {
      */
     public static boolean isEntityExist(final String owner, final String id) {
         if (isEntityUUIDProvided(id, new HashMap<>())) {
-            return findEntity(owner, id) != null;
+            return findEntity(id, owner) != null;
         } else {
             String path;
             boolean found = false;
@@ -191,11 +211,11 @@ public class EntityManager {
      * Find entities for a categoryId (kind or Mixin or actions). actions has no
      * entity list and it's not used here.
      *
-     * @param owner
      * @param filter
+     * @param owner
      * @return a list of entities (key: owner, value : List of entities).
      */
-    public static List<Entity> findAllEntities(final String owner, final CollectionFilter filter) {
+    public static List<Entity> findAllEntities(final CollectionFilter filter, final String owner) {
         List<Entity> entities = new LinkedList<>();
         
         if (owner == null || owner.isEmpty()) {
@@ -402,7 +422,7 @@ public class EntityManager {
      * @param attr = attributes of an entity
      * @return false if this entity is a link, true otherwise.
      */
-    public static boolean checkIfEntityIsResourceOrLinkFromAttributes(final Map<String, Object> attr) {
+    public static boolean checkIfEntityIsResourceOrLinkFromAttributes(final Map<String, String> attr) {
         boolean result;
         if (attr == null || attr.isEmpty()) {
             return true;
@@ -910,7 +930,7 @@ public class EntityManager {
                 }
             }
             if (uuid != null) {
-                entity = findEntity(username, uuid);
+                entity = findEntity(uuid, username);
             }
 
         }
@@ -953,11 +973,11 @@ public class EntityManager {
             Kind occiKind;
 
             // Check if kind already exist in realm (on extension model).
-            occiKind = KindManager.findKindFromExtension(owner, kind);
+            occiKind = KindManager.findKindFromExtension(kind, owner);
 
             if (occiKind == null) {
                 // Kind not found on extension, searching on entities.
-                occiKind = KindManager.findKindFromEntities(owner, kind);
+                occiKind = KindManager.findKindFromEntities(kind, owner);
             }
             try {
                 // Create an OCCI resource with good resource type (via extension model).
@@ -972,7 +992,7 @@ public class EntityManager {
                 MixinManager.addMixinsToEntity(resource, mixins, owner, false);
 
                 // Add the attributes...
-                updateAttributesToEntity(resource, attributes);
+                updateAttributesToEntity(resource, attributes, owner);
 
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + id);
@@ -989,7 +1009,7 @@ public class EntityManager {
             // Add the mixins if any.
             MixinManager.addMixinsToEntity(resource, mixins, owner, true);
 
-            updateAttributesToEntity(resource, attributes);
+            updateAttributesToEntity(resource, attributes, owner);
 
         }
 
@@ -1044,11 +1064,11 @@ public class EntityManager {
 
             Kind occiKind;
             // Check if kind already exist in realm (on extension model).
-            occiKind = KindManager.findKindFromExtension(owner, kind);
+            occiKind = KindManager.findKindFromExtension(kind, owner);
 
             if (occiKind == null) {
                 // Kind not found on extension, searching on entities.
-                occiKind = KindManager.findKindFromEntities(owner, kind);
+                occiKind = KindManager.findKindFromEntities(kind, owner);
             }
             try {
                 // Link doesnt exist on configuration, we create it.
@@ -1060,7 +1080,7 @@ public class EntityManager {
 
                 MixinManager.addMixinsToEntity(link, mixins, owner, false);
 
-                updateAttributesToEntity(link, attributes);
+                updateAttributesToEntity(link, attributes, owner);
 
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + id);
@@ -1077,7 +1097,7 @@ public class EntityManager {
 
             MixinManager.addMixinsToEntity(link, mixins, owner, true);
 
-            updateAttributesToEntity(link, attributes);
+            updateAttributesToEntity(link, attributes, owner);
         }
 
 
@@ -1137,7 +1157,7 @@ public class EntityManager {
      * @param attributes
      * @return Updated entity object.
      */
-    public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes) {
+    public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes, final String username) {
         if (attributes == null || attributes.isEmpty()) {
             // TODO : Check if concrete object attributes are deleted, or update MART with a remove attributes method.
             entity.getAttributes().clear();
@@ -1154,7 +1174,7 @@ public class EntityManager {
             attrValue = entry.getValue();
             if (!attrName.isEmpty()
                     && !attrName.equals("occi.core.id") && !attrName.equals("occi.core.target") && !attrName.equals("occi.core.source")) {
-                LOGGER.info("Attribute set value : " + attrValue);
+                LOGGER.debug("Attribute set value : " + attrValue);
 
                 OcciHelper.setAttribute(entity, attrName, attrValue);
 
@@ -1169,10 +1189,12 @@ public class EntityManager {
                         attrState.setValue(attrValue);
                     }
 
-                    LOGGER.info("Attribute : " + attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
+                    LOGGER.debug("Attribute : " + attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
                 }
             }
         }
+
+        updateVersion(username, entity.getId());
 
         return entity;
     }
@@ -1199,10 +1221,10 @@ public class EntityManager {
      * delete all entities from given kind id or disassociate entities from
      * given mixin id.
      *
-     * @param owner
      * @param id    (kind id or mixin id or entity Id!)
+     * @param owner
      */
-    public static void removeOrDissociateFromConfiguration(final String owner, final String id) {
+    public static void removeOrDissociateFromConfiguration(final String id, final String owner) {
         boolean found = false;
         boolean resourceToDelete = false;
         boolean kindEntitiesToDelete = false;
@@ -1229,7 +1251,7 @@ public class EntityManager {
         }
         if (!found) {
             // check if this is a kind id.
-            kind = KindManager.findKindFromEntities(owner, id);
+            kind = KindManager.findKindFromEntities(id, owner);
             if (kind != null) {
                 kindEntitiesToDelete = true;
                 found = true;
@@ -1388,7 +1410,7 @@ public class EntityManager {
      * @param attr
      * @return the UUID provided may return null if uuid not found.
      */
-    public static String getUUIDFromPath(final String path, final Map<String, Object> attr) {
+    public static String getUUIDFromPath(final String path, final Map<String, String> attr) {
         String[] uuids = path.split("/");
         String uuidToReturn = null;
 
@@ -1403,7 +1425,7 @@ public class EntityManager {
         }
 
         // Check with occi.core.id attribute.
-        String occiCoreId = (String)attr.get(Constants.OCCI_CORE_ID);
+        String occiCoreId = attr.get(Constants.OCCI_CORE_ID);
         if (occiCoreId == null) {
             return null;
         }
@@ -1581,4 +1603,108 @@ public class EntityManager {
         }
         return entitiesLocation;
     }
+
+    /**
+     * Execute an action on an entity.
+     * @param entityUUID
+     * @param actionId
+     * @param actionAttributes
+     * @param owner
+     * @throws ConfigurationException
+     */
+    public static void executeActionOnEntity(final String entityUUID, final String actionId, final Map<String, String> actionAttributes, final String owner) throws ConfigurationException {
+        if (entityUUID == null) {
+            throw new ConfigurationException("No entity defined to execute this action: " + actionId);
+        }
+        Entity entity = findEntity(entityUUID, owner);
+        if (entity == null) {
+            throw new ConfigurationException("Entity : " + entityUUID + " doesnt exist on configuration");
+        }
+
+        Extension ext = getExtensionForAction(owner, actionId);
+        if (ext == null) {
+            LOGGER.error("Action " + actionId + " doesnt exist on referenced extensions");
+            throw new ConfigurationException("Action " + actionId + " doesnt exist on referenced extensions");
+        }
+
+        Action action = getActionFromEntityWithActionId(entity, actionId);
+
+        if (action == null) {
+            LOGGER.error("Action cannot be executed on entity : " + entity.getId() + ", this action is not referenced on the kind : " + entity.getKind());
+            throw new ConfigurationException("Action cannot be executed on entity : " + entity.getId() + ", this action is not referenced on the kind : " + entity.getKind());
+        }
+        String actionTerm = action.getTerm();
+        String[] actionParameters = Utils.getActionParametersArray(actionAttributes);
+        try {
+            if (actionParameters == null) {
+                OcciHelper.executeAction(entity, actionTerm);
+            } else {
+                OcciHelper.executeAction(entity, actionTerm, actionParameters);
+            }
+        } catch (InvocationTargetException ex) {
+            String message;
+            if (ex.getMessage() != null) {
+                message = "Internal error while executing action : " + actionTerm + ", message: " + ex.getMessage();
+            } else {
+                message = "Internal error while executing action : " + actionTerm;
+            }
+            throw new ConfigurationException(message, ex);
+        }
+
+    }
+
+    /**
+     * Execute action on an entity location.
+     * @param location
+     * @param actionId
+     * @param actionAttributes
+     * @param owner
+     */
+    public static void executeActionOnlocation(final String location, final String actionId, final Map<String, String> actionAttributes, final String owner) throws ConfigurationException {
+        if (location == null) {
+            throw new ConfigurationException("No entity location defined.");
+        }
+        if (actionId == null) {
+            throw new ConfigurationException("No action scheme+term defined.");
+        }
+
+        Entity entity = findEntityFromLocation(location, owner);
+
+        if (entity == null) {
+            throw new ConfigurationException("Entity on location: " + location + " doesnt exist on configuration");
+        }
+
+        Extension ext = getExtensionForAction(owner, actionId);
+        if (ext == null) {
+            LOGGER.error("Action " + actionId + " doesnt exist on referenced extensions");
+            throw new ConfigurationException("Action " + actionId + " doesnt exist on referenced extensions");
+        }
+
+        Action action = getActionFromEntityWithActionId(entity, actionId);
+
+        if (action == null) {
+            LOGGER.error("Action cannot be executed on entity : " + entity.getId() + ", this action is not referenced on the kind : " + entity.getKind());
+            throw new ConfigurationException("Action cannot be executed on entity : " + entity.getId() + ", this action is not referenced on the kind : " + entity.getKind());
+        }
+        String actionTerm = action.getTerm();
+        String[] actionParameters = Utils.getActionParametersArray(actionAttributes);
+        try {
+            if (actionParameters == null) {
+                OcciHelper.executeAction(entity, actionTerm);
+            } else {
+                OcciHelper.executeAction(entity, actionTerm, actionParameters);
+            }
+        } catch (Exception ex) {
+            String message;
+            if (ex.getMessage() != null) {
+                message = "Internal error while executing action : " + actionTerm + ", message: " + ex.getMessage();
+            } else {
+                message = "Internal error while executing action : " + actionTerm;
+            }
+            throw new ConfigurationException(message, ex);
+        }
+
+    }
+
+
 }

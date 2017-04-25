@@ -1,3 +1,21 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.server.model;
 
 import org.junit.After;
@@ -30,193 +48,7 @@ public class ConfigurationManagerTest {
         assertNotNull(configuration);
     }
 
-    @Test
-    public void testFindUserMixinOnConfiguration() throws Exception {
 
-    }
 
-    @Test
-    public void testFindMixinOnExtension() throws Exception {
 
-    }
-
-    @Test
-    public void testIsKindAttribute() throws Exception {
-
-    }
-
-    @Test
-    public void testFindEntity() throws Exception {
-
-    }
-
-    @Test
-    public void testIsEntityExist() throws Exception {
-
-    }
-
-    @Test
-    public void testFindKindFromExtension() throws Exception {
-
-    }
-
-    @Test
-    public void testFindAllEntities() throws Exception {
-
-    }
-
-    @Test
-    public void testFindAllEntitiesOwner() throws Exception {
-
-    }
-
-    @Test
-    public void testFindAllEntitiesForCategory() throws Exception {
-
-    }
-
-    @Test
-    public void testGetExtensionForAction() throws Exception {
-
-    }
-
-    @Test
-    public void testGetExtensionForKind() throws Exception {
-
-    }
-
-    @Test
-    public void testGetExtensionForMixin() throws Exception {
-
-    }
-
-    @Test
-    public void testCheckIfEntityIsResourceOrLinkFromAttributes() throws Exception {
-
-    }
-
-    @Test
-    public void testIsCategoryReferencedOnEntity() throws Exception {
-
-    }
-
-    @Test
-    public void testGetActionFromEntityWithActionTerm() throws Exception {
-
-    }
-
-    @Test
-    public void testGetActionFromEntityWithActionId() throws Exception {
-
-    }
-
-    @Test
-    public void testGetUserMixinFromLocation() throws Exception {
-
-    }
-
-    @Test
-    public void testIsMixinTags() throws Exception {
-
-    }
-
-    @Test
-    public void testGetLocation() throws Exception {
-
-    }
-
-    @Test
-    public void testGetLocation1() throws Exception {
-
-    }
-
-    @Test
-    public void testGetLocation2() throws Exception {
-
-    }
-
-    @Test
-    public void testGetAllConfigurationKind() throws Exception {
-
-    }
-
-    @Test
-    public void testGetAllConfigurationMixins() throws Exception {
-
-    }
-
-    @Test
-    public void testFindCategorySchemeTermFromTerm() throws Exception {
-
-    }
-
-    @Test
-    public void testGetEntitiesLocation() throws Exception {
-
-    }
-
-    @Test
-    public void testFindEntityFromLocation() throws Exception {
-
-    }
-
-    @Test
-    public void testAddResourceToConfiguration() throws Exception {
-
-    }
-
-    @Test
-    public void testAddLinkToConfiguration() throws Exception {
-
-    }
-
-    @Test
-    public void testAddMixinsToEntity() throws Exception {
-
-    }
-
-    @Test
-    public void testSaveMixinForEntities() throws Exception {
-
-    }
-
-    @Test
-    public void testAddUserMixinOnConfiguration() throws Exception {
-
-    }
-
-    @Test
-    public void testUpdateAttributesToEntity() throws Exception {
-
-    }
-
-    @Test
-    public void testUpdateVersion() throws Exception {
-
-    }
-
-    @Test
-    public void testRemoveOrDissociateFromConfiguration() throws Exception {
-
-    }
-
-    @Test
-    public void testDissociateMixinFromEntity() throws Exception {
-
-    }
-
-    @Test
-    public void testRemoveEntityAttributes() throws Exception {
-
-    }
-
-    @Test
-    public void testRemoveUserMixinFromConfiguration() throws Exception {
-
-    }
-
-    @Test
-    public void testApplyFilterOnInterface() throws Exception {
-
-    }
 }

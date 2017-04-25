@@ -16,7 +16,7 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.utils.tests;
+package org.occiware.mart.server.utils;
 
 import org.junit.Test;
 import org.occiware.mart.server.model.EntityManager;
@@ -37,7 +37,7 @@ public class UtilsTest {
 
         String uuidToTest = "f88486b7-0632-482d-a184-a9195733ddd0";
         String uuidResult;
-        Map<String, Object> attr = new HashMap<>();
+        Map<String, String> attr = new HashMap<>();
         String path = "/tmp/testuuid/f88486b7-0632-482d-a184-a9195733ddd0";
 
         uuidResult = EntityManager.getUUIDFromPath(path, attr);

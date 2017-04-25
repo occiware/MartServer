@@ -20,7 +20,7 @@ package org.occiware.mart.server.impl;
 
 import junit.framework.TestCase;
 import org.junit.Test;
-import org.occiware.mart.server.parser.ContentData;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.model.ConfigurationManager;
 
 /**
@@ -63,9 +63,9 @@ public class PathParserTest extends TestCase {
     }
 
     private void collectionCategoryTest(String path) {
-        ContentData contentData = new ContentData();
+        OCCIRequestData OCCIRequestData = new OCCIRequestData();
 //        Map<String, String> requestParameters = new HashMap<>();
-//        PathParser pathParser = new PathParser(contentData, path, requestParameters);
+//        PathParser pathParser = new PathParser(OCCIRequestData, path, requestParameters);
 //        pathParser.updateRoutes(requestParameters);
 //        assertFalse(pathParser.isActionInvocationQuery());
 //        assertFalse(pathParser.isEntityQuery());
@@ -77,9 +77,9 @@ public class PathParserTest extends TestCase {
     }
 
     private void collectionCustomTest(String path) {
-        ContentData contentData = new ContentData();
+        OCCIRequestData OCCIRequestData = new OCCIRequestData();
 //        Map<String, String> requestParameters = new HashMap<>();
-//        PathParser pathParser = new PathParser(contentData, path, requestParameters);
+//        PathParser pathParser = new PathParser(OCCIRequestData, path, requestParameters);
 //        pathParser.updateRoutes(requestParameters);
 //        assertFalse(pathParser.isActionInvocationQuery());
 //        assertFalse(pathParser.isEntityQuery());
@@ -91,20 +91,20 @@ public class PathParserTest extends TestCase {
     }
 
     private void entityRequestTest(String path, String uuidAttr, String kind) {
-        ContentData contentData = new ContentData();
+        OCCIRequestData OCCIRequestData = new OCCIRequestData();
 //        Map<String, Object> attrs = new HashMap<>();
 //
 //        if (uuidAttr == null) {
-//            contentData.setAttrObjects(attrs);
+//            OCCIRequestData.setAttrObjects(attrs);
 //        } else {
 //            attrs.put("occi.core.id", uuidAttr);
-//            contentData.setAttrObjects(attrs);
+//            OCCIRequestData.setAttrObjects(attrs);
 //        }
 //        if (kind != null) {
-//            contentData.setKind(kind);
+//            OCCIRequestData.setKind(kind);
 //        }
 //        Map<String, String> requestParameters = new HashMap<>();
-//        PathParser pathParser = new PathParser(contentData, path, requestParameters);
+//        PathParser pathParser = new PathParser(OCCIRequestData, path, requestParameters);
 //        pathParser.updateRoutes(requestParameters);
 //        assertFalse(pathParser.isActionInvocationQuery());
 //        assertTrue(pathParser.isEntityQuery());
@@ -116,11 +116,11 @@ public class PathParserTest extends TestCase {
 
 
     private void actionInvocationTest() {
-        ContentData contentData = new ContentData();
-//        contentData.setAction("myactionscheme#term");
+        OCCIRequestData OCCIRequestData = new OCCIRequestData();
+//        OCCIRequestData.setAction("myactionscheme#term");
 //        String path = "";
 //        Map<String, String> requestParameters = new HashMap<>();
-//        PathParser pathParser = new PathParser(contentData, path, requestParameters);
+//        PathParser pathParser = new PathParser(OCCIRequestData, path, requestParameters);
 //        pathParser.updateRoutes(requestParameters);
 //        boolean actionInvocation = pathParser.isActionInvocationQuery();
 //        assertTrue(actionInvocation);
@@ -129,12 +129,12 @@ public class PathParserTest extends TestCase {
 
 
     private void mixinTagDefinitionTest(String path) {
-        ContentData contentData = new ContentData();
-//        contentData.setLocation("/mymixin/mymixin2/");
-//        contentData.setMixinTag("myMixinTagScheme#mymixin");
-//        contentData.setMixinTagTitle("mymixin title");
+        OCCIRequestData OCCIRequestData = new OCCIRequestData();
+//        OCCIRequestData.setLocation("/mymixin/mymixin2/");
+//        OCCIRequestData.setMixinTag("myMixinTagScheme#mymixin");
+//        OCCIRequestData.setMixinTagTitle("mymixin title");
 //        Map<String, String> requestParameters = new HashMap<>();
-//        PathParser pathParser = new PathParser(contentData, path, requestParameters);
+//        PathParser pathParser = new PathParser(OCCIRequestData, path, requestParameters);
 //        pathParser.updateRoutes(requestParameters);
 //        boolean mixinTagRes = pathParser.isMixinTagDefinitionRequest();
 //        assertTrue(mixinTagRes);
