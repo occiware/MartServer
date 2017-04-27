@@ -1,7 +1,10 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.parser.DefaultParser;
 import org.occiware.mart.server.parser.HeaderPojo;
+import org.occiware.mart.server.parser.IRequestParser;
+import org.occiware.mart.server.parser.ParserFactory;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.servlet.utils.ServletUtils;
@@ -43,8 +46,8 @@ public abstract class ServletEntry {
     private HttpServletResponse httpResponse;
     private String path;
 
-    protected OCCIServletInputParser occiRequest;
-    protected OCCIServletOutputParser occiResponse;
+    protected OCCIServletInputRequest occiRequest;
+    protected OCCIServletOutputResponse occiResponse;
 
     private String contentType = Constants.MEDIA_TYPE_TEXT_OCCI;
     private String acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
@@ -149,10 +152,22 @@ public abstract class ServletEntry {
         // TODO : Manage authentication and pass username to MART engine.
         // validateAuth().
 
+        // Build inputparser and output parser.
+        IRequestParser inputParser = ParserFactory.build(contentType);
+        IRequestParser outputParser = ParserFactory.build(acceptType);
 
+        // Create occiRequest objects.
+        occiResponse = new OCCIServletOutputResponse(acceptType, "anonymous", httpResponse, outputParser);
+        occiRequest = new OCCIServletInputRequest(occiResponse, contentType, "anonymous", httpRequest, headers, this.getRequestParameters(), inputParser);
 
-        occiResponse = new OCCIServletOutputParser(acceptType, "anonymous", httpResponse);
-        occiRequest = new OCCIServletInputParser(occiResponse, contentType, "anonymous", httpRequest, headers, this.getRequestParameters());
+        if (inputParser instanceof DefaultParser) {
+            LOGGER.warn("No parser for content type : " + contentType);
+            return occiResponse.parseMessage("content type : " + contentType + " not implemented.", HttpServletResponse.SC_NOT_IMPLEMENTED);
+        }
+        if (outputParser instanceof DefaultParser) {
+            LOGGER.warn("No parser for accept type : " + acceptType);
+            return occiResponse.parseMessage("accept type : " + contentType + " not implemented.", HttpServletResponse.SC_NOT_IMPLEMENTED);
+        }
 
         // Get Client user agent to complain with http_protocol spec, control the occi version if set by client.
         boolean result = ServletUtils.checkClientOCCIVersion(headers);
@@ -163,7 +178,7 @@ public abstract class ServletEntry {
 
         parseRequestParameters();
 
-        // Parse worker datas (to use with MART engine).
+        // Parse worker datas content.
         try {
             // Parse input query to data objects.
             occiRequest.parseInput();

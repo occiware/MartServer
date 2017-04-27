@@ -265,6 +265,11 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         headerMap.put(Constants.X_OCCI_LOCATION, xOcciLocation);
         headerMap.put(Constants.LINK, links);
 
+        List<Entity> entities = new ArrayList<>();
+        entities.add(entity);
+
+        super.convertEntitiesToOutputData(entities);
+
         return new HeaderPojo(headerMap);
     }
 
@@ -279,6 +284,9 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         }
         Map<String, List<String>> header = new LinkedHashMap<>();
         result = new HeaderPojo(header);
+
+        super.convertEntitiesToOutputData(entities);
+
         return result;
     }
 
@@ -296,6 +304,9 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         } else {
             header = new HeaderPojo(headerMap);
         }
+
+        super.convertLocationsToOutputDatas(locations);
+
         return header;
     }
 

@@ -77,7 +77,7 @@ public class MainServlet extends HttpServlet {
         HeaderPojo headers = ServletUtils.getRequestHeaders(req);
         URI serverURI = ServletUtils.getServerURI(req);
 
-        LOGGER.debug("doPut method for path: " + requestPath);
+        LOGGER.debug("doPut method for location: " + requestPath);
 
         PutWorker worker = new PutWorker(serverURI, resp, headers, req, requestPath);
 
@@ -91,7 +91,7 @@ public class MainServlet extends HttpServlet {
         HeaderPojo headers = ServletUtils.getRequestHeaders(req);
         URI serverURI = ServletUtils.getServerURI(req);
 
-        LOGGER.debug("doDelete method for path: " + requestPath);
+        LOGGER.debug("doDelete method for location: " + requestPath);
 
         DeleteWorker worker = new DeleteWorker(serverURI, resp, headers, req, requestPath);
 

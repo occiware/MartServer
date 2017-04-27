@@ -21,10 +21,6 @@ package org.occiware.mart.servlet.utils;
 import org.apache.commons.io.IOUtils;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ConfigurationException;
-import org.occiware.mart.server.model.ConfigurationManager;
-import org.occiware.mart.server.model.EntityManager;
-import org.occiware.mart.server.model.KindManager;
-import org.occiware.mart.server.model.MixinManager;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
@@ -84,11 +80,6 @@ public class ServletUtils {
         }
 
         return result;
-    }
-
-    public static String createUUID() {
-        return UUID.randomUUID().toString();
-
     }
 
     /**
@@ -418,272 +409,10 @@ public class ServletUtils {
 
     }
 
-    /**
-     * Check if the path contains a category referenced on extensions used by
-     * configuration.
-     *
-     * @param path
-     * @param user
-     * @return a category term if found on configuration, if not found return
-     * null.
-     */
-    public static String getCategoryFilter(final String path, final String user) {
-        List<Kind> kinds = KindManager.getAllConfigurationKind(user);
-        List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
-        String term;
-
-        for (Kind kind : kinds) {
-            for (Action action : kind.getActions()) {
-                term = action.getTerm();
-                if (path.contains(term) || path.contains(term.toLowerCase())) {
-                    return term;
-
-                }
-            }
-
-            term = kind.getTerm();
-            if (path.contains(term) || path.contains(term.toLowerCase())) {
-                return term;
-            }
-
-        }
-        for (Mixin mixin : mixins) {
-            term = mixin.getTerm();
-            if (path.contains(term) || path.contains(term.toLowerCase())) {
-                return term;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Check if the path equals a category referenced on extensions used by
-     * configuration. Remove leading slash and ending slash before proceed.
-     *
-     * @param path
-     * @param user
-     * @return a category term if found on configuration, if not found return
-     * null.
-     */
-    public static String getCategoryFilterSchemeTerm(final String path, final String user) {
-        List<Kind> kinds = KindManager.getAllConfigurationKind(user);
-        List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
-        String term;
-        String scheme;
-        String id;
-
-        if (path == null) {
-            return null;
-        }
-
-        String pathTerm = path;
-        if (pathTerm.startsWith("/")) {
-            pathTerm = pathTerm.substring(1);
-        }
-        if (pathTerm.endsWith("/")) {
-            pathTerm = pathTerm.substring(0, pathTerm.length() - 1);
-        }
-
-        for (Kind kind : kinds) {
-            for (Action action : kind.getActions()) {
-                term = action.getTerm();
-                scheme = action.getScheme();
-                id = scheme + term;
-                if (pathTerm.equals(term) || pathTerm.equals(term.toLowerCase())) {
-                    return id;
-
-                }
-            }
-
-            term = kind.getTerm();
-            scheme = kind.getScheme();
-            id = scheme + term;
-            if (pathTerm.equals(term) || path.equals(term.toLowerCase())) {
-                return id;
-            }
-
-        }
-        for (Mixin mixin : mixins) {
-
-            term = mixin.getTerm();
-            scheme = mixin.getScheme();
-            id = scheme + term;
-            if (pathTerm.equals(term) || pathTerm.equals(term.toLowerCase())) {
-                return id;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Return true if categoryFilter is a scheme + term.
-     *
-     * @param categoryFilter
-     * @param user
-     * @return
-     */
-    public static boolean checkIfCategorySchemeTerm(String categoryFilter, String user) {
-
-        List<Kind> kinds = KindManager.getAllConfigurationKind(user);
-        List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
-        String term;
-        String scheme;
-        String id;
-        for (Kind kind : kinds) {
-            // Check actions.
-            for (Action action : kind.getActions()) {
-                term = action.getTerm();
-                scheme = action.getScheme();
-                id = scheme + term;
-                if (categoryFilter.equalsIgnoreCase(id)) {
-                    return true;
-
-                }
-            }
-
-            term = kind.getTerm();
-            scheme = kind.getScheme();
-            id = scheme + term;
-            if (categoryFilter.equalsIgnoreCase(id)) {
-                return true;
-            }
-
-        }
-        for (Mixin mixin : mixins) {
-
-            term = mixin.getTerm();
-            scheme = mixin.getScheme();
-            id = scheme + term;
-            if (categoryFilter.equalsIgnoreCase(id)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param mixins
-     * @param kind
-     * @return true if all mixins applied.
-     */
-    public static boolean checkIfMixinAppliedToKind(List<Mixin> mixins, Kind kind) {
-        boolean result = true;
-        if (mixins.isEmpty()) {
-            return true;
-        }
-        for (Mixin mixin : mixins) {
-            if (!mixin.getApplies().contains(kind)) {
-                // one or more mixin doesnt apply to this kind.
-                result = false;
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Load a list of mixin from used extensions models.
-     *
-     * @param mixins
-     * @return
-     * @throws ConfigurationException
-     */
-    public static List<Mixin> loadMixinFromSchemeTerm(List<String> mixins) throws ConfigurationException {
-        List<Mixin> mixinModel = new LinkedList<>();
-
-        Mixin mixinTmp;
-        for (String mixinId : mixins) {
-            mixinTmp = MixinManager.findMixinOnExtension(ConfigurationManager.DEFAULT_OWNER, mixinId);
-            if (mixinTmp == null) {
-                mixinTmp = MixinManager.findUserMixinOnConfiguration(mixinId, ConfigurationManager.DEFAULT_OWNER);
-                if (mixinTmp == null) {
-                    throw new ConfigurationException("Mixin : " + mixinId + " not found on used extensions models");
-                }
-            } else {
-                mixinModel.add(mixinTmp);
-            }
-        }
-        return mixinModel;
-    }
-
     public static synchronized int getUniqueInt() {
         return uniqueInt++;
     }
 
-    /**
-     * Get all entities registered on the same path.
-     *
-     * @param path
-     * @return a List of String uuids
-     */
-    public static List<String> getEntityUUIDsFromPath(final String path) {
-        List<String> entitiesUUID = new ArrayList<>();
-        if (path == null || path.isEmpty()) {
-            return entitiesUUID;
-        }
-        String pathCompare = path;
-        if (!path.equals("/") && path.endsWith("/")) {
-            // Delete ending slash.
-            pathCompare = path.substring(0, path.length() - 1);
-        }
-        // Remove leading "/".
-        if (path.startsWith("/")) {
-            pathCompare = path.substring(1);
-        }
-
-        Map<String, String> entitiesPath = EntityManager.getEntitiesLocation();
-        String uuid;
-        String pathTmp;
-        for (Map.Entry<String, String> entry : entitiesPath.entrySet()) {
-            uuid = entry.getKey();
-            pathTmp = entry.getValue();
-
-            if (!pathTmp.equals("/") && pathTmp.endsWith("/")) {
-                pathTmp = pathTmp.substring(0, pathTmp.length() - 1);
-            }
-            // Remove leading "/".
-            if (pathTmp.startsWith("/")) {
-                pathTmp = pathTmp.substring(1);
-            }
-
-            if (pathCompare.equals(pathTmp)) {
-                entitiesUUID.add(uuid);
-            } else if ((pathCompare.startsWith(pathTmp) || pathTmp.startsWith(pathCompare)) && !pathTmp.isEmpty()) {
-                entitiesUUID.add(uuid);
-            }
-        }
-        return entitiesUUID;
-    }
-
-    /**
-     * Check if path is on a mixin tag (mixin without attributes and applied and
-     * depends).
-     *
-     * @param path
-     * @param owner
-     * @return false if the path and request is not on mixin tag.
-     */
-    public static boolean isMixinTagRequest(final String path, final String owner) {
-        boolean result;
-        Mixin mixin = MixinManager.getUserMixinFromLocation(path, owner);
-        result = mixin != null;
-        return result;
-    }
-
-    /**
-     * Is that path is on a category ? like compute/
-     *
-     * @param path
-     * @return
-     */
-    public static boolean isCollectionOnCategory(String path) {
-        String categoryId = ServletUtils.getCategoryFilterSchemeTerm(path, ConfigurationManager.DEFAULT_OWNER);
-
-        return categoryId != null;
-
-    }
 
     /**
      * Parse a string to a number without knowning its type output.
@@ -850,9 +579,5 @@ public class ServletUtils {
 
         return serverURI;
     }
-
-
-
-
 
 }

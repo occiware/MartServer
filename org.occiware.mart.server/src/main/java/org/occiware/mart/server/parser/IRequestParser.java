@@ -66,4 +66,12 @@ public interface IRequestParser {
     List<OCCIRequestData> getInputDatas();
 
     void setInputDatas(List<OCCIRequestData> inputDatas);
+
+    List<OCCIRequestData> getOutputDatas();
+
+    void setOutputDatas(List<OCCIRequestData> outputDatas);
+
+    void convertEntitiesToOutputData(List<Entity> entities);
+
+    void convertLocationsToOutputDatas(List<String> locations);
 }

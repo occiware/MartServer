@@ -33,10 +33,10 @@ public class PutWorker extends ServletEntry {
         }
 
         // There is content so check it.
-        occiRequest.validateDataContentRequest();
+        occiRequest.validateInputDataRequest();
 
-        List<OCCIRequestData> OCCIRequestData = occiRequest.getOCCIRequestData();
-        if (OCCIRequestData.isEmpty()) {
+        List<OCCIRequestData> datas = occiRequest.getContentDatas();
+        if (datas.isEmpty()) {
             return occiResponse.parseMessage("No content to put.", HttpServletResponse.SC_BAD_REQUEST);
         }
 
@@ -49,19 +49,16 @@ public class PutWorker extends ServletEntry {
             return occiResponse.parseMessage("You cannot use an action with PUT method.", HttpServletResponse.SC_BAD_REQUEST);
         }
 
-        if (occiRequest.isEntityLocation(getPath())) {
-            occiRequest.createEntity();
-            return occiResponse.getHttpResponse();
-        }
-
-        if (occiRequest.isMixinTagLocation(getPath())) {
-            occiRequest.defineMixinTags();
-            return occiResponse.getHttpResponse();
-        }
-
-        if (occiRequest.isCollectionQuery()) {
-            occiRequest.createEntities();
-            return occiResponse.getHttpResponse();
+        for (OCCIRequestData data : datas) {
+            if (occiRequest.isMixinTagLocation(occiRequest.getRequestPath())) {
+                occiRequest.createMixinTag(data.getMixinTagTitle(), data.getMixinTag(), data.getLocation(), data.getXocciLocations());
+                return occiResponse.getHttpResponse();
+            } else {
+                if (data.getLocation() == null) {
+                    data.setLocation(occiRequest.getRequestPath());
+                }
+                occiRequest.createEntity(data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
+            }
         }
 
         return resp;

@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.facade;
 
+import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.utils.CollectionFilter;
 
 import java.util.List;
@@ -122,5 +123,22 @@ public interface OCCIApiInputRequest {
     public OCCIApiResponse executeActionOnEntities(final String action, final Map<String, String> actionAttributes, final List<String> locations);
 
 
+    // Helper methods.
+    boolean isCategoryLocation(String location);
 
+    boolean isCategoryTerm(String categoryTerm);
+
+    String getCategorySchemeTerm(String categoryTerm);
+
+    String getMixinTagSchemeTermFromLocation(String location);
+
+    boolean isMixinTagLocation(String location);
+
+    boolean isEntityLocation(String location);
+
+    OCCIApiResponse validateInputDataRequest();
+
+    IRequestParser getInputParser();
+
+    void setInputParser(IRequestParser inputParser);
 }

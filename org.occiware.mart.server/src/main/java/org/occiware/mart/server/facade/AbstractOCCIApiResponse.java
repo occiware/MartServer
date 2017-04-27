@@ -96,6 +96,9 @@ public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
         } catch (ParseOCCIException ex) {
             LOGGER.warn("Parsing message failed : " + ex.getMessage());
             this.response = message;
+            this.setExceptionMessage(ex.getMessage());
+            this.setExceptionThrown(ex);
+            this.setResponseMessage(message);
         }
     }
 

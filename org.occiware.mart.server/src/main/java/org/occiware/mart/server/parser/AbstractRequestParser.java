@@ -19,7 +19,10 @@
 package org.occiware.mart.server.parser;
 
 import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.model.MixinManager;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -30,6 +33,7 @@ import java.util.List;
 public abstract class AbstractRequestParser implements IRequestParser {
 
     private List<OCCIRequestData> inputDatas = new LinkedList<>();
+    private List<OCCIRequestData> outputDatas = new LinkedList<>();
     private QueryInterfaceData interfaceData;
 
 
@@ -62,7 +66,68 @@ public abstract class AbstractRequestParser implements IRequestParser {
     public void setInputDatas(List<OCCIRequestData> inputDatas) {
         this.inputDatas = inputDatas;
     }
+    @Override
+    public List<OCCIRequestData> getOutputDatas() {
+        if (outputDatas == null) {
+            outputDatas = new LinkedList<>();
+        }
+        return outputDatas;
+    }
+    @Override
+    public void setOutputDatas(List<OCCIRequestData> outputDatas) {
+        this.outputDatas = outputDatas;
+    }
 
+    /**
+     * Convert an entity model object to a container object.
+     * @param entities a list of entity model.
+     */
+    @Override
+    public void convertEntitiesToOutputData(List<Entity> entities) {
 
+        OCCIRequestData data;
+        List<Mixin> mixins;
+        List<String> mixinsToRender = new LinkedList<>();
+        this.outputDatas.clear();
+        for (Entity entity : entities) {
+            mixins = entity.getMixins();
 
+            data = new OCCIRequestData();
+            data.setEntityUUID(entity.getId());
+            data.setAttrs(EntityManager.convertEntityAttributesToMap(entity));
+            data.setLocation(EntityManager.getLocation(entity));
+            data.setKind(entity.getKind().getScheme() + entity.getKind().getTerm());
+
+            if (!entity.getMixins().isEmpty()) {
+                for (Mixin mixin : mixins) {
+                    // Check if mixin tag.
+                    if (mixin.getAttributes().isEmpty()) {
+                        // this mixin is a mixin tag.
+                        data.setMixinTag(mixin.getScheme()+mixin.getTerm());
+
+                    }
+                    mixinsToRender.add(mixin.getScheme() + mixin.getTerm());
+                }
+                if (!mixinsToRender.isEmpty()) {
+                    data.setMixins(mixinsToRender);
+                }
+            }
+            this.outputDatas.add(data);
+        }
+    }
+
+    /**
+     * Convert a list of locations to output datas container object.
+     * @param locations a list of locations (entities, etc).
+     */
+    @Override
+    public void convertLocationsToOutputDatas(List<String> locations) {
+        OCCIRequestData data;
+        this.outputDatas.clear();
+        for (String location : locations) {
+            data = new OCCIRequestData();
+            data.setLocation(location);
+            this.outputDatas.add(data);
+        }
+    }
 }

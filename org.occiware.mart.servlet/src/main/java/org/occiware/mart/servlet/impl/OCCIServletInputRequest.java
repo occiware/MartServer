@@ -3,6 +3,8 @@ package org.occiware.mart.servlet.impl;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.facade.*;
 import org.occiware.mart.server.parser.HeaderPojo;
+import org.occiware.mart.server.parser.IRequestParser;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
@@ -11,20 +13,22 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by cgourdin on 11/04/2017.
  *
  */
-public class OCCIServletInputParser extends AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
+public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OCCIServletInputParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OCCIServletInputRequest.class);
 
     private HeaderPojo headers;
     private HttpServletRequest request;
     private String requestPath;
     private Map<String, String> requestParameters;
+    private final String contentType;
 
     private boolean onMixinTagLocation = false;
 
@@ -47,13 +51,10 @@ public class OCCIServletInputParser extends AbstractOCCIApiInputRequest implemen
      * Define if the query is an action query.
      */
     private boolean actionInvocationQuery;
-//    /**
-//     * Define if there is no content datas, the query is defined with a path (for Get and Delete methods).
-//     */
-//    private boolean datasOnlyOnPath;
 
-    public OCCIServletInputParser(OCCIResponse response, String contentType, String username, HttpServletRequest req, HeaderPojo headers, Map<String, String> requestParameters) {
-        super(response, contentType, req.getPathInfo(), username);
+
+    public OCCIServletInputRequest(OCCIApiResponse response, String contentType, String username, HttpServletRequest req, HeaderPojo headers, Map<String, String> requestParameters, IRequestParser inputParser) {
+        super(username, response, inputParser);
         this.headers = headers;
         this.request = req;
 
@@ -65,15 +66,16 @@ public class OCCIServletInputParser extends AbstractOCCIApiInputRequest implemen
             requestPath = requestPath + "/";
         }
         this.requestParameters = requestParameters;
+        this.contentType = contentType;
+
     }
 
     /**
      * Build the data objects for usage in PUT, GET etc. when call findEntity etc.
      */
-    @Override
     public void parseInput() throws ParseOCCIException {
 
-        String content = null;
+        String content;
         // For all media type that have content occi build like json, xml, text plain, yml etc..
         if (request == null) {
             throw new ParseOCCIException("No request to parse.");
@@ -114,15 +116,12 @@ public class OCCIServletInputParser extends AbstractOCCIApiInputRequest implemen
                     throw new ParseOCCIException("Cannot parse for " + contentType + " cause: unknown parser");
             }
         }
-
-
     }
 
     /**
      * Parse the path to a data object. a path may have /category/myresource/
      */
     private void  parsePath() {
-        // This section is important for Get query and Delete query.
 
         // Detect if this is an interface request.
         if (requestPath.equals("/.well-known/org/ogf/occi/-/") || requestPath.endsWith("/-/")) {
@@ -137,20 +136,20 @@ public class OCCIServletInputParser extends AbstractOCCIApiInputRequest implemen
         }
 
         // Detect if this path is on an existing entity path.
-        if (this.isEntityLocation(requestPath)) {
+        if (isEntityLocation(requestPath)) {
             onEntityLocation = true;
             return;
         }
 
         // Detect if this path is on an existing mixin tag definition location.
-        if (this.isMixinTagLocation(requestPath)) {
+        if (isMixinTagLocation(requestPath)) {
             onMixinTagLocation = true;
             return;
         }
 
         // Detect if the path is on a category (mixin, kind) like /myconnector/compute/ or /ipnetwork/ or on known path parent (bounded path).
         collectionQuery = true;
-        if (this.isCategoryLocation(requestPath)) {
+        if (isCategoryLocation(requestPath)) {
             onCategoryLocation = true;
         } else {
             onBoundedLocation = true;
@@ -207,11 +206,11 @@ public class OCCIServletInputParser extends AbstractOCCIApiInputRequest implemen
         this.actionInvocationQuery = actionInvocationQuery;
     }
 
-// public boolean isDatasOnlyOnPath() {
-    //    return datasOnlyOnPath;
-    // }
 
-    // public void setDatasOnlyOnPath(boolean datasOnlyOnPath) {
-    //    this.datasOnlyOnPath = datasOnlyOnPath;
-    // }
+    public List<OCCIRequestData> getContentDatas() {
+        return this.getInputParser().getInputDatas();
+    }
+
+
+
 }

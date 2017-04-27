@@ -18,16 +18,17 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.clouddesigner.occi.Action;
-import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Mixin;
+import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.exception.ResourceNotFoundException;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.model.EntityManager;
+import org.occiware.mart.server.model.KindManager;
 import org.occiware.mart.server.model.MixinManager;
 import org.occiware.mart.server.parser.IRequestParser;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
@@ -46,13 +47,15 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
     private final String username;
     private OCCIApiResponse occiApiResponse;
+    private IRequestParser inputParser;
 
-    public AbstractOCCIApiInputRequest(String username, OCCIApiResponse occiApiResponse) {
+    public AbstractOCCIApiInputRequest(String username, OCCIApiResponse occiApiResponse, IRequestParser inputParser) {
         if (username == null) {
             username = ConfigurationManager.DEFAULT_OWNER;
         }
         this.username = username;
         this.occiApiResponse = occiApiResponse;
+        this.inputParser = inputParser;
     }
 
 
@@ -65,7 +68,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             ConfigurationManager.applyFilterOnInterface(categoryFilter, interfData, username);
 
             // Render output.
-            occiApiResponse.getOutputParser().getInterface(interfData, username);
+            occiApiResponse.setResponseMessage(occiApiResponse.getOutputParser().getInterface(interfData, username));
 
         } catch (ConfigurationException | ParseOCCIException ex) {
             parseConfigurationExceptionMessageOutput(ex.getMessage());
@@ -214,6 +217,13 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         occiApiResponse.setExceptionThrown(new ResourceNotFoundException(message));
         occiApiResponse.parseResponseMessage(message);
         LOGGER.info(message);
+    }
+
+    private void parseModelValidatorExceptionMessageOutput(final String message) {
+        occiApiResponse.setExceptionMessage(message);
+        occiApiResponse.setExceptionThrown(new ModelValidatorException(message));
+        occiApiResponse.parseResponseMessage(message);
+        LOGGER.error(message);
     }
 
     /**
@@ -512,6 +522,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
         if (!entities.isEmpty()) {
             this.renderEntitiesLocationOutput(entities);
+
         } else {
             // Not found answer.
             parseNotFoundExceptionMessageOutput("Resource not found on location : " + location);
@@ -717,5 +728,268 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         return occiApiResponse;
     }
 
+    // Helper methods.
 
+    /**
+     *
+     * @param location
+     * @return
+     */
+    @Override
+    public boolean isCategoryLocation(final String location) {
+        boolean onCategoryLocation = false;
+        if (location == null || location.trim().isEmpty()) {
+            return false;
+        }
+        String[] fragments = location.split("/");
+        if (fragments.length > 0) {
+            // Check only the first and the second fragment.
+            if (isCategoryTerm(fragments[0]) || (fragments.length > 1 && isCategoryTerm(fragments[1]))) {
+                onCategoryLocation = true;
+            }
+        }
+        return onCategoryLocation;
+
+    }
+
+    @Override
+    public boolean isCategoryTerm(final String categoryTerm) {
+        return this.getCategorySchemeTerm(categoryTerm) != null;
+    }
+    @Override
+    public String getCategorySchemeTerm(final String categoryTerm) {
+        return ConfigurationManager.findCategorySchemeTermFromTerm(categoryTerm, username);
+    }
+
+    @Override
+    public String getMixinTagSchemeTermFromLocation(String location) {
+        String result = null;
+        Mixin mixin = MixinManager.getUserMixinFromLocation(location, username);
+        if (mixin != null) {
+            result = mixin.getScheme() + mixin.getTerm();
+        }
+        return result;
+    }
+
+    @Override
+    public boolean isMixinTagLocation(final String location) {
+        boolean onMixinTagLocation = false;
+        if (MixinManager.getUserMixinFromLocation(location, username) != null) {
+            onMixinTagLocation = true;
+        }
+        return onMixinTagLocation;
+    }
+
+    @Override
+    public boolean isEntityLocation(final String location) {
+        boolean onEntityLocation = false;
+        if (EntityManager.findEntityFromLocation(location, username) != null) {
+            onEntityLocation = true;
+        }
+        return onEntityLocation;
+    }
+
+
+    @Override
+    public OCCIApiResponse validateInputDataRequest() {
+        String message;
+        String kind;
+        Kind kindModel;
+        List<String> mixins;
+        String mixinTag;
+        Map<String, Object> attrs;
+        Map<String, Object> attrsToControlOnActions;
+        Map<String, Object> attrsToControlOnMixins;
+        String action;
+        String attrKey;
+        // TODO : Control input value datatype with models.
+        Object attrValue;
+        boolean found;
+        List<OCCIRequestData> inputDatas = inputParser.getInputDatas();
+        for (OCCIRequestData content : inputDatas) {
+            // Is the kind exist on this configuration's extensions ?
+            kind = content.getKind();
+            attrs = content.getAttrs();
+            mixins = content.getMixins();
+            mixinTag = content.getMixinTag();
+            action = content.getAction();
+            attrsToControlOnActions = new LinkedHashMap<>();
+            attrsToControlOnMixins = new LinkedHashMap<>();
+            found = false;
+
+            if (kind != null) {
+                // Check the scheme+term on extensions.
+                kindModel = KindManager.findKindFromExtension(kind, username);
+                if (kindModel == null) {
+                    message = "The kind : " + kind + " doesnt exist on extensions.";
+                    parseModelValidatorExceptionMessageOutput(message);
+                    return occiApiResponse;
+                }
+
+                // Check the attributes.
+                if (!attrs.isEmpty()) {
+
+                    for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+                        attrKey = entry.getKey();
+                        attrValue = entry.getValue();
+                        found = false;
+                        for (Attribute attribModel : kindModel.getAttributes()) {
+                            if (attribModel.getName().equals(attrKey)) {
+                                found = true;
+                            }
+                        }
+                        if (!found) {
+                            // Add the attribute to control on mixins and action (if one on request).
+                            attrsToControlOnActions.put(attrKey, attrValue);
+                            attrsToControlOnMixins.put(attrKey, attrValue);
+                        }
+                    }
+                }
+                found = false;
+                if (action != null) {
+                    Action actionModelWork = null;
+                    Kind currentKind = kindModel;
+                    while (currentKind != null && !found) {
+
+                        for (Action actionModel : currentKind.getActions()) {
+                            if ((actionModel.getScheme() + actionModel.getTerm()).equals(action)) {
+                                // The action is referenced on this kind.
+                                found = true;
+                                actionModelWork = actionModel;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            currentKind = currentKind.getParent();
+                        }
+                    }
+
+                    if (!found) {
+                        // Action is not referenced on this kind.
+                        message = "The action : " + action + " doesnt exist for this kind : " + kind + " and all parents";
+                        parseModelValidatorExceptionMessageOutput(message);
+                        return occiApiResponse;
+                    }
+
+                    found = false;
+                    // Control the action attributes if necessary.
+                    if (!attrsToControlOnActions.isEmpty()) {
+
+                        for (Map.Entry<String, Object> entry : attrsToControlOnActions.entrySet()) {
+                            attrKey = entry.getKey();
+                            attrValue = entry.getValue();
+                            found = false;
+                            for (Attribute attr : actionModelWork.getAttributes()) {
+                                if (attr.getName().equals(attrKey)) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (found) {
+                                attrsToControlOnMixins.remove(attrKey);
+                            }
+
+                        }
+                    }
+
+
+                }
+                found = false;
+                if (mixins.isEmpty()) {
+                    // no mixins to control...
+                    if (!attrsToControlOnMixins.isEmpty()) {
+                        String attributes = "";
+                        for (Map.Entry<String, Object> entry : attrsToControlOnMixins.entrySet()) {
+                            attributes = attributes + entry.getKey() + ";";
+                        }
+                        message = "Some attributes were not found on referenced models : " + attributes;
+                        parseModelValidatorExceptionMessageOutput(message);
+                        return occiApiResponse;
+                    }
+                } else {
+                    // There are mixins contents....
+                    Mixin mixinModel;
+                    // mixins exists ?
+                    // Are there applyable to this kind ?
+                    for (String mixin : mixins) {
+                        mixinModel = MixinManager.findMixinOnExtension(username, mixin);
+                        if (mixinModel == null) {
+                            message = "The mixin : " + mixin + " doesnt exist on extensions.";
+                            parseModelValidatorExceptionMessageOutput(message);
+                            return occiApiResponse;
+                        }
+                        // Check the attributes if any.
+                        if (!attrsToControlOnMixins.isEmpty()) {
+                            found = false;
+                            message = null;
+                            for (Map.Entry<String, Object> entry : attrsToControlOnMixins.entrySet()) {
+                                attrKey = entry.getKey();
+                                for (Attribute attr : mixinModel.getAttributes()) {
+                                    if (attrKey.equals(attr.getName())) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    message = "" + attrKey + ";";
+                                }
+
+                            }
+                            if (message != null) {
+                                message = "Some attributes were not found on referenced models : " + message;
+                                parseModelValidatorExceptionMessageOutput(message);
+                                return occiApiResponse;
+                            }
+                        }
+                    }
+                }
+            } // kind != null
+
+            // if this is an action invocation, is this action is present on extension's or present in parent kind of the entity.
+            // Are the actions attributes are correct and defined in extension ?
+            if (kind == null && action != null) {
+                Action actionModelWork = ConfigurationManager.findActionOnExtensions(action, username);
+                if (actionModelWork == null) {
+                    message = "Action : " + action + " doesnt exist on models.";
+                    parseModelValidatorExceptionMessageOutput(message);
+                    return occiApiResponse;
+                }
+
+                // Control the attributes.
+                if (!attrs.isEmpty()) {
+                    message = null;
+                    for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+                        found = false;
+                        attrKey = entry.getKey();
+
+                        for (Attribute attr : actionModelWork.getAttributes()) {
+                            if (attr.getName().equals(attrKey)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            message += "" + attrKey + ";";
+                        }
+                    }
+                    if (message != null) {
+                        message = "Some action attributes are not defined in action model : " + message;
+                        parseModelValidatorExceptionMessageOutput(message);
+                        return this.occiApiResponse;
+                    }
+                }
+            }
+        }
+
+        return occiApiResponse;
+    }
+
+    @Override
+    public IRequestParser getInputParser() {
+        return inputParser;
+    }
+    @Override
+    public void setInputParser(IRequestParser inputParser) {
+        this.inputParser = inputParser;
+    }
 }

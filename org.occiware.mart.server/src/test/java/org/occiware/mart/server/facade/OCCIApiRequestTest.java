@@ -19,6 +19,8 @@
 package org.occiware.mart.server.facade;
 
 import org.junit.Test;
+import org.occiware.mart.server.parser.DefaultParser;
+import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.ParserFactory;
 import org.occiware.mart.server.utils.Constants;
 
@@ -45,8 +47,9 @@ public class OCCIApiRequestTest {
 
     private void createEntity(String location) {
         String kind = "http://schemas.ogf.org/occi/infrastructure#compute";
+        IRequestParser parser = new DefaultParser();
         OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON));
-        OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse);
+        OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
 
         Map<String, String> attrs = new HashMap<>();
         List<String> mixins = new LinkedList<>();
@@ -64,9 +67,9 @@ public class OCCIApiRequestTest {
     @Test
     public void findEntityTest() {
         String location = "/";
-
+        IRequestParser parser = new DefaultParser();
         OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON));
-        OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse);
+        OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
 
         occiRequest.findEntities(location, null);
         assertNotNull(occiResponse);

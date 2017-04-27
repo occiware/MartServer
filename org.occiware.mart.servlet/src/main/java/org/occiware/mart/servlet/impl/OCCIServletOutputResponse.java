@@ -1,11 +1,11 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.exception.ResourceNotFoundException;
 import org.occiware.mart.server.facade.AbstractOCCIApiResponse;
-import org.occiware.mart.server.facade.AbstractOCCIResponse;
 import org.occiware.mart.server.facade.OCCIApiResponse;
-import org.occiware.mart.server.facade.OCCIResponse;
 import org.occiware.mart.server.parser.HeaderPojo;
+import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,14 +20,16 @@ import java.util.Map;
  * Created by cgourdin on 11/04/2017.
  * Implementation for Servlet output with parser (text/occi, application/json etc.)
  */
-public class OCCIServletOutputParser extends AbstractOCCIApiResponse implements OCCIApiResponse {
+public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implements OCCIApiResponse {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OCCIServletOutputParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OCCIServletOutputResponse.class);
     private HttpServletResponse httpResponse;
+    private final String acceptType;
 
-    public OCCIServletOutputParser(String contentType, String username, HttpServletResponse response) {
-        super(contentType, username);
+    public OCCIServletOutputResponse(String acceptType, String username, HttpServletResponse response, IRequestParser parser) {
+        super(username, parser);
         this.httpResponse = response;
+        this.acceptType = acceptType;
     }
 
     private String getAcceptedTypes() {
@@ -40,8 +42,8 @@ public class OCCIServletOutputParser extends AbstractOCCIApiResponse implements 
      * @param response
      */
     @Override
-    public void setResponse(Object response) {
-
+    public void setResponseMessage(Object response) {
+        super.setResponseMessage(response);
         if (response == null) {
             LOGGER.warn("Response has no values.");
             response = "";
@@ -49,7 +51,7 @@ public class OCCIServletOutputParser extends AbstractOCCIApiResponse implements 
 
         buildServerHeaders();
 
-        switch (contentType) {
+        switch (acceptType) {
             case Constants.MEDIA_TYPE_JSON_OCCI:
             case Constants.MEDIA_TYPE_JSON:
             case Constants.MEDIA_TYPE_TEXT_PLAIN:
@@ -93,6 +95,8 @@ public class OCCIServletOutputParser extends AbstractOCCIApiResponse implements 
         if (hasExceptions()) {
             if (getExceptionThrown() instanceof ParseOCCIException) {
                 httpResponse.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            } else if (getExceptionThrown() instanceof ResourceNotFoundException) {
+                httpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
             } else {
                 // All others are models and runtime operation exception.
                 httpResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -100,6 +104,7 @@ public class OCCIServletOutputParser extends AbstractOCCIApiResponse implements 
             writeContentToResponse(getExceptionMessage());
 
         } else {
+            // Default to OK response ==> 200.
             httpResponse.setStatus(HttpServletResponse.SC_OK);
         }
 
@@ -128,7 +133,7 @@ public class OCCIServletOutputParser extends AbstractOCCIApiResponse implements 
     private void buildServerHeaders() {
         httpResponse.setHeader("server", Constants.OCCI_SERVER_HEADER);
         httpResponse.setHeader("accept", getAcceptedTypes());
-        httpResponse.setContentType(contentType);
+        httpResponse.setContentType(acceptType);
     }
 
     /**
@@ -138,15 +143,9 @@ public class OCCIServletOutputParser extends AbstractOCCIApiResponse implements 
      * @param httpStatus
      * @return
      */
-    public HttpServletResponse parseMessage(String message, int httpStatus) {
-
-        try {
-            getOutputParser().parseMessage(message, httpStatus);
-            httpResponse.setStatus(httpStatus);
-        } catch (ParseOCCIException ex) {
-            httpResponse.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        }
-
+    public HttpServletResponse parseMessage(final String message, final int httpStatus) {
+        super.parseResponseMessage(message);
+        httpResponse.setStatus(httpStatus);
         return httpResponse;
     }
 

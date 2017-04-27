@@ -862,6 +862,10 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                 LOGGER.info("One entity link to render.");
                 response = currentLink.toStringJson();
             }
+
+            // Convert entities to a list of outputData, the purpose here is to let the developer use the parsed result or use a list of output container data.
+            super.convertEntitiesToOutputData(entities);
+
         } catch (JsonProcessingException ex) {
             throw new ParseOCCIException(ex.getMessage(), ex);
         }
@@ -884,6 +888,10 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
             locationsJson.setLocations(locations);
             try {
                 response = locationsJson.toStringJson();
+
+                // Output datas will give a list of datas location only.
+                super.convertLocationsToOutputDatas(locations);
+
             } catch (JsonProcessingException ex) {
                 throw new ParseOCCIException("Cannot parse the object to application/json representation : " + ex.getMessage(), ex);
             }

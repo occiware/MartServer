@@ -19,14 +19,15 @@
 package org.occiware.mart.server.facade;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.parser.IRequestParser;
 
 /**
  * Created by christophe on 19/04/2017.
  */
 public class DefaultOCCIRequest extends AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
-    public DefaultOCCIRequest(String username, OCCIApiResponse occiApiResponse) {
-        super(username, occiApiResponse);
+    public DefaultOCCIRequest(String username, OCCIApiResponse occiApiResponse, IRequestParser inputParser) {
+        super(username, occiApiResponse, inputParser);
     }
 
 }

@@ -8,6 +8,7 @@ import org.occiware.mart.server.utils.Constants;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -27,33 +28,44 @@ public class PostWorker extends ServletEntry {
             return occiResponse.parseMessage("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/", HttpServletResponse.SC_BAD_REQUEST);
         }
         // There is content so check it.
-        occiRequest.validateDataContentRequest();
-        List<OCCIRequestData> OCCIRequestData = occiRequest.getOCCIRequestData();
-        if (OCCIRequestData.isEmpty()) {
+        occiRequest.validateInputDataRequest();
+        List<OCCIRequestData> datas = occiRequest.getContentDatas();
+        if (datas.isEmpty()) {
             return occiResponse.parseMessage("No content to post.", HttpServletResponse.SC_BAD_REQUEST);
         }
         if (occiRequest.isInterfQuery()) {
             return occiResponse.parseMessage("you cannot use interface query on POST method", HttpServletResponse.SC_BAD_REQUEST);
         }
 
-        if (occiRequest.isActionInvocationQuery()) {
-            if (occiRequest.isEntityLocation(getPath())) {
-                occiRequest.findEntity();
-            } else {
-                // on collection.
-                // Query on collections of entities.
-                CollectionFilter filter = buildCollectionFilter();
-                occiRequest.findEntities(filter);
+        for (OCCIRequestData data : datas) {
+
+            // Action on entities.
+            if (occiRequest.isActionInvocationQuery()) {
+
+                occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), buildCollectionFilter());
+
+                if (!occiResponse.hasExceptions()) {
+
+
+                    // finally execute the action on entities found previously.
+                    List<OCCIRequestData> locationsOut = occiResponse.getOutputParser().getOutputDatas();
+                    List<String> locations = new LinkedList<>();
+                    for (OCCIRequestData locationData : locationsOut) {
+                        locations.add(locationData.getLocation());
+                    }
+                    occiRequest.executeActionOnEntities(data.getAction(), data.getAttrsValStr(), locations);
+                }
+                return occiResponse.getHttpResponse();
             }
-            if (!occiResponse.hasExceptions()) {
-                // finally execute the action on entities found previously.
-                occiRequest.executeAction();
+
+            // Entities update attributes and/or mixin and mixinTag association.
+            if (occiRequest.isEntityLocation(occiRequest.getRequestPath())) {
+                // Update entity(ies).
+                occiRequest.updateEntity(data.getMixins(), data.getAttrsValStr(), data.getLocation(), data.getMixinTag(), data.getXocciLocations());
             }
-            return occiResponse.getHttpResponse();
+
         }
 
-        // Update entity(ies).
-        occiRequest.updateEntities();
         resp = occiResponse.getHttpResponse();
 
         return resp;

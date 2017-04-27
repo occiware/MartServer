@@ -31,15 +31,12 @@ public class DefaultParser extends AbstractRequestParser implements IRequestPars
 
     @Override
     public Object getInterface(QueryInterfaceData interfaceData, String user) throws ParseOCCIException {
-
-
-
         return null;
     }
 
     @Override
     public String parseMessage(String message) throws ParseOCCIException {
-        return null;
+        return message;
     }
 
     @Override

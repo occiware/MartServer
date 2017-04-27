@@ -23,11 +23,12 @@ public class GetWorker extends ServletEntry {
     public HttpServletResponse executeQuery() {
 
         HttpServletResponse resp = buildInputDatas();
+
         if (occiResponse.hasExceptions()) {
             return resp;
         }
 
-        if (!occiRequest.getOCCIRequestData().isEmpty()) {
+        if (!occiRequest.getContentDatas().isEmpty()) {
             return occiResponse.parseMessage("Input content are not accepted with GET method", HttpServletResponse.SC_BAD_REQUEST);
         }
 
@@ -36,25 +37,19 @@ public class GetWorker extends ServletEntry {
             return occiResponse.parseMessage("You cannot use an action with GET method", HttpServletResponse.SC_BAD_REQUEST);
         }
 
-        // TODO : support URI-list combined with other output type like this : uri-list; application/json.
         if (occiRequest.isInterfQuery()) {
-            LOGGER.info("Querying the interface on path : " + getPath());
-            occiRequest.getInterface(getRequestParameters().get(Constants.CATEGORY_KEY));
+            LOGGER.info("Querying the interface on path : " + occiRequest.getRequestPath());
+            occiRequest.getModelsInterface(getRequestParameters().get(Constants.CATEGORY_KEY), getRequestParameters().get(Constants.EXTENSION_NAME_KEY));
             return occiResponse.getHttpResponse();
         }
 
-        if (occiRequest.isEntityLocation(getPath())) {
-            LOGGER.info("Querying an entity on path : " + getPath());
-            occiRequest.findEntity();
+        if (occiRequest.isEntityLocation(getPath()) || occiRequest.isCollectionQuery()) {
+            LOGGER.info("Querying entities on location : " + occiRequest.getRequestPath());
+            occiRequest.findEntities(getPath(), buildCollectionFilter());
             return occiResponse.getHttpResponse();
         }
 
-        if (occiRequest.isCollectionQuery()) {
-            // Query on collections of entities.
-            CollectionFilter filter = buildCollectionFilter();
-            occiRequest.findEntities(filter);
-            return occiResponse.getHttpResponse();
-        }
+        occiResponse.parseMessage("The request is malformed", HttpServletResponse.SC_BAD_REQUEST);
 
         return resp;
     }
