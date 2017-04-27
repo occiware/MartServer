@@ -1,6 +1,5 @@
 package org.occiware.mart.servlet;
 
-import org.occiware.mart.server.facade.OCCIRequest;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.servlet.impl.DeleteWorker;
 import org.occiware.mart.servlet.impl.GetWorker;

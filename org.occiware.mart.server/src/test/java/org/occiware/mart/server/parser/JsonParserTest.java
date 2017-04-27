@@ -46,9 +46,9 @@ public class JsonParserTest {
         // load the input stream resources test json file.
 
         InputStream in = null;
-        File resourcesFile = getJsonResourceInput("/testjson/integration/creation/resource1.json");
-        File resourcesFileTwo = getJsonResourceInput("/testjson/integration/creation/resource2.json");
-        File resourcesFileThree = getJsonResourceInput("/testjson/integration/creation/resource3.json");
+        File resourcesFile = getJsonResourceInput("/testjson/resource1.json");
+        File resourcesFileTwo = getJsonResourceInput("/testjson/resource2.json");
+        File resourcesFileThree = getJsonResourceInput("/testjson/resource3.json");
         File actionInvocFile = getJsonResourceInput("/testjson/action_invocation.json");
 
         assertNotNull(resourcesFile);
@@ -87,7 +87,7 @@ public class JsonParserTest {
 
     @Test
     public void testJsonInputParserToDatas() {
-        File resourcesFileThree = getJsonResourceInput("/testjson/integration/creation/resource3.json");
+        File resourcesFileThree = getJsonResourceInput("/testjson/resource3.json");
         try {
             IRequestParser jsonParser = ParserFactory.build(Constants.MEDIA_TYPE_JSON);
             InputStream in = new FileInputStream(resourcesFileThree);

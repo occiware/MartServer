@@ -61,6 +61,8 @@ public interface IRequestParser {
 
     public Object renderOutputEntities(final List<Entity> entities) throws ParseOCCIException;
 
+    public String parseMessageAndStatus(String message, int status) throws ParseOCCIException;
+
     public Object renderOutputEntity(final Entity entity) throws ParseOCCIException;
 
     List<OCCIRequestData> getInputDatas();

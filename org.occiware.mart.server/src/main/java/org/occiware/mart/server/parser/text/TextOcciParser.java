@@ -228,6 +228,11 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
     }
 
     @Override
+    public String parseMessageAndStatus(final String message, int status) throws ParseOCCIException {
+        return message + "; status=" + status;
+    }
+
+    @Override
     public HeaderPojo renderOutputEntity(Entity entity) throws ParseOCCIException {
         if (entity == null) {
             Map<String, List<String>> header = new LinkedHashMap<>();

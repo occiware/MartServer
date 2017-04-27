@@ -92,7 +92,8 @@ public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
     @Override
     public void parseResponseMessage(final String message) {
         try {
-            this.response = outputParser.parseMessage(message);
+            setResponseMessage(outputParser.parseMessage(message));
+
         } catch (ParseOCCIException ex) {
             LOGGER.warn("Parsing message failed : " + ex.getMessage());
             this.response = message;

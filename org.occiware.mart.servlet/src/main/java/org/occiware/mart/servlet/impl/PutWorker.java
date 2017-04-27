@@ -24,6 +24,10 @@ public class PutWorker extends ServletEntry {
     public HttpServletResponse executeQuery() {
 
         HttpServletResponse resp = buildInputDatas();
+        // Root request are not supported by PUT method ==> 405 http error.
+        if (occiRequest.getRequestPath().trim().isEmpty() || occiRequest.getRequestPath().equals("/")) {
+            return occiResponse.parseMessage("This url : " + occiRequest.getRequestPath() + " is not supported by HTTP PUT method.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        }
 
         if (occiResponse.hasExceptions()) {
             return resp;
@@ -32,8 +36,14 @@ public class PutWorker extends ServletEntry {
             return occiResponse.parseMessage("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/", HttpServletResponse.SC_BAD_REQUEST);
         }
 
+
+
         // There is content so check it.
         occiRequest.validateInputDataRequest();
+        if (occiResponse.hasExceptions()) {
+            // Validation failed.
+            return occiResponse.getHttpResponse();
+        }
 
         List<OCCIRequestData> datas = occiRequest.getContentDatas();
         if (datas.isEmpty()) {

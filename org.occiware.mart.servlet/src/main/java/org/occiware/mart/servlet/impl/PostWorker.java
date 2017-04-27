@@ -29,6 +29,11 @@ public class PostWorker extends ServletEntry {
         }
         // There is content so check it.
         occiRequest.validateInputDataRequest();
+        if (occiResponse.hasExceptions()) {
+            // Validation failed.
+            return occiResponse.getHttpResponse();
+        }
+
         List<OCCIRequestData> datas = occiRequest.getContentDatas();
         if (datas.isEmpty()) {
             return occiResponse.parseMessage("No content to post.", HttpServletResponse.SC_BAD_REQUEST);

@@ -144,7 +144,16 @@ public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implement
      * @return
      */
     public HttpServletResponse parseMessage(final String message, final int httpStatus) {
-        super.parseResponseMessage(message);
+
+        try {
+            setResponseMessage(getOutputParser().parseMessageAndStatus(message, httpStatus));
+
+        } catch (ParseOCCIException ex) {
+            LOGGER.warn("Parsing message failed : " + ex.getMessage());
+            this.setExceptionMessage(ex.getMessage());
+            this.setExceptionThrown(ex);
+            this.setResponseMessage(message);
+        }
         httpResponse.setStatus(httpStatus);
         return httpResponse;
     }

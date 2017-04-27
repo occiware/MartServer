@@ -40,6 +40,11 @@ public class DefaultParser extends AbstractRequestParser implements IRequestPars
     }
 
     @Override
+    public String parseMessageAndStatus(String message, int status) throws ParseOCCIException {
+        return message + " ; status: " + status;
+    }
+
+    @Override
     public void parseInputToDatas(Object contentObj) throws ParseOCCIException {
 
     }

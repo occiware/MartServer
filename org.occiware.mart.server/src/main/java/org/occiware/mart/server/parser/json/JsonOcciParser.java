@@ -797,6 +797,20 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         return jsonResult;
     }
 
+    @Override
+    public String parseMessageAndStatus(final String message, final int status) throws ParseOCCIException {
+        MessageJson msgJson = new MessageJson();
+        msgJson.setMessage(message);
+        msgJson.setStatus(status);
+        String jsonResult;
+        try {
+            jsonResult = msgJson.toStringJson();
+        } catch (JsonProcessingException ex) {
+            throw new ParseOCCIException(ex.getMessage(), ex);
+        }
+        return jsonResult;
+    }
+
     /**
      * Render one entity as output String.
      *

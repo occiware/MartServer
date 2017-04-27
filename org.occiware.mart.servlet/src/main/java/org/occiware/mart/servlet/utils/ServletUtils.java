@@ -20,7 +20,6 @@ package org.occiware.mart.servlet.utils;
 
 import org.apache.commons.io.IOUtils;
 import org.occiware.clouddesigner.occi.*;
-import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;

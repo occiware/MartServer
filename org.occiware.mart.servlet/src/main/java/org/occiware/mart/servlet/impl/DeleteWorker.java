@@ -27,7 +27,10 @@ public class DeleteWorker extends ServletEntry {
 
         // if there is content so check it.
         occiRequest.validateInputDataRequest();
-
+        if (occiResponse.hasExceptions()) {
+            // Validation failed.
+            return occiResponse.getHttpResponse();
+        }
         if (getContentType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
             return occiResponse.parseMessage("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/", HttpServletResponse.SC_BAD_REQUEST);
         }
