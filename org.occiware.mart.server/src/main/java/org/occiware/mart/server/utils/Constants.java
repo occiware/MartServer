@@ -61,8 +61,8 @@ public class Constants {
     public static final Float OCCI_SERVER_VERSION_NUMBER = 1.2f;
     public static final String OCCI_SERVER_VERSION = "OCCI/1.2";
     public static final String HEADER_USER_AGENT = "User-Agent";
-    public static final String HEADER_CONTENT_TYPE = "content-type";
-    public static final String HEADER_ACCEPT = "accept";
+    public static final String HEADER_CONTENT_TYPE = "Content-Type";
+    public static final String HEADER_ACCEPT = "Accept";
     public static final String X_OCCI_ATTRIBUTE = "X-OCCI-Attribute";
     public static final String CLASS_ACTION = "action";
     public static final String CLASS_KIND = "kind";

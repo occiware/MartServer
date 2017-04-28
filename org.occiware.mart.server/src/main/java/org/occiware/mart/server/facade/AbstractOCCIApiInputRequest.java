@@ -833,15 +833,24 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                         attrKey = entry.getKey();
                         attrValue = entry.getValue();
                         found = false;
-                        for (Attribute attribModel : kindModel.getAttributes()) {
-                            if (attribModel.getName().equals(attrKey)) {
-                                found = true;
+                        if (!(attrKey.equals(Constants.OCCI_CORE_ID)
+                                || attrKey.equals(Constants.OCCI_CORE_TITLE)
+                                || attrKey.equals(Constants.OCCI_CORE_SUMMARY)
+                                || attrKey.equals(Constants.OCCI_CORE_SOURCE)
+                                || attrKey.equals(Constants.OCCI_CORE_TARGET))) {
+                            for (Attribute attribModel : kindModel.getAttributes()) {
+                                if (attribModel.getName().equals(attrKey)) {
+                                    found = true;
+                                    break;
+                                }
                             }
-                        }
-                        if (!found) {
-                            // Add the attribute to control on mixins and action (if one on request).
-                            attrsToControlOnActions.put(attrKey, attrValue);
-                            attrsToControlOnMixins.put(attrKey, attrValue);
+                            if (!found) {
+                                // TODO : Control attribute in parent kind recursively before adding the other attributes..
+
+                                // Add the attribute to control on mixins and action (if one on request).
+                                attrsToControlOnActions.put(attrKey, attrValue);
+                                attrsToControlOnMixins.put(attrKey, attrValue);
+                            }
                         }
                     }
                 }

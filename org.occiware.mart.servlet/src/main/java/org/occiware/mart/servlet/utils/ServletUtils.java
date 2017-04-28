@@ -551,8 +551,8 @@ public class ServletUtils {
         Map<String, List<String>> map = new LinkedHashMap<>();
 
         Enumeration headerNames = request.getHeaderNames();
-        List<String> elements = new LinkedList<>();
         while (headerNames.hasMoreElements()) {
+            List<String> elements = new LinkedList<>();
             String key = (String) headerNames.nextElement();
             Enumeration<String> values = request.getHeaders(key);
             while(values.hasMoreElements()) {

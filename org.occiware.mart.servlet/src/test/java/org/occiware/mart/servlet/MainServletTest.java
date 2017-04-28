@@ -3,7 +3,6 @@ package org.occiware.mart.servlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -96,7 +95,8 @@ public class MainServletTest {
     @Test
     public void testCreateResourceInputJson() throws Exception {
         HttpMethod httpMethod = HttpMethod.PUT;
-        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_CREATED,
+
+        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource1.json",
                 "create a resource with PUT, must be created.");
 
@@ -234,7 +234,7 @@ public class MainServletTest {
     public void testUpdateResources() throws Exception {
         HttpMethod httpMethod = HttpMethod.POST;
         // Update a resource.
-        executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_OK,
+        executeQuery(httpMethod, "http://localhost:9090/mycomputes/", HttpServletResponse.SC_OK,
                 "/testjson/integration/update/resource1.json",
                 "Update a resource with POST, must be updated.");
 
@@ -244,9 +244,9 @@ public class MainServletTest {
 
 
         // Check after update GET :
-        ContentResponse response = executeQuery(HttpMethod.GET, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
+        ContentResponse response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
                 null,
-                "GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
+                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0");
 
         String result = response.getContentAsString();
         assertNotNull(result);
@@ -254,14 +254,14 @@ public class MainServletTest {
         assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
 
         // associate a mixin tag to a resource.
-        response = executeQuery(httpMethod, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
                 "/testjson/integration/update/mixintag_asso.json",
                 "Associate a mixin tag to a resource");
 
         // Get the resource.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
                 null,
-                "GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
+                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0");
 
         result = response.getContentAsString();
         assertNotNull(result);
@@ -271,30 +271,30 @@ public class MainServletTest {
 
         // action invocation.
         // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
-        response = executeQuery(httpMethod, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                 "/testjson/integration/update/action_invocation_test.json",
-                "POST Request action stop graceful invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop");
+                "POST Request action stop graceful invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop");
 
 
         // Action invocation without attributes field. ==> Start
-        response = executeQuery(httpMethod, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                 "/testjson/integration/update/action_invocation_test.json",
-                "POST Request action start invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
+                "POST Request action start invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
 
         // action invocation with direct term without the action kind definition.
-        response = executeQuery(httpMethod, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                 null,
-                "POST action invocation with direct term without the action kind definition on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
+                "POST action invocation with direct term without the action kind definition on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
 
         // bad action invocation the action doesnt exist on entity.
-        response = executeQuery(httpMethod, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=test", HttpServletResponse.SC_BAD_REQUEST,
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test", HttpServletResponse.SC_BAD_REQUEST,
                 null,
-                "POST Request action test invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
+                "POST Request action test invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
 
         // 5 : bad action invocation the action scheme+term doesnt exist on entity.
-        response = executeQuery(httpMethod, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=titi", HttpServletResponse.SC_BAD_REQUEST,
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=titi", HttpServletResponse.SC_BAD_REQUEST,
                 "/testjson/integration/update/update_attributes_computes.json",
-                "POST Request action test invocation on location: http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
+                "POST Request action test invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
 
         // 6 : update attributes on collection /compute/
         response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
@@ -365,15 +365,15 @@ public class MainServletTest {
 
 
         // DELETE Request, dissociate a mixin tag my_mixin2 from a resource compute: urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/", HttpServletResponse.SC_OK,
                 "/testjson/integration/delete/dissociate_mixin_tag.json",
                 "dissociate a mixin tag my_mixin2 from a resource compute: urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0");
 
 
         // GET request : http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
                 null,
-                "GET Request http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0");
+                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0");
 
         result = response.getContentAsString();
         assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin2"));

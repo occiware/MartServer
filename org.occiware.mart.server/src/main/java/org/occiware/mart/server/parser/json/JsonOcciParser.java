@@ -233,19 +233,21 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         }
         // set title, summary and id.
         if (id != null) {
-            if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
-                attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
-            } else {
-                attrs.put(Constants.OCCI_CORE_ID, id);
-                id = id.replace(Constants.URN_UUID_PREFIX, "");
-            }
+//            if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
+//                attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
+//            } else {
+//                attrs.put(Constants.OCCI_CORE_ID, id);
+//                id = id.replace(Constants.URN_UUID_PREFIX, "");
+//            }
             data.setEntityUUID(id);
         }
         if (title != null && !title.isEmpty()) {
-            attrs.put(Constants.OCCI_CORE_TITLE, title);
+            data.setEntityTitle(title);
+            // attrs.put(Constants.OCCI_CORE_TITLE, title);
         }
         if (summary != null && !summary.isEmpty()) {
-            attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
+            data.setEntitySummary(summary);
+            // attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
         }
         data.setAttrs(attrs);
 
@@ -303,19 +305,21 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         }
         // set title, summary and id.
         if (id != null) {
-            if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
-                attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
-            } else {
-                attrs.put(Constants.OCCI_CORE_ID, id);
-                id = id.replace(Constants.URN_UUID_PREFIX, "");
-            }
+//            if (!id.startsWith(Constants.URN_UUID_PREFIX)) {
+//                attrs.put(Constants.OCCI_CORE_ID, Constants.URN_UUID_PREFIX + id);
+//            } else {
+//                attrs.put(Constants.OCCI_CORE_ID, id);
+//                id = id.replace(Constants.URN_UUID_PREFIX, "");
+//            }
             data.setEntityUUID(id);
         }
         if (title != null && !title.isEmpty()) {
-            attrs.put(Constants.OCCI_CORE_TITLE, title);
+            data.setEntityTitle(title);
+            // attrs.put(Constants.OCCI_CORE_TITLE, title);
         }
         if (summary != null && !summary.isEmpty()) {
-            attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
+            data.setEntitySummary(summary);
+            // attrs.put(Constants.OCCI_CORE_SUMMARY, summary);
         }
         if (source == null) {
             throw new ParseOCCIException("No source set for link: " + id + " , check your json query.");

@@ -49,8 +49,8 @@ public abstract class ServletEntry {
     protected OCCIServletInputRequest occiRequest;
     protected OCCIServletOutputResponse occiResponse;
 
-    private String contentType = Constants.MEDIA_TYPE_TEXT_OCCI;
-    private String acceptType = Constants.MEDIA_TYPE_TEXT_OCCI;
+    private String contentType = Constants.MEDIA_TYPE_JSON;
+    private String acceptType = Constants.MEDIA_TYPE_JSON;
 
     /**
      * If parameters are in inputquery, it must declared here. Key: name of the

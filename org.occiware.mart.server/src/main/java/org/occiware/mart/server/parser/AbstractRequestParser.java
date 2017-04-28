@@ -19,7 +19,9 @@
 package org.occiware.mart.server.parser;
 
 import org.occiware.clouddesigner.occi.Entity;
+import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
+import org.occiware.clouddesigner.occi.Resource;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.model.EntityManager;
 import org.occiware.mart.server.model.MixinManager;
@@ -94,6 +96,11 @@ public abstract class AbstractRequestParser implements IRequestParser {
 
             data = new OCCIRequestData();
             data.setEntityUUID(entity.getId());
+            data.setEntityTitle(entity.getTitle());
+            // Add summary to data container if any.
+            if (entity instanceof Resource) {
+                data.setEntitySummary(((Resource) entity).getSummary());
+            }
             data.setAttrs(EntityManager.convertEntityAttributesToMap(entity));
             data.setLocation(EntityManager.getLocation(entity));
             data.setKind(entity.getKind().getScheme() + entity.getKind().getTerm());

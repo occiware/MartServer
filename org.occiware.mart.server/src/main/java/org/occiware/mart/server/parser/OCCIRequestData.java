@@ -48,6 +48,15 @@ public class OCCIRequestData {
      * Entity uuid if any.
      */
     private String entityUUID = null;
+    /**
+     * Entity summary if any.
+     */
+    private String entitySummary = null;
+    /**
+     * Entity title if any.
+     */
+    private String entityTitle = null;
+
 
     // Mixin tag scheme+term.
     private String mixinTag = null;
@@ -197,6 +206,21 @@ public class OCCIRequestData {
         this.header = header;
     }
 
+    public String getEntitySummary() {
+        return entitySummary;
+    }
+
+    public void setEntitySummary(String entitySummary) {
+        this.entitySummary = entitySummary;
+    }
+
+    public String getEntityTitle() {
+        return entityTitle;
+    }
+
+    public void setEntityTitle(String entityTitle) {
+        this.entityTitle = entityTitle;
+    }
 
     public void printDataToOutput() {
 
