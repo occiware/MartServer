@@ -41,9 +41,4 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     public Object renderOutputEntity(Entity entity) throws ParseOCCIException {
         return null;
     }
-
-    @Override
-    public String parseMessageAndStatus(String message, int status) throws ParseOCCIException {
-        return null;
-    }
 }

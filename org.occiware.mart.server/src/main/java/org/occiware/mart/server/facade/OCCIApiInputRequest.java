@@ -48,7 +48,7 @@ public interface OCCIApiInputRequest {
      * @param location the location like /mylocation/myentity.
      * @return a response object defined by implementation.
      */
-    public OCCIApiResponse createEntity(final String kind, final List<String> mixins,
+    public OCCIApiResponse createEntity(final String title, final String summary, final String kind, final List<String> mixins,
                              final Map<String, String> attributes, final String location);
 
     /**

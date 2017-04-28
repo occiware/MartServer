@@ -100,15 +100,23 @@ public class MainServletTest {
                 "/testjson/integration/creation/resource1.json",
                 "create a resource with PUT, must be created.");
 
+        // Check if root path with PUT request is authorized, this must not be allowed.
+        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_METHOD_NOT_ALLOWED,
+                "/testjson/integration/creation/bad_resource.json",
+                "Check if root path with PUT request is authorized, this must not be allowed.");
+
         // Check Create a bad resource (with a kind definition does not exist on extension / configuration).
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_BAD_REQUEST,
+        response = executeQuery(httpMethod, "http://localhost:9090/mybadcompute/mybadresource/", HttpServletResponse.SC_BAD_REQUEST,
                 "/testjson/integration/creation/bad_resource.json",
                 "Check Create a bad resource (with a kind definition does not exist on extension / configuration).");
 
-        // Create the second resource with mixins.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_CREATED,
-                "/testjson/integration/creation/resource2.json",
-                "Create the second resource with mixins.");
+
+        // Create the second resource with mixins and no uuid defined.
+        response = executeQuery(httpMethod, "http://localhost:9090/main/mainnetwork/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/resource1bis.json",
+                "Create the second resource with mixin.");
+
+
 
         // Create a collection of resources.
         response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_CREATED,
@@ -456,7 +464,7 @@ public class MainServletTest {
      */
     private ContentResponse executeQuery(final HttpMethod httpMethod, String uri, final int statusCodeToCheck, final String filePath, final String messageBefore) throws Exception {
         System.out.println(messageBefore);
-        ContentResponse response = null;
+        ContentResponse response;
 
         if (filePath != null) {
             File myFile = getResourceInputFile(filePath);

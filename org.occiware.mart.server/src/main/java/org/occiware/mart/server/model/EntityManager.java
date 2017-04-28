@@ -52,6 +52,7 @@ public class EntityManager {
      */
     private static Map<String, String> entitiesLocation = new ConcurrentHashMap<>();
 
+
     /**
      * Used only to create an eTag when object are updated. Key : owner+objectId
      * Value : version number. First version is 1.
@@ -806,9 +807,8 @@ public class EntityManager {
             location += "/";
         }
 
-        location += entity.getId(); // add the uuid to get a full location.
+        // location += entity.getId(); // add the uuid to get a full location.
 
-        // return getLocation(entity.getKind()) + entity.getId();
         return location;
     }
 
@@ -942,7 +942,8 @@ public class EntityManager {
      * Add a new resource entity to a configuration and update the
      * configuration's map accordingly.
      *
-     * @param id           (entity id : "term/title")
+     * @param id           (entity id : "uuid unique identifier")
+     * @param title
      * @param kind         (scheme#term)
      * @param mixins       (ex:
      *                     mixins=[http://schemas.ogf.org/occi/infrastructure/network# ipnetwork])
@@ -953,7 +954,7 @@ public class EntityManager {
      * @param relativePath (ex: compute/myuuid
      * @throws ConfigurationException
      */
-    public static void addResourceToConfiguration(String id, String kind, List<String> mixins,
+    public static void addResourceToConfiguration(String id, String title, String summary, String kind, List<String> mixins,
                                                   Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
@@ -985,6 +986,10 @@ public class EntityManager {
 
                 resource.setId(id);
 
+                resource.setTitle(title);
+
+                resource.setSummary(summary);
+
                 // Add a new kind to resource (title, scheme, term).
                 // if occiKind is null, this will give a default kind parent.
                 resource.setKind(occiKind);
@@ -1005,7 +1010,8 @@ public class EntityManager {
         } else {
             LOGGER.info("resource already exist, overwriting...");
             resourceOverwrite = true;
-
+            resource.setTitle(title);
+            resource.setSummary(summary);
             // Add the mixins if any.
             MixinManager.addMixinsToEntity(resource, mixins, owner, true);
 
@@ -1031,6 +1037,7 @@ public class EntityManager {
      * map accordingly.
      *
      * @param id
+     * @param title
      * @param kind
      * @param mixins
      * @param src
@@ -1040,7 +1047,7 @@ public class EntityManager {
      * @param relativePath
      * @throws ConfigurationException General configuration exception
      */
-    public static void addLinkToConfiguration(String id, String kind, List<String> mixins, String src,
+    public static void addLinkToConfiguration(String id, String title, String kind, List<String> mixins, String src,
                                               String target, Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
@@ -1074,7 +1081,7 @@ public class EntityManager {
                 // Link doesnt exist on configuration, we create it.
                 link = (Link) OcciHelper.createEntity(occiKind);
                 link.setId(id);
-
+                link.setTitle(title);
                 // Add a new kind to resource (title, scheme, term).
                 link.setKind(occiKind);
 
@@ -1094,7 +1101,7 @@ public class EntityManager {
             // Link exist upon our configuration, we update it.
 
             overwrite = true;
-
+            link.setTitle(title);
             MixinManager.addMixinsToEntity(link, mixins, owner, true);
 
             updateAttributesToEntity(link, attributes, owner);
@@ -1173,7 +1180,7 @@ public class EntityManager {
             attrName = entry.getKey();
             attrValue = entry.getValue();
             if (!attrName.isEmpty()
-                    && !attrName.equals("occi.core.id") && !attrName.equals("occi.core.target") && !attrName.equals("occi.core.source")) {
+                    && !attrName.equals(Constants.OCCI_CORE_ID) && !attrName.equals(Constants.OCCI_CORE_TARGET) && !attrName.equals(Constants.OCCI_CORE_SOURCE)) {
                 LOGGER.debug("Attribute set value : " + attrValue);
 
                 OcciHelper.setAttribute(entity, attrName, attrValue);

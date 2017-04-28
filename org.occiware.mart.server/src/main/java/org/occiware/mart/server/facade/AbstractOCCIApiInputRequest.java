@@ -78,7 +78,9 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     }
 
     @Override
-    public OCCIApiResponse createEntity(final String kind, final List<String> mixins, final Map<String, String> attributes, final String location) {
+    public OCCIApiResponse createEntity(final String title, final String summary,
+                                        final String kind, final List<String> mixins,
+                                        final Map<String, String> attributes, final String location) {
         String message;
         if (location == null || location.trim().isEmpty()) {
             message = "No location set for the entity : " + kind;
@@ -98,13 +100,14 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
         Entity entity = EntityManager.findEntity(location, username);
         String entityId = null;
+
         if (entity != null) {
             LOGGER.debug("Entity : " + location + " exist");
             overwrite = true;
             entityId = entity.getId();
             LOGGER.info("Overwriting entity : " + location);
         } else {
-            LOGGER.info("Creating entity : " + location + " with kind : " + kind);
+            LOGGER.info("Creating entity : " + location + " with kind : " + kind + " with title: " + title);
         }
         if (entityId == null) {
             entityId = EntityManager.getUUIDFromPath(location, attributes);
@@ -117,7 +120,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             entityId = ConfigurationManager.createUUID();
         }
 
-        LOGGER.info("Create entity with location: " + location + " with id : " + entityId);
+        LOGGER.info("Create entity with location: " + location + " with id : " + entityId + " with title : " + title);
         LOGGER.debug("Kind: " + kind);
         for (String mixin : mixins) {
             LOGGER.debug("Mixin : " + mixin);
@@ -159,10 +162,10 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         }
 
         try {
-            String coreId = Constants.URN_UUID_PREFIX + entityId;
-            attributes.put("occi.core.id", coreId);
+            // String coreId = Constants.URN_UUID_PREFIX + entityId;
+            // attributes.put("occi.core.id", coreId);
             if (isResource) {
-                EntityManager.addResourceToConfiguration(entityId, kind, mixins, attributes, username, location);
+                EntityManager.addResourceToConfiguration(entityId, title, summary, kind, mixins, attributes, username, location);
             } else {
                 String src = attributes.get(Constants.OCCI_CORE_SOURCE);
                 String target = attributes.get(Constants.OCCI_CORE_TARGET);
@@ -177,7 +180,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                     parseConfigurationExceptionMessageOutput(message);
                     return occiApiResponse;
                 }
-                EntityManager.addLinkToConfiguration(entityId, kind, mixins, src, target, attributes, username, location);
+                EntityManager.addLinkToConfiguration(entityId, title, kind, mixins, src, target, attributes, username, location);
             }
         } catch (ConfigurationException ex) {
             message = "The entity has not been added, it may be produce if you use non referenced attributes. Message: " + ex.getMessage();

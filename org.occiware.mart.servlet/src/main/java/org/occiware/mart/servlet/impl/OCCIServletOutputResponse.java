@@ -1,5 +1,6 @@
 package org.occiware.mart.servlet.impl;
 
+import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.exception.ResourceNotFoundException;
 import org.occiware.mart.server.facade.AbstractOCCIApiResponse;
@@ -93,7 +94,7 @@ public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implement
 
         // Define status.
         if (hasExceptions()) {
-            if (getExceptionThrown() instanceof ParseOCCIException) {
+            if (getExceptionThrown() instanceof ParseOCCIException || getExceptionThrown() instanceof ModelValidatorException) {
                 httpResponse.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             } else if (getExceptionThrown() instanceof ResourceNotFoundException) {
                 httpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -101,7 +102,6 @@ public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implement
                 // All others are models and runtime operation exception.
                 httpResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
-            writeContentToResponse(getExceptionMessage());
 
         } else {
             // Default to OK response ==> 200.
@@ -144,17 +144,15 @@ public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implement
      * @return
      */
     public HttpServletResponse parseMessage(final String message, final int httpStatus) {
-
         try {
-            setResponseMessage(getOutputParser().parseMessageAndStatus(message, httpStatus));
-
+            setResponseMessage(getOutputParser().parseMessage(message));
+            httpResponse.setStatus(httpStatus);
         } catch (ParseOCCIException ex) {
             LOGGER.warn("Parsing message failed : " + ex.getMessage());
             this.setExceptionMessage(ex.getMessage());
             this.setExceptionThrown(ex);
-            this.setResponseMessage(message);
+            httpResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
-        httpResponse.setStatus(httpStatus);
         return httpResponse;
     }
 

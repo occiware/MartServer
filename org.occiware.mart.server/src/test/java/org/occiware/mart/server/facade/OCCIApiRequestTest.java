@@ -55,7 +55,7 @@ public class OCCIApiRequestTest {
         List<String> mixins = new LinkedList<>();
         attrs.put("occi.compute.cores", "2");
         attrs.put("occi.compute.memory", "2.0");
-        occiRequest.createEntity(kind, mixins, attrs, location);
+        occiRequest.createEntity("entity title", "resource summary", kind, mixins, attrs, location);
 
         assertNotNull(occiResponse);
         assertFalse(occiResponse.hasExceptions());

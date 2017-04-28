@@ -482,12 +482,14 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
             LOGGER.info("Creating entity : " + location);
         }
         Map<String, String> attributesStr = data.getAttrsValStr();
+        String title = null;
+        String summary = null;
         try {
             String coreId = Constants.URN_UUID_PREFIX + entityId;
             attributesStr.put("occi.core.id", coreId);
             attributes.put("occi.core.id", coreId);
             if (isResource) {
-                EntityManager.addResourceToConfiguration(entityId, kind, mixins, attributesStr, username, location);
+                EntityManager.addResourceToConfiguration(entityId, title, summary, kind, mixins, attributesStr, username, location);
             } else {
                 Object src = attributes.get(Constants.OCCI_CORE_SOURCE);
                 String srcStr;
@@ -509,7 +511,7 @@ public abstract class AbstractOCCIRequest implements OCCIRequest {
                 }
                 srcStr = (String) src;
                 targetStr = (String) target;
-                EntityManager.addLinkToConfiguration(entityId, kind, mixins, srcStr, targetStr, attributesStr, username, location);
+                EntityManager.addLinkToConfiguration(entityId, title, kind, mixins, srcStr, targetStr, attributesStr, username, location);
             }
         } catch (ConfigurationException ex) {
             String message = "The entity has not been added, it may be produce if you use non referenced attributes. Message: " + ex.getMessage();

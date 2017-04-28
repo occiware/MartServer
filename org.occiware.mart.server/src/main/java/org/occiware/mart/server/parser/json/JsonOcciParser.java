@@ -791,21 +791,6 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
     public String parseMessage(final String message) throws ParseOCCIException {
         MessageJson msgJson = new MessageJson();
         msgJson.setMessage(message);
-        msgJson.setStatus(0);
-        String jsonResult;
-        try {
-            jsonResult = msgJson.toStringJson();
-        } catch (JsonProcessingException ex) {
-            throw new ParseOCCIException(ex.getMessage(), ex);
-        }
-        return jsonResult;
-    }
-
-    @Override
-    public String parseMessageAndStatus(final String message, final int status) throws ParseOCCIException {
-        MessageJson msgJson = new MessageJson();
-        msgJson.setMessage(message);
-        msgJson.setStatus(status);
         String jsonResult;
         try {
             jsonResult = msgJson.toStringJson();
@@ -968,14 +953,16 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                     }
                 }
             }
-            if (key.equals(Constants.OCCI_CORE_ID)) {
-                if (val != null && !val.startsWith(Constants.URN_UUID_PREFIX)) {
-                    val = Constants.URN_UUID_PREFIX + val;
-                }
-                attributes.put(key, val);
-            }
+            // We must not include occi.core.title, occi.core.summary and occi.core.id as these attributes are already defined in the json output content (title, id, summary attributes).
+//            if (key.equals(Constants.OCCI_CORE_ID)) {
+//                if (val != null && !val.startsWith(Constants.URN_UUID_PREFIX)) {
+//                    val = Constants.URN_UUID_PREFIX + val;
+//                }
+//                attributes.put(key, val);
+//            }
 
         }
+
         resJson.setAttributes(attributes);
 
         mixins = res.getMixins();
