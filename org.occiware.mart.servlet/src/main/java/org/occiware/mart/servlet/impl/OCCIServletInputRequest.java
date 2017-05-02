@@ -83,7 +83,7 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
         // Parse the path
         parsePath();
 
-        if (!interfQuery) {
+        // if (!interfQuery) {
             // Parse the content body if any.
             switch (contentType) {
                 case Constants.MEDIA_TYPE_JSON:
@@ -115,7 +115,7 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
                 default:
                     throw new ParseOCCIException("Cannot parse for " + contentType + " cause: unknown parser");
             }
-        }
+        // }
     }
 
     /**

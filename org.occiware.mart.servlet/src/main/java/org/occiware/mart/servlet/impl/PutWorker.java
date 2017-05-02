@@ -28,7 +28,7 @@ public class PutWorker extends ServletEntry {
     public HttpServletResponse executeQuery() {
 
         HttpServletResponse resp = buildInputDatas();
-        // Root request are not supported by PUT method ==> 405 http error.
+        // Root request are not allowed by PUT method ==> 405 http error.
         if (occiRequest.getRequestPath().trim().isEmpty() || occiRequest.getRequestPath().equals("/")) {
             return occiResponse.parseMessage("This url : " + occiRequest.getRequestPath() + " is not supported by HTTP PUT method.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         }
@@ -45,8 +45,8 @@ public class PutWorker extends ServletEntry {
             return occiResponse.parseMessage("No content to put.", HttpServletResponse.SC_BAD_REQUEST);
         }
         // Check if PUT has more than one content data.
-        if (datas.size() > 1) {
-            return occiResponse.parseMessage("Content has more than one entity to put, this is not authorized on HTTP PUT request, please use POST request for collection creation.", HttpServletResponse.SC_BAD_REQUEST);
+        if (datas.size() > 1 && !controlIfDatasHasMixinTagsOnly()) {
+            return occiResponse.parseMessage("Content has more than one entity to put, this is not authorized on HTTP PUT request, please use POST request for entity collection creation.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         }
 
         // There is content so check it.
@@ -60,23 +60,56 @@ public class PutWorker extends ServletEntry {
             LOGGER.warn("Querying action invocation on PUT method.");
             return occiResponse.parseMessage("You cannot use an action with PUT method.", HttpServletResponse.SC_BAD_REQUEST);
         }
+        boolean isMixinTags = false;
+        for (OCCIRequestData data : datas) {
+            if (occiRequest.isInterfQuery() && data.getMixinTag() == null) {
+                return occiResponse.parseMessage("you cannot use interface query on PUT method, only mixin tag content are authorized with this url type : /-/", HttpServletResponse.SC_BAD_REQUEST);
+            }
 
-        OCCIRequestData data = occiRequest.getContentDatas().get(0);
-        if (occiRequest.isInterfQuery() && data.getMixinTag() == null) {
-            return occiResponse.parseMessage("you cannot use interface query on PUT method, only mixin tag content are authorized with this url type : /-/", HttpServletResponse.SC_BAD_REQUEST);
-        }
+            // determine if this is a mixin tag definition request.
+            if (occiRequest.isInterfQuery() && data.getMixinTag() != null) {
+                occiRequest.createMixinTag(data.getMixinTagTitle(), data.getMixinTag(), data.getLocation(), data.getXocciLocations());
+                isMixinTags = true;
+                if (occiResponse.hasExceptions()) {
+                    return resp;
+                }
+                continue;
+            }
 
-        if (occiRequest.isMixinTagLocation(occiRequest.getRequestPath())) {
-            occiRequest.createMixinTag(data.getMixinTagTitle(), data.getMixinTag(), data.getLocation(), data.getXocciLocations());
-        } else {
+            // This is a feature that override the PUT request path if data.getLocation() return null (no location set on request content).
             if (data.getLocation() == null) {
                 // Location has not been set on content, this is set on request path like /mycompute/myentity/.
                 data.setLocation(occiRequest.getRequestPath());
             }
+
+            // This is an entity creation query.
             occiRequest.createEntity(data.getEntityTitle(), data.getEntitySummary(), data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
+        }
+        
+        if (isMixinTags) {
+            // All ok, mixin tags defined.
+            occiResponse.parseResponseMessage("ok");
         }
 
         return resp;
+    }
+
+    /**
+     * True if all content data are mixin tags
+     * @return
+     */
+    private boolean controlIfDatasHasMixinTagsOnly() {
+        boolean result = false;
+        List<OCCIRequestData> datas = occiRequest.getContentDatas();
+        for (OCCIRequestData data : datas) {
+            if (data.getMixinTag() == null) {
+                result = false;
+                break;
+            } else {
+                result = true;
+            }
+        }
+        return result;
     }
 
 

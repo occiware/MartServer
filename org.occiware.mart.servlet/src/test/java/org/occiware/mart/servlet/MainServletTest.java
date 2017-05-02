@@ -81,9 +81,10 @@ public class MainServletTest {
      */
     public void testServerRequests() {
         try {
-            testCreateResourceInputJson();
+            testPutMethodJson();
+            testGetResourceLink();
             // testUpdateResources();
-            // testGetResourceLink();
+
             // testDeleteResources();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -93,10 +94,10 @@ public class MainServletTest {
     }
 
     @Test
-    public void testCreateResourceInputJson() throws Exception {
+    public void testPutMethodJson() throws Exception {
         HttpMethod httpMethod = HttpMethod.PUT;
-
-        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
+        System.out.println("Testing PUT method ==> PutWorker");
+        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/compute1/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource1.json",
                 "create a resource with PUT, must be created.");
 
@@ -112,31 +113,50 @@ public class MainServletTest {
 
 
         // Create the second resource with mixins and no uuid defined.
-        response = executeQuery(httpMethod, "http://localhost:9090/main/mainnetwork/", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/mynetworks/mainnetwork/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource1bis.json",
-                "Create the second resource with mixin.");
+                "Create the second resource with mixin on location : /mynetworks/mainnetwork.");
 
-
-
-        // Create a collection of resources.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_CREATED,
+        // Create a collection of resources, this must not be authorized in PUT REQUEST, this is authorized in POST request.
+        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_METHOD_NOT_ALLOWED,
                 "/testjson/integration/creation/resource3.json",
-                "Create a collection of resources.");
+                "Create a collection of resources with PUT method.");
 
-        // Now test a resource single load without "resources" key.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_CREATED,
+        // Other test create resource without ending slash.
+        response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute2", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resourceonly.json",
-                "Now test a resource single load without \"resources\" key.");
+                "Other test create resource without ending slash on location : /myresources/compute2");
+
 
         // Create a resource with integrated location value.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_CREATED,
+        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource_location.json",
                 "Create a resource with integrated location value.");
 
         // Create a resource without uuid set.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_CREATED,
+        response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute3/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource_without_uuid.json",
-                "Create a resource with integrated location value.");
+                "Create a resource without uuid");
+
+        // Define a mixin tag
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_usermixin1.json",
+                "Create a mixin tag named usermixin1");
+
+        // define a second mixin tag
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_usermixin2.json",
+                "Create a mixin tag named usermixin2");
+
+        // redefine the mixin user tag 1.
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_usermixin1.json",
+                "Redefine the mixin user tag 1");
+
+        // define other mixin user tags with a collection of mixins.
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/definemixintags.json",
+                "Redefine all the mixin user tags with a collection of mixins");
     }
 
 
@@ -147,7 +167,7 @@ public class MainServletTest {
         // Test model interface.
         ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/-/?category=network", HttpServletResponse.SC_OK,
                 null,
-                "GET Request interface /-/.");
+                "GET Request interface /-/ with network category collection filtering.");
 
         String result = response.getContentAsString();
         assertFalse(result.isEmpty());
