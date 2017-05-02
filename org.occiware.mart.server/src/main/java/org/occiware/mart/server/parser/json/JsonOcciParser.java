@@ -148,10 +148,9 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
             }
 
         } else {
-            // We parse here only the path.
-            List<OCCIRequestData> occiRequestDatas = super.getInputDatas();
-            OCCIRequestData occiRequestData = new OCCIRequestData();
-            occiRequestDatas.add(occiRequestData);
+            // No content input.
+            super.getInputDatas().clear();
+
         }
     }
 

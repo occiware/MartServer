@@ -244,4 +244,24 @@ public class OCCIRequestData {
             }
         }
     }
+
+    /**
+     * Check if this container has datas.
+     * @return
+     */
+    public boolean hasDatas() {
+        boolean result = false;
+        if (this.getMixinTag() != null
+                || this.getKind() != null
+                || this.getAction() != null
+                || this.getEntityTitle() != null
+                || this.getEntitySummary() != null
+                || this.getEntityUUID() != null
+                || !this.getMixins().isEmpty()
+                || !this.getAttrs().isEmpty()
+                || this.getMixinTagTitle() != null) {
+            result = true;
+        }
+        return result;
+    }
 }

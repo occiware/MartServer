@@ -10,10 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 
 /**
@@ -40,7 +43,7 @@ public class MainServlet extends HttpServlet {
      */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doGet(req, resp);
+        // super.doGet(req, resp);
         String requestPath = req.getPathInfo();
         // Get input headers in a map.
         HeaderPojo headers = ServletUtils.getRequestHeaders(req);
@@ -51,13 +54,16 @@ public class MainServlet extends HttpServlet {
         GetWorker worker = new GetWorker(serverURI, resp, headers, req, requestPath);
 
         resp = worker.executeQuery();
+        System.out.println("Response status: " + resp.getStatus());
+
+
     }
 
 
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPost(req, resp);
+        // super.doPost(req, resp);
         String requestPath = req.getPathInfo();
         HeaderPojo headers = ServletUtils.getRequestHeaders(req);
         URI serverURI = ServletUtils.getServerURI(req);
@@ -71,7 +77,7 @@ public class MainServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPut(req, resp);
+        // super.doPut(req, resp);
         String requestPath = req.getPathInfo();
         HeaderPojo headers = ServletUtils.getRequestHeaders(req);
         URI serverURI = ServletUtils.getServerURI(req);
@@ -85,7 +91,7 @@ public class MainServlet extends HttpServlet {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doDelete(req, resp);
+        // super.doDelete(req, resp);
         String requestPath = req.getPathInfo();
         HeaderPojo headers = ServletUtils.getRequestHeaders(req);
         URI serverURI = ServletUtils.getServerURI(req);

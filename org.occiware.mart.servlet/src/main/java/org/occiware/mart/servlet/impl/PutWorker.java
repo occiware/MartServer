@@ -28,6 +28,7 @@ public class PutWorker extends ServletEntry {
     public HttpServletResponse executeQuery() {
 
         HttpServletResponse resp = buildInputDatas();
+
         // Root request are not allowed by PUT method ==> 405 http error.
         if (occiRequest.getRequestPath().trim().isEmpty() || occiRequest.getRequestPath().equals("/")) {
             return occiResponse.parseMessage("This url : " + occiRequest.getRequestPath() + " is not supported by HTTP PUT method.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
@@ -44,7 +45,8 @@ public class PutWorker extends ServletEntry {
         if (datas.isEmpty()) {
             return occiResponse.parseMessage("No content to put.", HttpServletResponse.SC_BAD_REQUEST);
         }
-        // Check if PUT has more than one content data.
+
+        // Check if PUT has more than one content data and datas doesnt contain mixin tags.
         if (datas.size() > 1 && !controlIfDatasHasMixinTagsOnly()) {
             return occiResponse.parseMessage("Content has more than one entity to put, this is not authorized on HTTP PUT request, please use POST request for entity collection creation.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         }
@@ -85,7 +87,7 @@ public class PutWorker extends ServletEntry {
             // This is an entity creation query.
             occiRequest.createEntity(data.getEntityTitle(), data.getEntitySummary(), data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
         }
-        
+
         if (isMixinTags) {
             // All ok, mixin tags defined.
             occiResponse.parseResponseMessage("ok");

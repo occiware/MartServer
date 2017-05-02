@@ -79,11 +79,14 @@ public class MainServletTest {
      * Integration test, this test all methods PUT, POST, GET, DELETE.
      * Before start jetty server and after stop server.
      */
+    @Test
     public void testServerRequests() {
         try {
-            testPutMethodJson();
-            testGetResourceLink();
-            // testUpdateResources();
+            createResourcesWithPutAndPost();
+
+            // updateResourcesTest();
+            // testGetResourceLink();
+
 
             // testDeleteResources();
         } catch (Exception ex) {
@@ -93,11 +96,11 @@ public class MainServletTest {
 
     }
 
-    @Test
-    public void testPutMethodJson() throws Exception {
+    // @Test
+    public void createResourcesWithPutAndPost() throws Exception {
         HttpMethod httpMethod = HttpMethod.PUT;
         System.out.println("Testing PUT method ==> PutWorker");
-        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/compute1/", HttpServletResponse.SC_OK,
+        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute1/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource1.json",
                 "create a resource with PUT, must be created.");
 
@@ -157,21 +160,38 @@ public class MainServletTest {
         response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/definemixintags.json",
                 "Redefine all the mixin user tags with a collection of mixins");
+
+        // POST creation part.
+        // Create resources with POST using json and collections.
+
+
+
     }
 
 
     public void testGetResourceLink() throws Exception {
         HttpMethod httpMethod = HttpMethod.GET;
 
-        // uuid: f89486b7-0632-482d-a184-a9195733ddd9
+        // Test model interface with no filters.
+        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/.well-known/org/ogf/occi/-/", HttpServletResponse.SC_OK,
+                null,
+                "GET Request interface /-/ with no filters.");
+
         // Test model interface.
-        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/-/?category=network", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/-/?category=network", HttpServletResponse.SC_OK,
                 null,
                 "GET Request interface /-/ with network category collection filtering.");
 
         String result = response.getContentAsString();
         assertFalse(result.isEmpty());
         assertTrue(result.contains("\"term\" : \"network\","));
+
+
+        // Test on collection compute category with location only.
+        response = executeQuery(httpMethod, "http://localhost:9090/compute", HttpServletResponse.SC_OK,
+                null,
+                "GET Request collection.");
+
 
         // See file: resource_location.json.
         response = executeQuery(httpMethod, "http://localhost:9090/testlocation/", HttpServletResponse.SC_OK,
@@ -180,22 +200,27 @@ public class MainServletTest {
         result = response.getContentAsString();
         assertFalse(result.isEmpty());
 
-        // GET request on resource location /test/
-        response = executeQuery(httpMethod, "http://localhost:9090/test/", HttpServletResponse.SC_OK,
+        // Same test with myresources collection.
+        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_OK,
                 null,
-                "GET Request on resource location : /test/");
-        result = response.getContentAsString();
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains(Constants.URN_UUID_PREFIX));
+                "GET Request on resource location : /myresources/");
+
+        // GET request on resource location /test/
+        response = executeQuery(httpMethod, "http://localhost:9090/test/", HttpServletResponse.SC_NOT_FOUND,
+                null,
+                "GET Request on resource location : /test/, this must be resource not found ==> 404");
+//        result = response.getContentAsString();
+//        assertFalse(result.isEmpty());
+//        assertTrue(result.contains(Constants.URN_UUID_PREFIX));
 
         // GET request on resource location : /otherlocation/other2/
-        response = executeQuery(httpMethod, "http://localhost:9090/otherlocation/other2/", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/otherlocation/other2/", HttpServletResponse.SC_NOT_FOUND,
                 null,
                 "GET Request on resource location : /otherlocation/other2/");
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
+//        result = response.getContentAsString();
+//        assertNotNull(result);
+//        assertFalse(result.isEmpty());
+//        assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
 
         // GET Request on resource location : /testlocation/f89486b7-0632-482d-a184-a9195733ddd9
         response = executeQuery(httpMethod, "http://localhost:9090/testlocation/f89486b7-0632-482d-a184-a9195733ddd9", HttpServletResponse.SC_OK,
@@ -204,6 +229,8 @@ public class MainServletTest {
         result = response.getContentAsString();
         assertNotNull(result);
         assertFalse(result.isEmpty());
+        assertTrue(result.contains(Constants.URN_UUID_PREFIX));
+        assertTrue(result.contains("f89486b7-0632-482d-a184-a9195733ddd9"));
 
         // Search on a false relative path but with good keys. This must be not found to avoid path confusion.
         executeQuery(httpMethod, "http://localhost:9090/otherresources/f89486b7-0632-482d-a184-a9195733ddd9", HttpServletResponse.SC_NOT_FOUND,
@@ -259,7 +286,7 @@ public class MainServletTest {
     }
 
 
-    public void testUpdateResources() throws Exception {
+    public void updateResourcesTest() throws Exception {
         HttpMethod httpMethod = HttpMethod.POST;
         // Update a resource.
         executeQuery(httpMethod, "http://localhost:9090/mycomputes/", HttpServletResponse.SC_OK,

@@ -136,7 +136,9 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         if (!mixinsToAdd.isEmpty()) {
             data.setMixins(mixinsToAdd);
         }
-        super.getInputDatas().add(data);
+        if (data.hasDatas()) {
+            super.getInputDatas().add(data);
+        }
     }
 
     /**

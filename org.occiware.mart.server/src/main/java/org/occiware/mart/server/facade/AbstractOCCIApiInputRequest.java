@@ -60,15 +60,17 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
 
     @Override
-    public OCCIApiResponse getModelsInterface(String categoryFilter, String extensionFilter) {
+    public OCCIApiResponse getModelsInterface(final String categoryFilter, final String extensionFilter) {
         QueryInterfaceData interfData = new QueryInterfaceData();
 
         interfData.setCategoryFilter(categoryFilter);
         try {
+            // TODO : Apply extension filter.
             ConfigurationManager.applyFilterOnInterface(categoryFilter, interfData, username);
 
             // Render output.
-            occiApiResponse.setResponseMessage(occiApiResponse.getOutputParser().getInterface(interfData, username));
+            Object result = occiApiResponse.getOutputParser().getInterface(interfData, username);
+            occiApiResponse.setResponseMessage(result);
 
         } catch (ConfigurationException | ParseOCCIException ex) {
             parseConfigurationExceptionMessageOutput(ex.getMessage());
@@ -423,12 +425,12 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         String categoryFilter = filter.getCategoryFilter();
         // Determine if this is a collection or an entity location.
         // Collection on categories. // Like : get on myhost/compute/
-        boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
-        if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-            filter.setCategoryFilter(ConfigurationManager.getCategoryFilterSchemeTerm(location, username));
-        } else {
-            filter.setFilterOnPath(location);
-        }
+        // boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
+        // if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
+        //    filter.setCategoryFilter(ConfigurationManager.getCategoryFilterSchemeTerm(location, username));
+        //} else {
+        //    filter.setFilterOnPath(location);
+        //}
 
         // Case of the mixin tag entities request.
         boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);

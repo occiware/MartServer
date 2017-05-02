@@ -514,11 +514,17 @@ public class EntityManager {
         try {
             relativeLocation = getLocation(entity.getId());
             relativeLocation = relativeLocation.replaceAll("\\s+", "");
+            if (!relativeLocation.endsWith("/")) {
+                relativeLocation = relativeLocation + "/";
+            }
         } catch (ConfigurationException ex) {
             relativeLocation = null;
         }
 
         filterPath = filterOnPath.replaceAll("\\s+", "");
+        if (!filterPath.endsWith("/")) {
+            filterPath = filterPath + "/";
+        }
 
         if (relativeLocation == null || relativeLocation.isEmpty()) {
             result = false;

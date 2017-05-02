@@ -40,13 +40,13 @@ public class GetWorker extends ServletEntry {
         if (occiRequest.isInterfQuery()) {
             LOGGER.info("Querying the interface on path : " + occiRequest.getRequestPath());
             occiRequest.getModelsInterface(getRequestParameters().get(Constants.CATEGORY_KEY), getRequestParameters().get(Constants.EXTENSION_NAME_KEY));
-            return occiResponse.getHttpResponse();
+            return resp;
         }
 
-        if (occiRequest.isEntityLocation(getPath()) || occiRequest.isCollectionQuery()) {
+        if (occiRequest.isEntityLocation(occiRequest.getRequestPath()) || occiRequest.isCollectionQuery()) {
             LOGGER.info("Querying entities on location : " + occiRequest.getRequestPath());
-            occiRequest.findEntities(getPath(), buildCollectionFilter());
-            return occiResponse.getHttpResponse();
+            occiRequest.findEntities(occiRequest.getRequestPath(), buildCollectionFilter());
+            return resp;
         }
 
         occiResponse.parseMessage("The request is malformed", HttpServletResponse.SC_BAD_REQUEST);
