@@ -12,6 +12,11 @@ import java.util.List;
  * Created by cgourdin on 26/04/2017.
  */
 public class TextPlainParser extends AbstractRequestParser implements IRequestParser {
+
+    public TextPlainParser(String user) {
+        super(user);
+    }
+
     @Override
     public Object getInterface(QueryInterfaceData interfaceData, String user) throws ParseOCCIException {
         return null;

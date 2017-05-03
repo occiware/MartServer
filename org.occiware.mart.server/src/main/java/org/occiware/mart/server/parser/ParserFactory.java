@@ -18,8 +18,10 @@
  */
 package org.occiware.mart.server.parser;
 
+import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.parser.text.TextOcciParser;
+import org.occiware.mart.server.parser.text.TextPlainParser;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,26 +39,35 @@ public class ParserFactory {
      * @param parserType (maybe content type or accept type, or other custom type).
      * @return an IRequestParser parser.
      */
-    public static IRequestParser build(String parserType) {
+    public static IRequestParser build(String parserType, String user) {
+        if (user == null) {
+            user = ConfigurationManager.DEFAULT_OWNER;
+        }
         if (parserType == null) {
             // Default content type if none on headers.
-            return new TextOcciParser();
+            return new TextOcciParser(user);
         }
         switch (parserType) {
             case Constants.MEDIA_TYPE_TEXT_OCCI:
+            case Constants.MEDIA_TYPE_TEXT_URI_LIST:
                 LOGGER.info("Parser request: TextOcciParser");
-                return new TextOcciParser();
+                return new TextOcciParser(user);
 
             case Constants.MEDIA_TYPE_JSON:
             case Constants.MEDIA_TYPE_JSON_OCCI:
                 LOGGER.info("Parser request: JsonOcciParser");
-                return new JsonOcciParser();
+                return new JsonOcciParser(user);
+
+            case Constants.MEDIA_TYPE_TEXT_PLAIN:
+                LOGGER.info("Parser request: TextPlainParser");
+                return new TextPlainParser(user);
+
             // You can add here all other parsers you need.
 
             default:
                 // Default content type if unknown.
                 LOGGER.warn("Parser request: DefaultParser, warning: contentType/accept is unknown default parser is DefaultParser");
-                return new DefaultParser();
+                return new DefaultParser(user);
         }
     }
 }

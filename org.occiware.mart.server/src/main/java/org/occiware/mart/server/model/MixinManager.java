@@ -355,7 +355,7 @@ public class MixinManager {
         LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
         List<Entity> entities = new ArrayList<>();
         for (String entityId : entityIds) {
-            Entity entity = EntityManager.findEntity(entityId, owner);
+            Entity entity = EntityManager.findEntityForUuid(entityId, owner);
 
             if (entity != null && !entity.getMixins().contains(mixin)) {
                 entity.getMixins().add(mixin);
@@ -433,14 +433,14 @@ public class MixinManager {
     /**
      * Dissociate entities from this mixin.
      *
-     * @param owner
      * @param mixin
+     * @param owner
      */
-    static void dissociateMixinFromEntities(final String owner, final Mixin mixin) {
+    static void dissociateMixinFromEntities(final Mixin mixin, final String owner) {
         if (mixin == null) {
             return;
         }
-        List<Entity> entities = EntityManager.findAllEntitiesForMixin(owner, mixin.getScheme() + mixin.getTerm());
+        List<Entity> entities = EntityManager.findAllEntitiesForMixin(mixin.getScheme() + mixin.getTerm(), owner);
         for (Entity entity : entities) {
             entity.getMixins().remove(mixin);
             EntityManager.updateVersion(owner, entity.getId());

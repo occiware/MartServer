@@ -18,6 +18,7 @@
  */
 package org.occiware.mart.server.facade;
 
+import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.utils.CollectionFilter;
 
@@ -141,4 +142,8 @@ public interface OCCIApiInputRequest {
     IRequestParser getInputParser();
 
     void setInputParser(IRequestParser inputParser);
+
+    public void LoadModelFromDisk() throws ConfigurationException;
+
+    public void saveModelToDisk() throws ConfigurationException;
 }

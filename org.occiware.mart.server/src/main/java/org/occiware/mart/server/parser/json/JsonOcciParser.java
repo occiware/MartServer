@@ -53,6 +53,10 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
     public static final String EMPTY_JSON = "{ }";
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonOcciParser.class);
 
+    public JsonOcciParser(String user) {
+        super(user);
+    }
+
     //*************************
     // Read input content part
     //*************************
@@ -920,7 +924,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         resJson.setId(Constants.URN_UUID_PREFIX + res.getId());
         resJson.setTitle(res.getTitle());
         resJson.setSummary(res.getSummary());
-        resJson.setLocation(EntityManager.getLocation(entity));
+        resJson.setLocation(EntityManager.getLocation(entity, getUser()));
 
         List<String> actionsStr = new LinkedList<>();
         String actionStr;
@@ -1002,7 +1006,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         linkJson.setKind(kind.getScheme() + kind.getTerm());
         linkJson.setId(Constants.URN_UUID_PREFIX + link.getId());
         linkJson.setTitle(link.getTitle());
-        linkJson.setLocation(EntityManager.getLocation(entity));
+        linkJson.setLocation(EntityManager.getLocation(entity, getUser()));
         actions = kind.getActions();
         for (Action action : actions) {
             actionStr = action.getScheme() + action.getTerm();
@@ -1052,13 +1056,13 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         Resource resTarget = link.getTarget();
         SourceJson src = new SourceJson();
         TargetJson target = new TargetJson();
-        String relativeLocation = EntityManager.getLocation(resSrc);
+        String relativeLocation = EntityManager.getLocation(resSrc, getUser());
         src.setKind(resSrc.getKind().getScheme() + resSrc.getKind().getTerm());
         if (!relativeLocation.startsWith("/")) {
             relativeLocation = "/" + relativeLocation;
         }
         src.setLocation(relativeLocation);
-        relativeLocation = EntityManager.getLocation(resTarget);
+        relativeLocation = EntityManager.getLocation(resTarget, getUser());
         target.setKind(resTarget.getKind().getScheme() + resTarget.getKind().getTerm());
         if (!relativeLocation.startsWith("/")) {
             relativeLocation = "/" + relativeLocation;

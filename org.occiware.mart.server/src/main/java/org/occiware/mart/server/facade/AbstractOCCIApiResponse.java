@@ -53,7 +53,7 @@ public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
             username = ConfigurationManager.DEFAULT_OWNER;
         }
         if (outputParser == null) {
-            outputParser = new DefaultParser();
+            outputParser = new DefaultParser(username);
         }
         this.username = username;
         this.outputParser = outputParser;
@@ -111,7 +111,7 @@ public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
     @Override
     public IRequestParser getOutputParser() {
         if (this.outputParser == null) {
-            this.outputParser = new DefaultParser();
+            this.outputParser = new DefaultParser(username);
         }
         return this.outputParser;
     }

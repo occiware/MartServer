@@ -89,7 +89,7 @@ public class JsonParserTest {
     public void testJsonInputParserToDatas() {
         File resourcesFileThree = getJsonResourceInput("/testjson/resource3.json");
         try {
-            IRequestParser jsonParser = ParserFactory.build(Constants.MEDIA_TYPE_JSON);
+            IRequestParser jsonParser = ParserFactory.build(Constants.MEDIA_TYPE_JSON, "anonymous");
             InputStream in = new FileInputStream(resourcesFileThree);
             String content;
             try {

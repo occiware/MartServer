@@ -160,11 +160,12 @@ public class MainServletTest {
         response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/definemixintags.json",
                 "Redefine all the mixin user tags with a collection of mixins");
-
+        httpMethod = HttpMethod.POST;
         // POST creation part.
         // Create resources with POST using json and collections.
-
-
+        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/resource3.json",
+                "Create resources with POST using json and collections.");
 
     }
 

@@ -19,12 +19,10 @@
 package org.occiware.mart.server.parser;
 
 import org.occiware.clouddesigner.occi.Entity;
-import org.occiware.clouddesigner.occi.Link;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.Resource;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.model.EntityManager;
-import org.occiware.mart.server.model.MixinManager;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -36,8 +34,12 @@ public abstract class AbstractRequestParser implements IRequestParser {
 
     private List<OCCIRequestData> inputDatas = new LinkedList<>();
     private List<OCCIRequestData> outputDatas = new LinkedList<>();
+    private String user;
     private QueryInterfaceData interfaceData;
 
+    public AbstractRequestParser(String user) {
+        this.user = user;
+    }
 
     @Override
     public abstract Object getInterface(QueryInterfaceData interfaceData, String user) throws ParseOCCIException;
@@ -50,9 +52,6 @@ public abstract class AbstractRequestParser implements IRequestParser {
 
     @Override
     public abstract Object renderOutputEntitiesLocations(List<String> locations) throws ParseOCCIException;
-
-    @Override
-    public abstract Object renderOutputEntities(List<Entity> entities) throws ParseOCCIException;
 
     @Override
     public abstract Object renderOutputEntity(Entity entity) throws ParseOCCIException;
@@ -83,6 +82,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
     /**
      * Convert an entity model object to a container object.
      * @param entities a list of entity model.
+     *
      */
     @Override
     public void convertEntitiesToOutputData(List<Entity> entities) {
@@ -102,7 +102,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
                 data.setEntitySummary(((Resource) entity).getSummary());
             }
             data.setAttrs(EntityManager.convertEntityAttributesToMap(entity));
-            data.setLocation(EntityManager.getLocation(entity));
+            data.setLocation(EntityManager.getLocation(entity, user));
             data.setKind(entity.getKind().getScheme() + entity.getKind().getTerm());
 
             if (!entity.getMixins().isEmpty()) {
@@ -136,5 +136,9 @@ public abstract class AbstractRequestParser implements IRequestParser {
             data.setLocation(location);
             this.outputDatas.add(data);
         }
+    }
+
+    public String getUser() {
+        return this.user;
     }
 }

@@ -100,7 +100,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         // Define full overwrite of an existing entity.
         boolean overwrite = false;
 
-        Entity entity = EntityManager.findEntity(location, username);
+        Entity entity = EntityManager.findEntityFromLocation(location, username);
         String entityId = null;
 
         if (entity != null) {
@@ -167,7 +167,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             // String coreId = Constants.URN_UUID_PREFIX + entityId;
             // attributes.put("occi.core.id", coreId);
             if (isResource) {
-                EntityManager.addResourceToConfiguration(entityId, title, summary, kind, mixins, attributes, username, location);
+                EntityManager.addResourceToConfiguration(entityId, title, summary, kind, mixins, attributes, location, username);
             } else {
                 String src = attributes.get(Constants.OCCI_CORE_SOURCE);
                 String target = attributes.get(Constants.OCCI_CORE_TARGET);
@@ -182,7 +182,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                     parseConfigurationExceptionMessageOutput(message);
                     return occiApiResponse;
                 }
-                EntityManager.addLinkToConfiguration(entityId, title, kind, mixins, src, target, attributes, username, location);
+                EntityManager.addLinkToConfiguration(entityId, title, kind, mixins, src, target, attributes, location, username);
             }
         } catch (ConfigurationException ex) {
             message = "The entity has not been added, it may be produce if you use non referenced attributes. Message: " + ex.getMessage();
@@ -192,7 +192,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
 
         // Execute model CRUD method.
-        entity = EntityManager.findEntity(entityId, username);
+        entity = EntityManager.findEntityForUuid(entityId, username);
         if (entity != null) {
             if (overwrite) {
                 entity.occiUpdate();
@@ -265,7 +265,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                 List<String> locations = new LinkedList<>();
                 // Launch the parsing output (for json, text/occi and other implementations).
                 for (Entity entity : entities) {
-                    String location = EntityManager.getLocation(entity);
+                    String location = EntityManager.getLocation(entity, username);
                     locations.add(location);
                 }
                 occiApiResponse.setResponseMessage(outputParser.renderOutputEntitiesLocations(locations));
@@ -351,7 +351,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             mixinTags.add(mixinTag);
             // Update mixin tags association.
             for (String xocciLocation : xocciLocations) {
-                entity = EntityManager.findEntity(xocciLocation, username);
+                entity = EntityManager.findEntityFromLocation(xocciLocation, username);
                 if (entity == null) {
                     message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
                     parseConfigurationExceptionMessageOutput(message);
@@ -423,15 +423,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         // Important to note : filters are defined in concrete implementation (categoryFilter, attributes filter, filter on a value etc.)
 
         String categoryFilter = filter.getCategoryFilter();
-        // Determine if this is a collection or an entity location.
-        // Collection on categories. // Like : get on myhost/compute/
-        // boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
-        // if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-        //    filter.setCategoryFilter(ConfigurationManager.getCategoryFilterSchemeTerm(location, username));
-        //} else {
-        //    filter.setFilterOnPath(location);
-        //}
-
+        String filterOnPath = filter.getFilterOnPath();
         // Case of the mixin tag entities request.
         boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
         if (isMixinTagRequest) {
@@ -447,6 +439,18 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                 filter.setFilterOnPath(null);
             }
         }
+
+        // Determine if this is a collection or an entity location.
+        // Collection on categories. // Like : get on myhost/compute/
+        if ((categoryFilter == null || categoryFilter.isEmpty()) && (filterOnPath == null || filterOnPath.isEmpty())) {
+            boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
+            if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
+                filter.setCategoryFilter(ConfigurationManager.getCategoryFilterSchemeTerm(location, username));
+            } else {
+                filter.setFilterOnPath(location);
+            }
+        }
+
 
         entities = EntityManager.findAllEntities(filter, username);
 
@@ -581,7 +585,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                             parseConfigurationExceptionMessageOutput(message);
                             return occiApiResponse;
                         }
-                        Entity entity = EntityManager.findEntity(uuid, ConfigurationManager.DEFAULT_OWNER);
+                        Entity entity = EntityManager.findEntityForUuid(uuid, ConfigurationManager.DEFAULT_OWNER);
                         if (entity == null) {
                             message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
                             parseConfigurationExceptionMessageOutput(message);
@@ -590,7 +594,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                         entities.add(entity.getId());
                     } else {
                         // Maybe a collection on inbound or outbound path.
-                        List<String> entitiesTmp = EntityManager.getEntityUUIDsFromPath(xOcciLocation);
+                        List<String> entitiesTmp = EntityManager.getEntityUUIDsFromPath(xOcciLocation, username);
                         if (!entitiesTmp.isEmpty()) {
                             entities.addAll(entitiesTmp);
                         }
@@ -1005,5 +1009,23 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public void setInputParser(IRequestParser inputParser) {
         this.inputParser = inputParser;
+    }
+
+    /**
+     * Load all models from disk for all user's configurations.
+     * @throws ConfigurationException
+     */
+    @Override
+    public void LoadModelFromDisk() throws ConfigurationException {
+        // TODO : Load all configurations model from disk.
+    }
+
+    /**
+     * Save all models to disk for all user's configurations.
+     * @throws ConfigurationException
+     */
+    @Override
+    public void saveModelToDisk() throws ConfigurationException {
+        // TODO : Save all configurations model to disk.
     }
 }

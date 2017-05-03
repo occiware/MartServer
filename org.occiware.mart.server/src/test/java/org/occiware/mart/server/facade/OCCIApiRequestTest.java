@@ -19,9 +19,11 @@
 package org.occiware.mart.server.facade;
 
 import org.junit.Test;
+import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.DefaultParser;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.ParserFactory;
+import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 
 import java.util.HashMap;
@@ -41,14 +43,16 @@ public class OCCIApiRequestTest {
     public void createEntityTest() {
 
         // First create entity on "/".
+        ConfigurationManager.getConfigurationForOwner(username);
+
         String location = "/";
         createEntity(location);
     }
 
     private void createEntity(String location) {
         String kind = "http://schemas.ogf.org/occi/infrastructure#compute";
-        IRequestParser parser = new DefaultParser();
-        OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON));
+        IRequestParser parser = new DefaultParser(username);
+        OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
         OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
 
         Map<String, String> attrs = new HashMap<>();
@@ -67,8 +71,8 @@ public class OCCIApiRequestTest {
     @Test
     public void findEntityTest() {
         String location = "/";
-        IRequestParser parser = new DefaultParser();
-        OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON));
+        IRequestParser parser = new DefaultParser(username);
+        OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
         OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
 
         occiRequest.findEntities(location, null);
@@ -84,16 +88,26 @@ public class OCCIApiRequestTest {
 
         // Find a collection on category /compute/.
         System.out.println("Find on category location like /compute/");
-        occiRequest.findEntities("/compute/", null);
+
+        CollectionFilter filter = new CollectionFilter();
+        filter.setOperator(0);
+        filter.setNumberOfItemsPerPage(10);
+        filter.setCurrentPage(1);
+        filter.setCategoryFilter("compute");
+        occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
+        occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
+        occiRequest.findEntities("/compute/", filter);
         assertNotNull(occiResponse);
         assertNotNull(occiResponse.getResponseMessage());
         assertFalse(occiResponse.hasExceptions());
         System.out.println("Result : ");
         System.out.println(occiResponse.getResponseMessage().toString());
-
+        occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
+        occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
         // not find..
         System.out.println("Check with a test path, it must not find a resource.");
-        occiRequest.findEntities("/test/", null);
+        filter.setFilterOnPath("/test/");
+        occiRequest.findEntities("/test/", filter);
         assertNotNull(occiResponse);
         assertNotNull(occiResponse.getResponseMessage());
         assertTrue(occiResponse.hasExceptions());
@@ -101,6 +115,32 @@ public class OCCIApiRequestTest {
         System.out.println("response : ");
         System.out.println(occiResponse.getResponseMessage().toString());
         System.out.println("Exception message: " + occiResponse.getExceptionMessage());
+        occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
+        occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
+
+        System.out.println("With location /compute/ without filter collection.");
+        occiRequest.findEntities("/compute/", null);
+        assertNotNull(occiResponse);
+        assertNotNull(occiResponse.getResponseMessage());
+        assertFalse(occiResponse.hasExceptions());
+        System.out.println("Result : ");
+        System.out.println(occiResponse.getResponseMessage().toString());
+
+        occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
+        occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
+
+        // Find entities without filter set.
+        // Must be not found.
+        occiRequest.findEntities("/test/", null);
+        assertNotNull(occiResponse);
+        assertNotNull(occiResponse.getResponseMessage());
+        assertNotNull(occiResponse.hasExceptions());
+
+        System.out.println("response : ");
+        System.out.println(occiResponse.getResponseMessage().toString());
+        System.out.println("Exception message: " + occiResponse.getExceptionMessage());
+
+
 
     }
 

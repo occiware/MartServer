@@ -62,6 +62,7 @@ public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implement
 
                 break;
             case Constants.MEDIA_TYPE_TEXT_OCCI:
+            case Constants.MEDIA_TYPE_TEXT_URI_LIST:
                 // Set the header values only.
                 if (response instanceof String) {
                     httpResponse.setHeader("message", (String) response);

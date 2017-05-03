@@ -138,13 +138,15 @@ public class OCCIRequestData {
      * @return
      */
     public String getEntityUUID() {
-
-        if (!getAttrs().isEmpty()) {
-            entityUUID = attrs.get(Constants.OCCI_CORE_ID).toString();
-
-            if (entityUUID != null && entityUUID.startsWith(Constants.URN_UUID_PREFIX)) {
-                entityUUID = entityUUID.replace(Constants.URN_UUID_PREFIX, "");
+        if (this.entityUUID == null && !getAttrs().isEmpty()) {
+            Object entityId = attrs.get(Constants.OCCI_CORE_ID);
+            if (entityId != null) {
+                entityUUID = attrs.get(Constants.OCCI_CORE_ID).toString();
             }
+        }
+
+        if (entityUUID != null && entityUUID.startsWith(Constants.URN_UUID_PREFIX)) {
+            entityUUID = entityUUID.replace(Constants.URN_UUID_PREFIX, "");
         }
         return entityUUID;
     }
@@ -231,6 +233,13 @@ public class OCCIRequestData {
         System.out.println("Entity id: " + this.getEntityUUID());
         System.out.println("Kind : " + this.getKind());
         System.out.println("Location: " + this.getLocation());
+        System.out.println("Mixin tag: " + this.getMixinTag());
+        System.out.println("Mixin tag title: " + this.getMixinTagTitle());
+        List<String> xlocations = this.getXocciLocations();
+        for (String xlocation : xlocations) {
+            System.out.println("x location: " + xlocation);
+        }
+
         if (this.getMixins() != null && !this.getMixins().isEmpty()) {
             for (String mixinId : mixins) {
                 System.out.println("Mixin : " + mixinId);

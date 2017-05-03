@@ -43,7 +43,7 @@ public class PostWorker extends ServletEntry {
         if (datas.isEmpty()) {
             return occiResponse.parseMessage("No content to post.", HttpServletResponse.SC_BAD_REQUEST);
         }
-        
+
         if (occiRequest.isInterfQuery()) {
             return occiResponse.parseMessage("you cannot use interface query on POST method", HttpServletResponse.SC_BAD_REQUEST);
         }
@@ -57,7 +57,6 @@ public class PostWorker extends ServletEntry {
 
                 if (!occiResponse.hasExceptions()) {
 
-
                     // finally execute the action on entities found previously.
                     List<OCCIRequestData> locationsOut = occiResponse.getOutputParser().getOutputDatas();
                     List<String> locations = new LinkedList<>();
@@ -70,14 +69,21 @@ public class PostWorker extends ServletEntry {
             }
 
             // Entities update attributes and/or mixin and mixinTag association.
-            if (occiRequest.isEntityLocation(occiRequest.getRequestPath())) {
+            if (occiRequest.isCollectionQuery() && data.getKind() != null && data.getLocation() != null) {
+                occiRequest.createEntity(data.getEntityTitle(), data.getEntitySummary(), data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
+
+            } else if (data.getLocation() != null) {
                 // Update entity(ies).
                 occiRequest.updateEntity(data.getMixins(), data.getAttrsValStr(), data.getLocation(), data.getMixinTag(), data.getXocciLocations());
+            }
+            if (occiResponse.hasExceptions()) {
+                return resp;
             }
 
         }
 
-        resp = occiResponse.getHttpResponse();
+        // If we are here this is an unknown request.
+        occiResponse.parseMessage("The request is malformed", HttpServletResponse.SC_BAD_REQUEST);
 
         return resp;
     }

@@ -29,6 +29,10 @@ import java.util.List;
  */
 public class DefaultParser extends AbstractRequestParser implements IRequestParser {
 
+    public DefaultParser(String user) {
+        super(user);
+    }
+
     @Override
     public Object getInterface(QueryInterfaceData interfaceData, String user) throws ParseOCCIException {
         return null;

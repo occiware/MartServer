@@ -27,6 +27,7 @@ import org.occiware.clouddesigner.occi.*;
 import org.occiware.clouddesigner.occi.util.Occi2Ecore;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.model.container.EntitiesOwner;
 import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
@@ -47,11 +48,11 @@ public class EntityManager {
 
 
     private static final String REGEX_CONTROL_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
-    /**
-     * key: uuid, value: entity relative path.
-     */
-    private static Map<String, String> entitiesLocation = new ConcurrentHashMap<>();
 
+    /**
+     * Entities for a user. key: owner, value : EntityOwner container object.
+     */
+    private static Map<String, EntitiesOwner> entitiesOwnerMap = new ConcurrentHashMap<>();
 
     /**
      * Used only to create an eTag when object are updated. Key : owner+objectId
@@ -60,160 +61,87 @@ public class EntityManager {
     private static Map<String, Integer> versionObjectMap = new ConcurrentHashMap<>();
 
     /**
+     * Find an Entity used by an owner, whatever is its configuration.
+     * @param id may be an uuid, a path/uuid or a location.
+     * @param owner the user owner of this entity
+     * @return an Entity model object if found else null.
+     */
+    private static Entity findEntity(final String id, final String owner) {
+        Entity entity = null;
+        if (id == null || owner == null) {
+            return null;
+        }
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        // Search entity with uuid.
+        LOGGER.info("Search entity with uuid: " + id);
+        if (isUUIDValid(id)) {
+            entity = entitiesOwner.getEntityByUuid(id);
+        }
+        if (entity == null) {
+            LOGGER.info("Search entity on location : " + id);
+            // search entity with id ==> location.
+            entity = entitiesOwner.getEntityByLocation(id);
+        }
+        return entity;
+    }
+
+
+    /**
      * Find a resource for owner and entity Id.
      *
-     * @param owner
      * @param id    (may be an uuid, a path/uuid or a path.)
-     * @return an OCCI resource.
+     * @param owner (the user owner of this entity)
+     * @return an OCCI resource else null if not found.
      */
-    private static Resource findResource(final String owner, final String id) {
-        Resource resFound = null;
-        Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
-
-        boolean isEntityUUID = isEntityUUIDProvided(id, new HashMap<>());
-        String entityUUID;
-        if (isEntityUUID) {
-            entityUUID = getUUIDFromPath(id, new HashMap<>());
-
-            for (Resource resource : configuration.getResources()) {
-                if (resource.getId().equals(entityUUID)) {
-                    resFound = resource;
-                    break;
-                }
-            }
+    private static Resource findResource(final String id, final String owner) {
+        Entity entity;
+        if (id == null || owner == null) {
+            return null;
         }
+        entity = findEntity(id, owner);
 
-        if (resFound == null && !isEntityUUID) {
-            List<String> uuids = getEntityUUIDsFromPath(id);
-            if (uuids.size() == 1) {
-                String uuidTmp = uuids.get(0);
-                for (Resource resource : configuration.getResources()) {
-                    if (resource.getId().equals(uuidTmp)) {
-                        resFound = resource;
-                        break;
-                    }
-                }
-            }
+        if (entity != null && entity instanceof Resource) {
+            return (Resource) entity;
         }
-
-        return resFound;
+        return null;
     }
 
     /**
      * Find a link on all chains of resources.
      *
-     * @param owner
-     * @param id
-     * @return
+     * @param id may be an uuid, a path/uuid or a path.
+     * @param owner the user owner of this entity.
+     * @return a Link OCCI entity model object else null if not found.
      */
-    private static Link findLink(final String owner, final String id) {
-        Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
-        String entityUUID;
-        boolean isEntityUUID = isEntityUUIDProvided(id, new HashMap<>());
+    private static Link findLink(final String id, final String owner) {
+        Entity entity;
+        if (id == null || owner == null) {
+            return null;
+        }
+        entity = findEntity(id, owner);
 
-        Link link = null;
-        EList<Link> links;
-        for (Resource resource : configuration.getResources()) {
-            entityUUID = getUUIDFromPath(id, new HashMap<>());
-            links = resource.getLinks();
-            if (!links.isEmpty()) {
-                for (Link lnk : links) {
-                    if (lnk.getId().equals(entityUUID)) {
-                        link = lnk;
-                        break;
-
-                    }
-                }
-                if (link != null) {
-                    break;
-                }
-            }
-
+        if (entity != null && entity instanceof Link) {
+            return (Link) entity;
         }
 
-        if (link == null && !isEntityUUID) {
-            // The id hasn't an uuid. Search on map if a single entity is on the path.
-            List<String> uuids = getEntityUUIDsFromPath(id);
-            if (uuids.size() == 1) {
-                String uuidTmp = uuids.get(0);
-
-                for (Resource resource : configuration.getResources()) {
-                    links = resource.getLinks();
-                    if (!links.isEmpty()) {
-                        for (Link lnk : links) {
-                            if (lnk.getId().equals(uuidTmp)) {
-                                link = lnk;
-                                break;
-
-                            }
-                        }
-                        if (link != null) {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        return link;
+        return null;
     }
 
     /**
-     * Search an entity (link or resource) on the current configuration.
-     *
-     * @param id    (entityId is unique for all owners)
-     * @param owner
-     * @return an OCCI Entity, could be null, if entity has is not found.
-     * @throws ConfigurationException
-     */
-    public static Entity findEntity(final String id, String owner) {
-        Entity entity = null;
-        if (owner == null) {
-            owner = ConfigurationManager.DEFAULT_OWNER;
-        }
-        Resource resource = findResource(owner, id);
-        Link link;
-        if (resource == null) {
-            link = findLink(owner, id);
-            if (link != null) {
-                entity = link;
-            }
-        } else {
-            entity = resource;
-        }
-
-        return entity;
-    }
-
-    /**
-     * @param owner
      * @param id
+     * @param owner
      * @return true if entity exist or false if it doesnt exist.
      */
-    public static boolean isEntityExist(final String owner, final String id) {
-        if (isEntityUUIDProvided(id, new HashMap<>())) {
-            return findEntity(id, owner) != null;
-        } else {
-            String path;
-            boolean found = false;
-            for (Map.Entry<String, String> entry : entitiesLocation.entrySet()) {
-                path = entry.getValue();
-                if (path.equals(id)) {
-                    found = true;
-                    break;
-                }
-
-            }
-            return found;
-        }
+    public static boolean isEntityExist(final String id, final String owner) {
+        return findEntity(id, owner) != null;
     }
 
     /**
      * Find entities for a categoryId (kind or Mixin or actions). actions has no
      * entity list and it's not used here.
      *
-     * @param filter
-     * @param owner
+     * @param filter a collection filter object.
+     * @param owner owner of this collection.
      * @return a list of entities (key: owner, value : List of entities).
      */
     public static List<Entity> findAllEntities(final CollectionFilter filter, final String owner) {
@@ -238,43 +166,38 @@ public class EntityManager {
      */
     public static List<Entity> findAllEntitiesOwner(final String owner) {
         List<Entity> entities = new ArrayList<>();
-        Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
-        EList<Resource> resources = configuration.getResources();
-        EList<Link> links;
-        for (Resource resource : resources) {
-            entities.add(resource);
-            links = resource.getLinks();
-            if (!links.isEmpty()) {
-                for (Link link : links) {
-                    if (!entities.contains(link)) {
-                        entities.add(link);
-                    }
-                }
-            }
+        if (owner == null) {
+            return entities;
         }
-
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        Map<String, Entity> entitiesMap = entitiesOwner.getEntitiesByUuid();
+        for (Map.Entry<String, Entity> entry : entitiesMap.entrySet()) {
+            entities.add(entry.getValue());
+        }
         return entities;
     }
 
     /**
      * Find all entities with that kind. (replace getEntities from kind object).
      *
-     * @param owner
-     * @param categoryId
-     * @return
+     * @param categoryId Scheme+term category.
+     * @param owner owner of these entities.
+     * @return a list of entities or empty list if none.
      */
-    private static List<Entity> findAllEntitiesForKind(final String owner, final String categoryId) {
+    private static List<Entity> findAllEntitiesForKind(final String categoryId, final String owner) {
         List<Entity> entities = new ArrayList<>();
-        for (Resource res : ConfigurationManager.getConfigurationForOwner(owner).getResources()) {
-            if ((res.getKind().getScheme() + res.getKind().getTerm()).equals(categoryId)) {
-                entities.add(res);
+        if (categoryId == null || categoryId.trim().isEmpty()) {
+            return entities;
+        }
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        Map<String, Entity> entitiesMap = entitiesOwner.getEntitiesByUuid();
+        String kind;
+        for (Map.Entry<String, Entity> entry : entitiesMap.entrySet()) {
+            Entity entity = entry.getValue();
+            kind = entity.getKind().getScheme() + entity.getKind().getTerm();
+            if (kind.equals(categoryId)) {
+                entities.add(entity);
             }
-            for (Link link : res.getLinks()) {
-                if ((link.getKind().getScheme() + link.getKind().getTerm()).equals(categoryId)) {
-                    entities.add(link);
-                }
-            }
-
         }
         return entities;
 
@@ -283,80 +206,27 @@ public class EntityManager {
     /**
      * Find all entities for a mixin.
      *
-     * @param owner  username
      * @param categoryId the category scheme + term.
+     * @param owner  username
      * @return a list of entities objects.
      */
-    public static List<Entity> findAllEntitiesForMixin(final String owner, final String categoryId) {
+    public static List<Entity> findAllEntitiesForMixin(final String categoryId, final String owner) {
         List<Entity> entities = new ArrayList<>();
-        for (Resource res : ConfigurationManager.getConfigurationForOwner(owner).getResources()) {
-            for (Mixin mix : res.getMixins()) {
-                if ((mix.getScheme() + mix.getTerm()).equals(categoryId)) {
-                    entities.add(res);
-                }
-            }
-            for (Link link : res.getLinks()) {
-                for (Mixin mix : link.getMixins()) {
-                    if ((mix.getScheme() + mix.getTerm()).equals(categoryId)) {
-                        entities.add(link);
-                    }
-                }
-
-            }
-
+        if (categoryId == null || categoryId.trim().isEmpty()) {
+            return entities;
         }
-        return entities;
-    }
-
-    /**
-     * Find all entities for a category.
-     *
-     * @param owner
-     * @param categoryId (id of kind, mixin or action, composed by scheme+term.
-     * @return a collection list of entity.
-     */
-    public static List<Entity> findAllEntitiesForCategory(final String owner, final String categoryId) {
-        List<Entity> entities = new ArrayList<>();
-        String kind;
-        for (Resource res : ConfigurationManager.getConfigurationForOwner(owner).getResources()) {
-            kind = res.getKind().getScheme() + res.getKind().getTerm();
-
-            if (kind.equals(categoryId)) {
-                entities.add(res);
-                continue;
-            }
-
-            for (Action act : res.getKind().getActions()) {
-                if ((act.getScheme() + act.getTerm()).equals(categoryId)) {
-                    entities.add(res);
-                }
-
-            }
-            for (Mixin mixin : res.getMixins()) {
-                for (Action act : mixin.getActions()) {
-
-                    if ((act.getScheme() + act.getTerm()).equals(categoryId)) {
-                        entities.add(res);
-                    }
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        Map<String, Entity> entitiesMap = entitiesOwner.getEntitiesByUuid();
+        String mixin;
+        for (Map.Entry<String, Entity> entry : entitiesMap.entrySet()) {
+            Entity entity = entry.getValue();
+            for (Mixin mix : entity.getMixins()) {
+                mixin = mix.getScheme() + mix.getTerm();
+                if (mixin.equals(categoryId)) {
+                    entities.add(entity);
+                    break;
                 }
             }
-
-            for (Link link : res.getLinks()) {
-                for (Action act : link.getKind().getActions()) {
-                    if ((act.getScheme() + act.getTerm()).equals(categoryId)) {
-                        entities.add(link);
-                    }
-                }
-                for (Mixin mixin : link.getMixins()) {
-                    for (Action act : mixin.getActions()) {
-
-                        if ((act.getScheme() + act.getTerm()).equals(categoryId)) {
-                            entities.add(link);
-                        }
-                    }
-                }
-            }
-
         }
         return entities;
     }
@@ -382,12 +252,12 @@ public class EntityManager {
     /**
      * Find a used extension for an action Kind.
      *
-     * @param owner     (owner of the configuration).
      * @param action_id (kind : scheme+term)
+     * @param owner     (owner of the configuration).
      * @return extension found, may return null if no extension found with this
      * configuration.
      */
-    public static Extension getExtensionForAction(String owner, String action_id) {
+    public static Extension getExtensionForAction(final String action_id, final String owner) {
         Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
         EList<Extension> exts = config.getUse();
         Extension extRet = null;
@@ -419,7 +289,6 @@ public class EntityManager {
 
     /**
      * Determine if entity is a Resource or a Link from the provided attributes.
-     *
      * @param attr = attributes of an entity
      * @return false if this entity is a link, true otherwise.
      */
@@ -436,15 +305,17 @@ public class EntityManager {
     /**
      * Apply filter where possible. startIndex starts at 1
      *
-     * @param filter
-     * @param sources
+     * @param filter Collection filter object.
+     * @param sources A list of entities to filter.
+     * @param owner the owner of the entities.
      * @return a filtered list of entities.
      */
-    private static List<Entity> filterEntities(final CollectionFilter filter, List<Entity> sources, final String user) {
+    private static List<Entity> filterEntities(final CollectionFilter filter, List<Entity> sources, final String owner) {
 
         String categoryFilter = filter.getCategoryFilter();
-        if (categoryFilter != null && !categoryFilter.isEmpty() && !ConfigurationManager.checkIfCategorySchemeTerm(categoryFilter, user)) {
-            categoryFilter = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, user);
+        if (categoryFilter != null && !categoryFilter.isEmpty()
+                && !ConfigurationManager.checkIfCategorySchemeTerm(categoryFilter, owner)) {
+            categoryFilter = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, owner);
         }
 
         String filterOnPath = filter.getFilterOnPath();
@@ -458,7 +329,9 @@ public class EntityManager {
         while (it.hasNext()) {
             Entity entity = it.next();
 
-            if (checkEntityAttributeFilter(filter, entity) && checkEntityCategoryFilter(categoryFilter, entity) && checkEntityFilterOnPath(filterOnPath, entity)) {
+            if (checkEntityAttributeFilter(filter, entity)
+                    && checkEntityCategoryFilter(categoryFilter, entity)
+                    && checkEntityFilterOnPath(filterOnPath, entity, owner)) {
                 continue;
             }
             it.remove();
@@ -498,11 +371,12 @@ public class EntityManager {
     /**
      * Check if entity respect filter location path (relative).
      *
-     * @param filterOnPath
-     * @param entity
+     * @param filterOnPath partial location to filter.
+     * @param entity entity to check.
+     * @param owner
      * @return true if constraint path is respected (or if filter on path is null or empty) and false elsewhere.
      */
-    private static boolean checkEntityFilterOnPath(final String filterOnPath, final Entity entity) {
+    private static boolean checkEntityFilterOnPath(final String filterOnPath, final Entity entity, final String owner) {
         boolean result = false;
 
         String filterPath = filterOnPath;
@@ -512,10 +386,12 @@ public class EntityManager {
 
         String relativeLocation;
         try {
-            relativeLocation = getLocation(entity.getId());
-            relativeLocation = relativeLocation.replaceAll("\\s+", "");
-            if (!relativeLocation.endsWith("/")) {
-                relativeLocation = relativeLocation + "/";
+            relativeLocation = getLocation(entity.getId(), owner);
+            if (relativeLocation != null) {
+                relativeLocation = relativeLocation.replaceAll("\\s+", "");
+                if (!relativeLocation.endsWith("/")) {
+                    relativeLocation = relativeLocation + "/";
+                }
             }
         } catch (ConfigurationException ex) {
             relativeLocation = null;
@@ -771,18 +647,21 @@ public class EntityManager {
      * Get the location of an entity registered by his uuid, if not found, throw a ConfigurationException.
      *
      * @param uuid uuid v4 of the entity.
+     * @param owner
      * @return a location for uuid provided.
      * @throws ConfigurationException General configuration exception.
      */
-    public static String getLocation(String uuid) throws ConfigurationException {
-        if (uuid == null) {
-            throw new ConfigurationException("No uuid provided to find location.");
+    public static String getLocation(final String uuid, final String owner) throws ConfigurationException {
+
+        if (uuid == null || owner == null) {
+            throw new ConfigurationException("No uuid provided to find location for owner: " + owner);
         }
-        String result = getEntitiesLocation().get(uuid);
-        if (result == null) {
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        String location = entitiesOwner.getEntityLocation(uuid);
+        if (location == null) {
             throw new ConfigurationException("No location found for uuid : " + uuid);
         }
-        return result;
+        return location;
     }
 
     /**
@@ -792,29 +671,23 @@ public class EntityManager {
      * @return a location for an entity, if this entity has no location, the location will be "/" (root).
      * Must never return null value.
      */
-    public static String getLocation(Entity entity) {
-        if (entity == null || entitiesLocation == null) {
-            if (entity == null) {
-                return "";
-            }
-            entitiesLocation = new ConcurrentHashMap<>();
+    public static String getLocation(Entity entity, final String owner) {
+        if (entity == null) {
+            return "";
         }
-        // TODO : Check if in future we have location defined in connectors.
-        String location = entitiesLocation.get(entity.getId());
 
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        // TODO : Check if in future we have location defined in connectors.
+        String location = entitiesOwner.getEntityLocation(entity);
         if (location == null) {
             location = "/"; // On root path by default.
             // To ensure that the path exist on entities path map.
-            entitiesLocation.put(entity.getId(), location);
+            entitiesOwner.putEntity(location, entity);
         }
-
         // we have maybe no leading slash.
         if (!location.equals("/") && !location.endsWith("/")) {
             location += "/";
         }
-
-        // location += entity.getId(); // add the uuid to get a full location.
-
         return location;
     }
 
@@ -918,29 +791,23 @@ public class EntityManager {
      * This method is called when no uuid is provided on request, but you have
      * to ensure that only one entity exist for this path.
      *
-     * @param path
-     * @return an entity from a relative path, if entity doesnt exist on path,
+     * @param location entity location.
+     * @param owner the entity owner.
+     * @return an entity from a location, if entity doesnt exist on path,
      * return null.
      */
-    public static Entity findEntityFromLocation(final String path, final String username) {
-        Entity entity = null;
-        String uuid = null;
-        String pathTmp;
-        if (path != null) {
-            for (Map.Entry<String, String> entry : entitiesLocation.entrySet()) {
-                uuid = entry.getKey();
-                pathTmp = entry.getValue();
-                if (path.equals(pathTmp)) {
-                    // entity found.
-                    break;
-                }
-            }
-            if (uuid != null) {
-                entity = findEntity(uuid, username);
-            }
-
+    public static Entity findEntityFromLocation(final String location, final String owner) {
+        Entity entity;
+        if (location == null) {
+            return null;
         }
-
+        // Path must be ended with slash.
+        String pathParam = location;
+        if (!pathParam.endsWith("/")) {
+            pathParam = pathParam + "/";
+        }
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        entity = entitiesOwner.getEntityByLocation(pathParam);
         return entity;
     }
 
@@ -948,24 +815,22 @@ public class EntityManager {
      * Add a new resource entity to a configuration and update the
      * configuration's map accordingly.
      *
-     * @param id           (entity id : "uuid unique identifier")
-     * @param title
-     * @param kind         (scheme#term)
+     * @param uuid         Entity id : "uuid unique identifier"
+     * @param title        Title of the entity.
+     * @param kind         scheme+term
      * @param mixins       (ex:
      *                     mixins=[http://schemas.ogf.org/occi/infrastructure/network# ipnetwork])
      * @param attributes   (ex: attributes={occi.network.vlan=12,
      *                     occi.network.label=private, occi.network.address=10.1.0.0/16,
      *                     occi.network.gateway=10.1.255.254})
-     * @param owner
-     * @param relativePath (ex: compute/myuuid
+     * @param owner        Owner of this entity to create.
      * @throws ConfigurationException
      */
-    public static void addResourceToConfiguration(String id, String title, String summary, String kind, List<String> mixins,
-                                                  Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
+    public static void addResourceToConfiguration(String uuid, String title, String summary, String kind, List<String> mixins,
+                                                  Map<String, String> attributes, String location, String owner) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
-            // Assume if owner is not used to a default user uuid "anonymous".
-            owner = ConfigurationManager.DEFAULT_OWNER;
+            throw new ConfigurationException("No user defined for the current configuration.");
         }
 
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
@@ -973,7 +838,7 @@ public class EntityManager {
         // Assign a new resource to configuration, if configuration has resource
         // existed, inform by logger but overwrite existing one.
         boolean resourceOverwrite;
-        Resource resource = findResource(owner, id);
+        Resource resource = findResource(uuid, owner);
         if (resource == null) {
             resourceOverwrite = false;
 
@@ -990,7 +855,7 @@ public class EntityManager {
                 // Create an OCCI resource with good resource type (via extension model).
                 resource = (Resource) OcciHelper.createEntity(occiKind);
 
-                resource.setId(id);
+                resource.setId(uuid);
 
                 resource.setTitle(title);
 
@@ -1006,12 +871,12 @@ public class EntityManager {
                 updateAttributesToEntity(resource, attributes, owner);
 
             } catch (Throwable ex) {
-                LOGGER.error("Exception thrown while creating an entity. " + id);
+                LOGGER.error("Exception thrown while creating an entity. " + uuid);
                 LOGGER.error("Exception class : " + ex.getClass().getName());
                 if (ex instanceof ConfigurationException) {
                     throw ex;
                 }
-                throw new ConfigurationException("Exception thrown while creating an entity: " + id + " Message: " + ex.getMessage(), ex);
+                throw new ConfigurationException("Exception thrown while creating an entity: " + uuid + " Message: " + ex.getMessage(), ex);
             }
         } else {
             LOGGER.info("resource already exist, overwriting...");
@@ -1032,10 +897,11 @@ public class EntityManager {
             configuration.getResources().add(resource);
             LOGGER.info("Added Resource " + resource.getId() + " to configuration object.");
         }
-        updateVersion(owner, id);
-        // Add the entity to relative path map.
-        entitiesLocation.put(id, relativePath);
+        updateVersion(owner, uuid);
 
+        // Add or full update the entity to this owner.
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        entitiesOwner.putEntity(location, resource);
     }
 
     /**
@@ -1049,12 +915,12 @@ public class EntityManager {
      * @param src
      * @param target
      * @param attributes
+     * @param location
      * @param owner
-     * @param relativePath
      * @throws ConfigurationException General configuration exception
      */
     public static void addLinkToConfiguration(String id, String title, String kind, List<String> mixins, String src,
-                                              String target, Map<String, String> attributes, String owner, String relativePath) throws ConfigurationException {
+                                              String target, Map<String, String> attributes, String location, String owner) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
             // Assume if owner is not used to a default user uuid "anonymous".
@@ -1062,8 +928,8 @@ public class EntityManager {
         }
 
         boolean overwrite = false;
-        Resource resourceSrc = findResource(owner, src);
-        Resource resourceDest = findResource(owner, target);
+        Resource resourceSrc = findResource(src, owner);
+        Resource resourceDest = findResource(target, owner);
 
         if (resourceSrc == null) {
             throw new ConfigurationException("Cannot find the source of the link: " + id);
@@ -1072,7 +938,7 @@ public class EntityManager {
             throw new ConfigurationException("Cannot find the target of the link: " + id);
         }
 
-        Link link = findLink(owner, id);
+        Link link = findLink(id, owner);
         if (link == null) {
 
             Kind occiKind;
@@ -1127,8 +993,9 @@ public class EntityManager {
         } else {
             LOGGER.info("link " + id + " added to configuration !");
         }
-        entitiesLocation.put(id, relativePath);
-
+        // Add or full update the entity to this owner.
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        entitiesOwner.putEntity(location, link);
     }
 
     /**
@@ -1168,9 +1035,10 @@ public class EntityManager {
      *
      * @param entity
      * @param attributes
+     * @param owner
      * @return Updated entity object.
      */
-    public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes, final String username) {
+    public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes, final String owner) {
         if (attributes == null || attributes.isEmpty()) {
             // TODO : Check if concrete object attributes are deleted, or update MART with a remove attributes method.
             entity.getAttributes().clear();
@@ -1207,7 +1075,7 @@ public class EntityManager {
             }
         }
 
-        updateVersion(username, entity.getId());
+        updateVersion(owner, entity.getId());
 
         return entity;
     }
@@ -1235,7 +1103,7 @@ public class EntityManager {
      * given mixin id.
      *
      * @param id    (kind id or mixin id or entity Id!)
-     * @param owner
+     * @param owner owner of the model object to remove.
      */
     public static void removeOrDissociateFromConfiguration(final String id, final String owner) {
         boolean found = false;
@@ -1250,13 +1118,13 @@ public class EntityManager {
         Mixin mixin = null;
 
         // searching in resources.
-        resource = findResource(owner, id);
+        resource = findResource(id, owner);
         if (resource != null) {
             found = true;
             resourceToDelete = true;
         }
         if (!found) {
-            link = findLink(owner, id);
+            link = findLink(id, owner);
             if (link != null) {
                 found = true;
                 linkToDelete = true;
@@ -1278,46 +1146,48 @@ public class EntityManager {
         }
 
         if (resourceToDelete) {
-            removeResource(owner, resource);
+            removeResource(resource, owner);
         }
         if (linkToDelete) {
-            removeLink(link);
+            removeLink(link, owner);
         }
         if (kindEntitiesToDelete) {
-            removeEntitiesForKind(owner, kind);
+            removeEntitiesForKind(kind, owner);
         }
         if (mixinToDissociate) {
-            MixinManager.dissociateMixinFromEntities(owner, mixin);
+            MixinManager.dissociateMixinFromEntities(mixin, owner);
         }
     }
 
     /**
      * Remove a resource from owner's configuration.
      *
-     * @param owner
      * @param resource
+     * @param owner
      */
-    private static void removeResource(final String owner, final Resource resource) {
+    private static void removeResource(final Resource resource, final String owner) {
         Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
-
         Iterator<Link> it = resource.getLinks().iterator();
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        // If this resource have links, remove all the links.
         while (it.hasNext()) {
             Link link = it.next();
+
             Resource src = link.getSource();
+
             if (!src.equals(resource)) {
                 src.getLinks().remove(link);
-                entitiesLocation.remove(link.getId());
+                entitiesOwner.removeEntity(link);
             }
             Resource target = link.getTarget();
             if (!target.equals(resource)) {
                 target.getLinks().remove(link);
-                entitiesLocation.remove(link.getId());
+                entitiesOwner.removeEntity(link);
             }
         }
-
         resource.getLinks().clear();
         config.getResources().remove(resource);
-        entitiesLocation.remove(resource.getId());
+        entitiesOwner.removeEntity(resource);
     }
 
     /**
@@ -1325,32 +1195,32 @@ public class EntityManager {
      *
      * @param link
      */
-    private static void removeLink(final Link link) {
+    private static void removeLink(final Link link, final String owner) {
         Resource resourceSrc = link.getSource();
         Resource resourceTarget = link.getTarget();
         resourceSrc.getLinks().remove(link);
         resourceTarget.getLinks().remove(link);
-        entitiesLocation.remove(link.getId());
-
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        entitiesOwner.removeEntity(link);
     }
 
     /**
      * Remove all entities for this kind.
      *
-     * @param owner
      * @param kind
+     * @param owner
      */
-    private static void removeEntitiesForKind(final String owner, final Kind kind) {
+    private static void removeEntitiesForKind(final Kind kind, final String owner) {
         if (kind == null) {
             return;
         }
-        List<Entity> entities = findAllEntitiesForKind(owner, kind.getScheme() + kind.getTerm());
+        List<Entity> entities = findAllEntitiesForKind(kind.getScheme() + kind.getTerm(), owner);
 
         for (Entity entity : entities) {
             if (entity instanceof Resource) {
-                removeResource(owner, (Resource) entity);
+                removeResource((Resource) entity, owner);
             } else if (entity instanceof Link) {
-                removeLink((Link) entity);
+                removeLink((Link) entity, owner);
             }
         }
         entities.clear();
@@ -1473,7 +1343,7 @@ public class EntityManager {
 
     /**
      * Print on logger an entity.
-     *
+     * Used only for debugging purpose.
      * @param entity
      */
     public static void printEntity(Entity entity) {
@@ -1508,45 +1378,42 @@ public class EntityManager {
                 builder.append(action.getTitle()).append("--> ").append(action.getScheme()).append(action.getTerm()).append(" \n ");
             }
         }
-        LOGGER.info(builder.toString());
+        LOGGER.debug(builder.toString());
 
     }
 
     /**
-     * Get all entities registered on the same path.
+     * Get all entities uuid registered on the same path collection.
      *
      * @param path
+     * @param owner
      * @return a List of String uuids
      */
-    public static List<String> getEntityUUIDsFromPath(final String path) {
+    public static List<String> getEntityUUIDsFromPath(final String path, final String owner) {
         List<String> entitiesUUID = new ArrayList<>();
         if (path == null || path.isEmpty()) {
             return entitiesUUID;
         }
+
         String pathCompare = path;
-        if (!path.equals("/") && path.endsWith("/")) {
-            // Delete ending slash.
-            pathCompare = path.substring(0, path.length() - 1);
+
+        if (!pathCompare.endsWith("/")) {
+            pathCompare = pathCompare + "/";
         }
-        // Remove leading "/".
-        if (path.startsWith("/")) {
-            pathCompare = path.substring(1);
+        if (!pathCompare.startsWith("/")) {
+            pathCompare = "/" + pathCompare;
         }
 
-        Map<String, String> entitiesPath = getEntitiesLocation();
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+
+        Map<String, Entity> entitiesLocationMap = entitiesOwner.getEntitiesByLocation();
+
         String uuid;
         String pathTmp;
-        for (Map.Entry<String, String> entry : entitiesPath.entrySet()) {
-            uuid = entry.getKey();
-            pathTmp = entry.getValue();
+        for (Map.Entry<String, Entity> entry : entitiesLocationMap.entrySet()) {
 
-            if (!pathTmp.equals("/") && pathTmp.endsWith("/")) {
-                pathTmp = pathTmp.substring(0, pathTmp.length() - 1);
-            }
-            // Remove leading "/".
-            if (pathTmp.startsWith("/")) {
-                pathTmp = pathTmp.substring(1);
-            }
+            pathTmp = entry.getKey();
+            uuid = entry.getValue().getId();
 
             if (pathCompare.equals(pathTmp)) {
                 entitiesUUID.add(uuid);
@@ -1607,15 +1474,6 @@ public class EntityManager {
         return attributes;
     }
 
-    /**
-     * @return
-     */
-    public static Map<String, String> getEntitiesLocation() {
-        if (entitiesLocation == null) {
-            entitiesLocation = new ConcurrentHashMap<>();
-        }
-        return entitiesLocation;
-    }
 
     /**
      * Execute an action on an entity.
@@ -1634,7 +1492,7 @@ public class EntityManager {
             throw new ConfigurationException("Entity : " + entityUUID + " doesnt exist on configuration");
         }
 
-        Extension ext = getExtensionForAction(owner, actionId);
+        Extension ext = getExtensionForAction(actionId, owner);
         if (ext == null) {
             LOGGER.error("Action " + actionId + " doesnt exist on referenced extensions");
             throw new ConfigurationException("Action " + actionId + " doesnt exist on referenced extensions");
@@ -1687,7 +1545,7 @@ public class EntityManager {
             throw new ConfigurationException("Entity on location: " + location + " doesnt exist on configuration");
         }
 
-        Extension ext = getExtensionForAction(owner, actionId);
+        Extension ext = getExtensionForAction(actionId, owner);
         if (ext == null) {
             LOGGER.error("Action " + actionId + " doesnt exist on referenced extensions");
             throw new ConfigurationException("Action " + actionId + " doesnt exist on referenced extensions");
@@ -1720,4 +1578,13 @@ public class EntityManager {
     }
 
 
+    public static void buildEntitiesOwner(final String owner) {
+        entitiesOwnerMap.put(owner, new EntitiesOwner(owner));
+    }
+
+    public static Entity findEntityForUuid(final String entityId, final String owner) {
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        Entity entity = entitiesOwner.getEntityByUuid(entityId);
+        return entity;
+    }
 }

@@ -44,8 +44,14 @@ public class GetWorker extends ServletEntry {
         }
 
         if (occiRequest.isEntityLocation(occiRequest.getRequestPath()) || occiRequest.isCollectionQuery()) {
+
             LOGGER.info("Querying entities on location : " + occiRequest.getRequestPath());
-            occiRequest.findEntities(occiRequest.getRequestPath(), buildCollectionFilter());
+            if (!getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+                occiRequest.findEntities(occiRequest.getRequestPath(), buildCollectionFilter());
+            } else {
+                occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), buildCollectionFilter());
+            }
+
             return resp;
         }
 
@@ -53,7 +59,6 @@ public class GetWorker extends ServletEntry {
 
         return resp;
     }
-
 
 
 }

@@ -115,6 +115,11 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
                 default:
                     throw new ParseOCCIException("Cannot parse for " + contentType + " cause: unknown parser");
             }
+
+            if (getContentDatas().size() > 1) {
+                this.collectionQuery = true;
+            }
+
         // }
     }
 

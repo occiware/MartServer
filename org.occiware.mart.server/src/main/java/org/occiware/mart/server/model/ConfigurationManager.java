@@ -22,6 +22,7 @@ import org.occiware.clouddesigner.occi.*;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.MART;
 import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.model.container.EntitiesOwner;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,6 @@ public class ConfigurationManager {
      */
     private static Map<String, Configuration> configurations = new ConcurrentHashMap<>();
 
-
     private static OCCIFactory occiFactory = OCCIFactory.eINSTANCE;
 
     static {
@@ -67,6 +67,7 @@ public class ConfigurationManager {
             createConfiguration(owner);
             // Assign all referenced extensions on configuration for this user.
             useAllExtensionForConfigurationInClasspath(owner);
+
         }
         return configurations.get(owner);
     }
@@ -214,6 +215,7 @@ public class ConfigurationManager {
         Configuration configuration = occiFactory.createConfiguration();
         configurations.put(owner, configuration);
         LOGGER.debug("Configuration for user " + owner + " created");
+        EntityManager.buildEntitiesOwner(owner);
     }
 
     /**

@@ -150,15 +150,16 @@ public abstract class ServletEntry {
         }
 
         // TODO : Manage authentication and pass username to MART engine.
+        String username = "anonymous";
         // validateAuth().
 
         // Build inputparser and output parser.
-        IRequestParser inputParser = ParserFactory.build(contentType);
-        IRequestParser outputParser = ParserFactory.build(acceptType);
+        IRequestParser inputParser = ParserFactory.build(contentType, username);
+        IRequestParser outputParser = ParserFactory.build(acceptType, username);
 
         // Create occiRequest objects.
-        occiResponse = new OCCIServletOutputResponse(acceptType, "anonymous", httpResponse, outputParser);
-        occiRequest = new OCCIServletInputRequest(occiResponse, contentType, "anonymous", httpRequest, headers, this.getRequestParameters(), inputParser);
+        occiResponse = new OCCIServletOutputResponse(acceptType, username, httpResponse, outputParser);
+        occiRequest = new OCCIServletInputRequest(occiResponse, contentType, username, httpRequest, headers, this.getRequestParameters(), inputParser);
 
         if (inputParser instanceof DefaultParser) {
             LOGGER.warn("No parser for content type : " + contentType);
