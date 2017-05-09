@@ -1,7 +1,6 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.parser.HeaderPojo;
-import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +42,7 @@ public class GetWorker extends ServletEntry {
             return resp;
         }
 
-        if (occiRequest.isEntityLocation(occiRequest.getRequestPath()) || occiRequest.isCollectionQuery()) {
+        if (occiRequest.isOnEntityLocation() || occiRequest.isOnCollectionLocation()) {
 
             LOGGER.info("Querying entities on location : " + occiRequest.getRequestPath());
             if (!getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {

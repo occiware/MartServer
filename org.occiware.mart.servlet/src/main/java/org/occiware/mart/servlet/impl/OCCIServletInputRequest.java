@@ -1,7 +1,9 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
-import org.occiware.mart.server.facade.*;
+import org.occiware.mart.server.facade.AbstractOCCIApiInputRequest;
+import org.occiware.mart.server.facade.OCCIApiInputRequest;
+import org.occiware.mart.server.facade.OCCIApiResponse;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.OCCIRequestData;
@@ -18,7 +20,6 @@ import java.util.Map;
 
 /**
  * Created by cgourdin on 11/04/2017.
- *
  */
 public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
@@ -30,18 +31,22 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
     private Map<String, String> requestParameters;
     private final String contentType;
 
-    private boolean onMixinTagLocation = false;
+
 
     private boolean onEntityLocation = false;
 
 
     /**
-     * Define if this is a collection query.
+     * Define if this is a collection location.
      */
-    private boolean collectionQuery;
+    private boolean onCollectionLocation = false;
     private boolean onBoundedLocation = false;
     private boolean onCategoryLocation = false;
-
+    private boolean onMixinTagLocation = false;
+    /**
+     * Collection of data content on input. True if this is a collection content (like entities) and false if not (one thing like one entity or one mixin tag data).
+     */
+    private boolean contentCollection = false;
     /**
      * Define if the path is an interface query /-/.
      */
@@ -83,50 +88,47 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
         // Parse the path
         parsePath();
 
-        // if (!interfQuery) {
-            // Parse the content body if any.
-            switch (contentType) {
-                case Constants.MEDIA_TYPE_JSON:
-                case Constants.MEDIA_TYPE_JSON_OCCI:
-                case Constants.MEDIA_TYPE_TEXT_PLAIN:
-                    InputStream in = null;
-                    LOGGER.info("Parsing input uploaded datas...");
-                    try {
-                        in = request.getInputStream();
-                        if (in != null) {
-                            // throw new ParseOCCIException("The input has no content delivered.");
-                            content = Utils.convertInputStreamToString(in);
-                            // for Object occiRequest to be fully completed.
-                            getInputParser().parseInputToDatas(content);
-                        }
-                    } catch (IOException ex) {
-                        throw new ParseOCCIException("The server cant read the content input --> " + ex.getMessage());
-                    } finally {
-                        Utils.closeQuietly(in);
+        // Parse the content body if any.
+        switch (contentType) {
+            case Constants.MEDIA_TYPE_JSON:
+            case Constants.MEDIA_TYPE_JSON_OCCI:
+            case Constants.MEDIA_TYPE_TEXT_PLAIN:
+                InputStream in = null;
+                LOGGER.info("Parsing input uploaded datas...");
+                try {
+                    in = request.getInputStream();
+                    if (in != null) {
+                        // throw new ParseOCCIException("The input has no content delivered.");
+                        content = Utils.convertInputStreamToString(in);
+                        // for Object occiRequest to be fully completed.
+                        getInputParser().parseInputToDatas(content);
                     }
-                    break;
-                case Constants.MEDIA_TYPE_TEXT_OCCI:
-                    // For all media type that have header definition only, known for now is text/occi.
-                    if (headers != null && !headers.getHeaderMap().isEmpty()) {
-                        // for object occiRequest to be fully completed, the parameter is Map<String, List<String>> encapsulated on MultivaluedMap.)
-                        getInputParser().parseInputToDatas(headers);
-                    }
-                    break;
-                default:
-                    throw new ParseOCCIException("Cannot parse for " + contentType + " cause: unknown parser");
-            }
+                } catch (IOException ex) {
+                    throw new ParseOCCIException("The server cant read the content input --> " + ex.getMessage());
+                } finally {
+                    Utils.closeQuietly(in);
+                }
+                break;
+            case Constants.MEDIA_TYPE_TEXT_OCCI:
+                // For all media type that have header definition only, known for now is text/occi.
+                if (headers != null && !headers.getHeaderMap().isEmpty()) {
+                    // for object occiRequest to be fully completed, the parameter is Map<String, List<String>> encapsulated on MultivaluedMap.)
+                    getInputParser().parseInputToDatas(headers);
+                }
+                break;
+            default:
+                throw new ParseOCCIException("Cannot parse for " + contentType + " cause: unknown parser");
+        }
 
-            if (getContentDatas().size() > 1) {
-                this.collectionQuery = true;
-            }
-
-        // }
+        if (getContentDatas().size() > 1) {
+            this.contentCollection = true;
+        }
     }
 
     /**
      * Parse the path to a data object. a path may have /category/myresource/
      */
-    private void  parsePath() {
+    private void parsePath() {
 
         // Detect if this is an interface request.
         if (requestPath.equals("/.well-known/org/ogf/occi/-/") || requestPath.endsWith("/-/")) {
@@ -137,8 +139,22 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
         // Detect if this is an action invocation request
         if (requestParameters != null && requestParameters.get("action") != null) {
             actionInvocationQuery = true;
-            // No return because we must know if this is a mixin Tag location path or an entity path or an entity collection path.
+            if (isEntityLocation(requestPath)) {
+                onEntityLocation = true;
+            } else {
+                // Action on collection : Category (kind, mixin on extension), mixin defined ?
+                onCollectionLocation = true;
+                if (isCategoryLocation(requestPath)) {
+                    onCategoryLocation = true;
+                } else if (isMixinTagLocation(requestPath)){
+                    onMixinTagLocation = true;
+                } else {
+                    onBoundedLocation = true; // Collection on a fragment path like /myresources/mycomputes/ ==> my entities below this path.
+                }
+            }
+            return;
         }
+
 
         // Detect if this path is on an existing entity path.
         if (isEntityLocation(requestPath)) {
@@ -146,20 +162,15 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
             return;
         }
 
-        // Detect if this path is on an existing mixin tag definition location.
-        if (isMixinTagLocation(requestPath)) {
-            onMixinTagLocation = true;
-            return;
-        }
-
         // Detect if the path is on a category (mixin, kind) like /myconnector/compute/ or /ipnetwork/ or on known path parent (bounded path).
-        collectionQuery = true;
+        onCollectionLocation = true;
         if (isCategoryLocation(requestPath)) {
             onCategoryLocation = true;
+        } else if (isMixinTagLocation(requestPath)){
+            onMixinTagLocation = true;
         } else {
-            onBoundedLocation = true;
+            onBoundedLocation = true; // Collection on a fragment path like /myresources/mycomputes/ ==> my entities below this path.
         }
-
     }
 
     public HeaderPojo getHeaders() {
@@ -187,12 +198,12 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
     }
 
 
-    public boolean isCollectionQuery() {
-        return collectionQuery;
+    public boolean isOnCollectionLocation() {
+        return onCollectionLocation;
     }
 
-    public void setCollectionQuery(boolean collectionQuery) {
-        this.collectionQuery = collectionQuery;
+    public void setOnCollectionLocation(boolean onCollectionLocation) {
+        this.onCollectionLocation = onCollectionLocation;
     }
 
     public boolean isInterfQuery() {
@@ -211,11 +222,27 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
         this.actionInvocationQuery = actionInvocationQuery;
     }
 
+    public boolean isOnEntityLocation() {
+        return onEntityLocation;
+    }
+
+    public boolean isOnBoundedLocation() {
+        return onBoundedLocation;
+    }
+
+    public boolean isOnCategoryLocation() {
+        return onCategoryLocation;
+    }
 
     public List<OCCIRequestData> getContentDatas() {
         return this.getInputParser().getInputDatas();
     }
 
+    public boolean isContentCollection() {
+        return contentCollection;
+    }
 
-
+    public boolean isOnMixinTagLocation() {
+        return onMixinTagLocation;
+    }
 }

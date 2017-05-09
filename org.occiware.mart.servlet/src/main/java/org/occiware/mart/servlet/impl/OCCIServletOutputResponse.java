@@ -121,6 +121,7 @@ public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implement
         try {
             // String contentResponse = new String(content.getBytes(), Charset.forName("UTF-8"));
 
+            httpResponse.resetBuffer();
             PrintWriter respWriter = httpResponse.getWriter();
             respWriter.println(content);
 

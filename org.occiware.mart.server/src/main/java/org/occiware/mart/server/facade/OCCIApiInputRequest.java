@@ -20,6 +20,7 @@ package org.occiware.mart.server.facade;
 
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.parser.IRequestParser;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.utils.CollectionFilter;
 
 import java.util.List;
@@ -52,16 +53,16 @@ public interface OCCIApiInputRequest {
     public OCCIApiResponse createEntity(final String title, final String summary, final String kind, final List<String> mixins,
                              final Map<String, String> attributes, final String location);
 
+    OCCIApiResponse createEntities(List<OCCIRequestData> datas);
+
     /**
      * Update an entity (partial update). This take new mixins association but doesnt remove association, to make that use removeMixinAssociations() method.
      * @param mixins a list of mixins to associate with entity.
      * @param attributes attributes to update.
      * @param location an entity location.
-     * @param mixinTag a mixin tag.
-     * @param xocciLocations a list of entities location for mixin tags only and set on mixin tag parameter.
      * @return a response object defined by implementation.
      */
-    public OCCIApiResponse updateEntity(final List<String> mixins, final Map<String, String> attributes, final String location, final String mixinTag, final List<String> xocciLocations);
+    public OCCIApiResponse updateEntity(final List<String> mixins, final Map<String, String> attributes, final String location);
 
     /**
      * Delete an entity with location provided.
@@ -97,6 +98,10 @@ public interface OCCIApiInputRequest {
      *@param locations an optional list of entities location, if set this associate the mixin on these locations.  @return a response object defined by implementation.
      */
     public OCCIApiResponse createMixinTag(final String title, final String mixinTag, String location, final List<String> locations);
+
+    OCCIApiResponse replaceMixinTagCollection(String mixinTag, List<String> locations);
+
+    OCCIApiResponse associateMixinToEntities(String mixin, String mixinTagLocation, List<String> xlocations);
 
     /**
      * Remove definitively the mixin tag and remove all its association.

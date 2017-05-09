@@ -1139,7 +1139,7 @@ public class EntityManager {
             }
         }
         if (!found) {
-            mixin = MixinManager.findMixinOnEntities(owner, id);
+            mixin = MixinManager.findMixinOnEntities(id, owner);
             if (mixin != null) {
                 mixinToDissociate = true;
             }

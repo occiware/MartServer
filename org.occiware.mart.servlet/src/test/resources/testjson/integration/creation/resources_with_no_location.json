@@ -13,8 +13,7 @@
         "occi.network.label": "private",
         "occi.network.address": "10.1.0.0/16",
         "occi.network.gateway": "10.1.255.254"
-      },
-      "location": "/network/c7d55bf4-7057-5113-85c8-141871bf7636"
+      }
     },
     {
       "id": "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
@@ -28,7 +27,6 @@
         "occi.compute.architecture": "x86",
         "occi.compute.state": "active"
       },
-      "location": "/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
       "links": [
         {
           "kind": "http://schemas.ogf.org/occi/infrastructure#networkinterface",
@@ -53,26 +51,9 @@
           },
           "source": {
             "location": "/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8"
-          },
-          "location": "/networkinterface/b2fe83ae-a20f-54fc-b436-cec85c94c5e9"
+          }
         }
       ]
-    }
-  ],
-  "mixins": [
-    {
-      "location": "/mixins/my_mixin/",
-      "scheme": "http://occiware.org/occi/tags#",
-      "term": "my_mixin",
-      "attributes": {},
-      "title": "my mixin tag 1"
-    },
-    {
-      "location": "/mixins/my_mixin2/",
-      "scheme": "http://occiware.org/occi/tags#",
-      "term": "my_mixin2",
-      "attributes": {},
-      "title": "my mixin tag 2"
     }
   ]
 }

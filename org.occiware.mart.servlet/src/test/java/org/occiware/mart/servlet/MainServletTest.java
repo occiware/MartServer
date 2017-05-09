@@ -100,7 +100,12 @@ public class MainServletTest {
     public void createResourcesWithPutAndPost() throws Exception {
         HttpMethod httpMethod = HttpMethod.PUT;
         System.out.println("Testing PUT method ==> PutWorker");
-        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute1/", HttpServletResponse.SC_OK,
+        // Test interface.
+        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_BAD_REQUEST,
+                "/testjson/integration/creation/mixintag_usermixin1.json",
+                "Test query interface with PUT method. Must fail with bad request.");
+
+        response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute1/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource1.json",
                 "create a resource with PUT, must be created.");
 
@@ -130,9 +135,13 @@ public class MainServletTest {
                 "/testjson/integration/creation/resourceonly.json",
                 "Other test create resource without ending slash on location : /myresources/compute2");
 
+        // This test location conflict on put method (request path differ from location).
+        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_CONFLICT,
+                "/testjson/integration/creation/resource_location.json",
+                "Create a resource with integrated location value but conflict with request path.");
 
         // Create a resource with integrated location value.
-        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/testlocation/f89486b7-0632-482d-a184-a9195733ddd9", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource_location.json",
                 "Create a resource with integrated location value.");
 
@@ -140,6 +149,19 @@ public class MainServletTest {
         response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute3/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource_without_uuid.json",
                 "Create a resource without uuid");
+
+
+        httpMethod = HttpMethod.POST;
+        // POST creation part.
+        // Create resources with POST using json and collections.
+        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_BAD_REQUEST,
+                "/testjson/integration/creation/resources_with_no_location.json",
+                "Create resources with POST using json and collections, but no locations set on resources, this will fail.");
+
+        // Create resources with POST using json and collections with locations set.
+        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/resource3.json",
+                "Create resources with POST using json and collections and locations set for each entity.");
 
         // Define a mixin tag
         response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
@@ -160,12 +182,11 @@ public class MainServletTest {
         response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/definemixintags.json",
                 "Redefine all the mixin user tags with a collection of mixins");
-        httpMethod = HttpMethod.POST;
-        // POST creation part.
-        // Create resources with POST using json and collections.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource3.json",
-                "Create resources with POST using json and collections.");
+
+        // TODO : associate mixin tags with some entities
+
+        // TODO : PUT other entities collection on mixins tag path and check if the new ones replace old entities association.
+
 
     }
 

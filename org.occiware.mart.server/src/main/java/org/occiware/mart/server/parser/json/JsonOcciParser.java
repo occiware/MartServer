@@ -442,7 +442,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
 
         // Build the list of mixins user tags.
         for (Mixin mixin : mixins) {
-            if (MixinManager.isMixinTags(user, mixin.getScheme() + mixin.getTerm())) {
+            if (MixinManager.isMixinTags(mixin.getScheme() + mixin.getTerm(), user)) {
                 extUserTagMixins.add(mixin);
             }
         }
@@ -522,7 +522,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                     models.add(modelJson);
                 }
             } else {
-                Extension ext = MixinManager.getExtensionForMixin(user, mixin.getScheme() + mixin.getTerm());
+                Extension ext = MixinManager.getExtensionForMixin(mixin.getScheme() + mixin.getTerm(), user);
                 if (models.isEmpty()) {
                     modelJson = new ModelInterfaceJson();
                     modelJson.setId(ext.getScheme());
