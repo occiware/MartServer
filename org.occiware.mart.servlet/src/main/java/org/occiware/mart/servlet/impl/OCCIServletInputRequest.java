@@ -32,7 +32,6 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
     private final String contentType;
 
 
-
     private boolean onEntityLocation = false;
 
 
@@ -146,7 +145,7 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
                 onCollectionLocation = true;
                 if (isCategoryLocation(requestPath)) {
                     onCategoryLocation = true;
-                } else if (isMixinTagLocation(requestPath)){
+                } else if (isMixinTagLocation(requestPath)) {
                     onMixinTagLocation = true;
                 } else {
                     onBoundedLocation = true; // Collection on a fragment path like /myresources/mycomputes/ ==> my entities below this path.
@@ -166,7 +165,7 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
         onCollectionLocation = true;
         if (isCategoryLocation(requestPath)) {
             onCategoryLocation = true;
-        } else if (isMixinTagLocation(requestPath)){
+        } else if (isMixinTagLocation(requestPath)) {
             onMixinTagLocation = true;
         } else {
             onBoundedLocation = true; // Collection on a fragment path like /myresources/mycomputes/ ==> my entities below this path.
@@ -244,5 +243,90 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
 
     public boolean isOnMixinTagLocation() {
         return onMixinTagLocation;
+    }
+
+    /**
+     * Helper method to control if there are entities instance on input datas.
+     *
+     * @return true if data objects are entities instance false if this is not the case.
+     */
+    public boolean areDatasEntities() {
+        boolean result = true;
+        List<OCCIRequestData> datas = getContentDatas();
+        if (datas.isEmpty()) {
+            return false;
+        }
+        for (OCCIRequestData data : datas) {
+            if (data.getKind() == null) {
+                result = false;
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Helper method to control if entities data have the category referenced in their kind / mixin from request path (category path).
+     *
+     * @return true if ok, false if not.
+     */
+    public boolean areDatasHaveSameCategoryLocation() {
+        boolean result = true;
+        List<OCCIRequestData> datas = getContentDatas();
+        List<String> mixins;
+        String kind;
+        if (datas.isEmpty()) {
+            return false;
+        }
+        String requestTerm = requestPath;
+        if (requestTerm.startsWith("/")) {
+            requestTerm = requestTerm.substring(1);
+        }
+        if (requestTerm.endsWith("/")) {
+            requestTerm = requestTerm.substring(0, requestTerm.length() - 1);
+        }
+        String categoryId = super.getCategorySchemeTerm(requestTerm);
+        boolean found;
+        for (OCCIRequestData data : datas) {
+            // First control the kind.
+            kind = data.getKind();
+            mixins = data.getMixins();
+            found = false;
+            // If not the same, control the mixins.
+            if (!kind.equals(categoryId)) {
+                for (String mixin : mixins) {
+                    if (mixin.equals(categoryId)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    result = false;
+                    break;
+                }
+
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Helper to define if datas content have actions definitions.
+     * @return true if content data is action content.
+     */
+    public boolean isActionOnContentData() {
+        boolean result = true;
+        List<OCCIRequestData> datas = getContentDatas();
+        if (datas.isEmpty()) {
+            return false;
+        }
+        for (OCCIRequestData data : datas) {
+            if (data.getAction() == null) {
+                result = false;
+                break;
+            }
+        }
+        return result;
     }
 }

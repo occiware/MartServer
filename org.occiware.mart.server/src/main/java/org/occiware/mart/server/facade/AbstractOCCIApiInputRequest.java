@@ -830,45 +830,128 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public OCCIApiResponse executeActionOnEntities(final String action, final Map<String, String> actionAttributes, final List<String> locations) {
         String message;
-        if (action == null || action.trim().isEmpty()) {
-            // No action defined.
-            message = "Action is not defined";
-            parseNotFoundExceptionMessageOutput(message);
+        try {
+            EntityManager.checkActionOnModel(action, username);
+
+        } catch (ConfigurationException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
             return occiApiResponse;
         }
-
         if (locations == null || locations.isEmpty()) {
             // No entities defined to execute the action.
             message = "Entity locations are not set.";
-            parseNotFoundExceptionMessageOutput(message);
+            parseConfigurationExceptionMessageOutput(message);
             return occiApiResponse;
         }
-
-        // Find action category on model.
-        Action actionModel = ConfigurationManager.findActionOnExtensions(action, username);
-        if (actionModel == null) {
-            message = "Action : " + action + " not found on referenced extensions";
-            parseNotFoundExceptionMessageOutput(message);
-            return occiApiResponse;
-        }
-
-        // Execute the action.
+        Entity entity;
+        List<Entity> entities = new LinkedList<>();
+        // Execute the action on entity locations.
         for (String location : locations) {
             try {
-                EntityManager.executeActionOnlocation(location, action, actionAttributes, username);
+                LOGGER.info("Triggering action : " + action + " on entity located on : " + location);
+                EntityManager.executeActionOnEntityLocation(location, action, actionAttributes, username);
+                entity = EntityManager.findEntityFromLocation(location, username);
+                entities.add(entity);
             } catch (ConfigurationException ex) {
                 parseConfigurationExceptionMessageOutput(ex.getMessage());
                 return occiApiResponse;
             }
 
         }
+        renderEntitiesOutput(entities);
+        return occiApiResponse;
+    }
 
+    /**
+     * Trigger an action on a category (kind or mixin) entity collection. This method will load entities from the category defined and execute the action on each entity.
+     * @param action action scheme + term.
+     * @param actionAttrs action attributes
+     * @param categoryTerm category term
+     */
+    @Override
+    public OCCIApiResponse executeActionOnCategory(final String action, final Map<String, String> actionAttrs, final String categoryTerm) {
+        String message;
+        try {
+            EntityManager.checkActionOnModel(action, username);
+        } catch (ConfigurationException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+            return occiApiResponse;
+        }
+        if (categoryTerm == null) {
+            message = "Category term is not set for action to trigger : " + action;
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+        // Check if category term is on extensions model.
+        String categoryId = getCategorySchemeTerm(categoryTerm);
+        if (categoryId == null) {
+            message = "Category : " + categoryTerm + " is unknown";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+
+        // Load all entities on scope of this category.
+        List<Entity> entities = EntityManager.findAllEntitiesForKind(categoryId, username);
+        if (entities == null || entities.isEmpty()) {
+            // Try on mixins.
+            entities = EntityManager.findAllEntitiesForMixin(categoryId, username);
+        }
+
+        if (entities == null || entities.isEmpty()) {
+            message = "Category : " + categoryId + " has no referenced entities";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        // Trigger the action.
+        LOGGER.info("Triggering action : " + action + " on category : " + categoryId + ", entities number: " + entities.size());
+        for (Entity entity : entities) {
+            try {
+                EntityManager.executeActionOnEntity(entity, action, actionAttrs, username);
+            } catch (ConfigurationException ex) {
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
+                return occiApiResponse;
+            }
+        }
+        renderEntitiesOutput(entities);
+        return occiApiResponse;
+    }
+
+    @Override
+    public OCCIApiResponse executeActionOnMixinTag(final String action, final Map<String, String> actionAttrs, final String mixinTag) {
+        String message;
+        Mixin mixinTagModel = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
+        if (mixinTagModel == null) {
+            message = "User defined mixin doesnt exist on configuration model";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+
+        // Search the entities that has the mixin tag associated.
+        List<Entity> entities = EntityManager.findAllEntitiesForMixin(mixinTag, username);
+        if (entities.isEmpty()) {
+            message = "Mixin user defined has no referenced entities, no action to trigger";
+            parseConfigurationExceptionMessageOutput(message);
+            return occiApiResponse;
+        }
+        LOGGER.info("Triggering action : " + action + " on mixin user defined : " + mixinTag + ", entities number: " + entities.size());
+        for (Entity entity : entities) {
+            try {
+                EntityManager.executeActionOnEntity(entity, action, actionAttrs, username);
+            } catch (ConfigurationException ex) {
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
+                return occiApiResponse;
+            }
+        }
+        renderEntitiesOutput(entities);
         return occiApiResponse;
     }
 
 
-    // Helper methods.
-
+    // ****************
+    // Helper methods
+    // ****************
     /**
      * @param location
      * @return
@@ -993,8 +1076,9 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                         }
                     }
                 }
-                found = false;
+
                 if (action != null) {
+                    found = false;
                     Action actionModelWork = null;
                     Kind currentKind = kindModel;
                     while (currentKind != null && !found) {
@@ -1012,20 +1096,11 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                         }
                     }
 
-                    if (!found) {
-                        // Action is not referenced on this kind.
-                        message = "The action : " + action + " doesnt exist for this kind : " + kind + " and all parents";
-                        parseModelValidatorExceptionMessageOutput(message);
-                        return occiApiResponse;
-                    }
-
-                    found = false;
                     // Control the action attributes if necessary.
-                    if (!attrsToControlOnActions.isEmpty()) {
+                    if (found && !attrsToControlOnActions.isEmpty()) {
 
                         for (Map.Entry<String, Object> entry : attrsToControlOnActions.entrySet()) {
                             attrKey = entry.getKey();
-                            attrValue = entry.getValue();
                             found = false;
                             for (Attribute attr : actionModelWork.getAttributes()) {
                                 if (attr.getName().equals(attrKey)) {
@@ -1036,13 +1111,17 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                             if (found) {
                                 attrsToControlOnMixins.remove(attrKey);
                             }
-
                         }
                     }
-
+                    if (!found) {
+                        // Action is not referenced on this kind.
+                        message = "The action : " + action + " doesnt exist for this kind : " + kind + " and all parents";
+                        parseModelValidatorExceptionMessageOutput(message);
+                        return occiApiResponse;
+                    }
 
                 }
-                found = false;
+
                 if (mixins.isEmpty()) {
                     // no mixins to control...
                     if (!attrsToControlOnMixins.isEmpty()) {
@@ -1142,6 +1221,12 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         this.inputParser = inputParser;
     }
 
+    @Override
+    public String createUUID() {
+        return ConfigurationManager.createUUID();
+    }
+
+
     /**
      * Load all models from disk for all user's configurations.
      *
@@ -1161,4 +1246,6 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     public void saveModelToDisk() throws ConfigurationException {
         // TODO : Save all configurations model to disk.
     }
+
+
 }

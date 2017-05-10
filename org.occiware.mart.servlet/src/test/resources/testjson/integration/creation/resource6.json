@@ -1,0 +1,14 @@
+{
+  "title": "network2",
+  "summary": "My secondary network",
+  "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+  "mixins": [
+    "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+  ],
+  "attributes": {
+    "occi.network.vlan": 11,
+    "occi.network.label": "private",
+    "occi.network.address": "10.1.0.0/16",
+    "occi.network.gateway": "10.1.255.254"
+  }
+}

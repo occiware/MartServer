@@ -1,0 +1,12 @@
+{
+  "title": "postcompute1",
+  "summary": "My compute created with a post method and no uuid set",
+  "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+  "attributes": {
+    "occi.compute.speed": 3.0,
+    "occi.compute.memory": 4.0,
+    "occi.compute.cores": 4,
+    "occi.compute.architecture": "x64",
+    "occi.compute.state": "inactive"
+  }
+}

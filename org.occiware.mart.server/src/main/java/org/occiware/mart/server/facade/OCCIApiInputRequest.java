@@ -129,6 +129,10 @@ public interface OCCIApiInputRequest {
     public OCCIApiResponse executeActionOnEntities(final String action, final Map<String, String> actionAttributes, final List<String> locations);
 
 
+    OCCIApiResponse executeActionOnCategory(String action, Map<String, String> actionsAttrs, String categoryTerm);
+
+    OCCIApiResponse executeActionOnMixinTag(String action, Map<String, String> actionAttrs, String mixinTag);
+
     // Helper methods.
     boolean isCategoryLocation(String location);
 
@@ -147,6 +151,8 @@ public interface OCCIApiInputRequest {
     IRequestParser getInputParser();
 
     void setInputParser(IRequestParser inputParser);
+
+    String createUUID();
 
     public void LoadModelFromDisk() throws ConfigurationException;
 

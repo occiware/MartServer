@@ -152,14 +152,31 @@ public class MainServletTest {
 
 
         httpMethod = HttpMethod.POST;
+
+
         // POST creation part.
+
+        // Create a new entity subtype instance on /compute/
+        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/resource4_no_location.json",
+                "Create resource postcompute1 with POST using json and collection category path, but no locations set on resource, on location: /compute/");
+
+        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/resource5_with_location.json",
+                "Create resource postcompute2 with POST using location, and id set on id value, on location: /myresources/mypostcomputes/postcompute2");
+
+        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_BAD_REQUEST,
+                "/testjson/integration/creation/resource6.json",
+                "Create resource network2 with POST, must fail, because network is not a compute, on location: /compute/");
+
+
         // Create resources with POST using json and collections.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_BAD_REQUEST,
-                "/testjson/integration/creation/resources_with_no_location.json",
+        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/resource_collection2.json",
                 "Create resources with POST using json and collections, but no locations set on resources, this will fail.");
 
         // Create resources with POST using json and collections with locations set.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource3.json",
                 "Create resources with POST using json and collections and locations set for each entity.");
 

@@ -1,34 +1,34 @@
 {
   "resources": [
     {
-      "id": "urn:uuid:c7d55bf4-7057-5113-85c8-141871bf7636",
-      "title": "network2",
-      "summary": "My second network",
+      "id": "urn:uuid:f7d55bf4-7057-5113-85c8-141871bf7635",
+      "title": "network3",
+      "summary": "My third network",
       "kind": "http://schemas.ogf.org/occi/infrastructure#network",
       "mixins": [
         "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
       ],
       "attributes": {
-        "occi.network.vlan": 14,
+        "occi.network.vlan": 10,
         "occi.network.label": "private",
         "occi.network.address": "10.1.0.0/16",
         "occi.network.gateway": "10.1.255.254"
       },
-      "location": "/network/c7d55bf4-7057-5113-85c8-141871bf7636"
+      "location": "/mynetwork/third/"
     },
     {
-      "id": "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-      "title": "compute3",
-      "summary": "My other compute 3",
+      "id": "urn:uuid:ffcf3896-500e-48d8-a3f5-a8b3601bcdd9",
+      "title": "mycomputefortesting",
+      "summary": "My other compute to test",
       "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
       "attributes": {
-        "occi.compute.speed": 1.0,
-        "occi.compute.memory": 2.0,
+        "occi.compute.speed": 1,
+        "occi.compute.memory": 2,
         "occi.compute.cores": 1,
         "occi.compute.architecture": "x86",
         "occi.compute.state": "active"
       },
-      "location": "/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
+      "location": "/compute/ffcf3896-500e-48d8-a3f5-a8b3601bcdd9",
       "links": [
         {
           "kind": "http://schemas.ogf.org/occi/infrastructure#networkinterface",
@@ -38,7 +38,7 @@
           "attributes": {
             "occi.networkinterface.interface": "eth0",
             "occi.networkinterface.mac": "00:80:41:ae:fd:7e",
-            "occi.networkinterface.address": "192.168.0.100",
+            "occi.networkinterface.address": "192.168.0.50",
             "occi.networkinterface.gateway": "192.168.0.1",
             "occi.networkinterface.allocation": "dynamic"
           },
@@ -46,18 +46,16 @@
             "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up",
             "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#down"
           ],
-          "id": "urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
+          "id": "urn:uuid:24fe83ae-a20f-54fc-b436-cec85c94c5e8",
           "target": {
-            "location": "/network/c7d55bf4-7057-5113-85c8-141871bf7636",
+            "location": "/mynetwork/third/",
             "kind": "http://schemas.ogf.org/occi/infrastructure#network"
           },
           "source": {
-            "location": "/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8"
-          },
-          "location": "/networkinterface/b2fe83ae-a20f-54fc-b436-cec85c94c5e9"
+            "location": "/compute/ffcf3896-500e-48d8-a3f5-a8b3601bcdd9"
+          }
         }
       ]
     }
   ]
 }
-

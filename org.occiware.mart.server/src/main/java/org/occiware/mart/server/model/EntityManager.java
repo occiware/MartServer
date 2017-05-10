@@ -184,7 +184,7 @@ public class EntityManager {
      * @param owner owner of these entities.
      * @return a list of entities or empty list if none.
      */
-    private static List<Entity> findAllEntitiesForKind(final String categoryId, final String owner) {
+    public static List<Entity> findAllEntitiesForKind(final String categoryId, final String owner) {
         List<Entity> entities = new ArrayList<>();
         if (categoryId == null || categoryId.trim().isEmpty()) {
             return entities;
@@ -252,12 +252,12 @@ public class EntityManager {
     /**
      * Find a used extension for an action Kind.
      *
-     * @param action_id (kind : scheme+term)
+     * @param actionId (action : scheme+term)
      * @param owner     (owner of the configuration).
      * @return extension found, may return null if no extension found with this
      * configuration.
      */
-    public static Extension getExtensionForAction(final String action_id, final String owner) {
+    public static Extension getExtensionForAction(final String actionId, final String owner) {
         Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
         EList<Extension> exts = config.getUse();
         Extension extRet = null;
@@ -269,7 +269,7 @@ public class EntityManager {
             for (Kind kind : kinds) {
                 actionKinds = kind.getActions();
                 for (Action action : actionKinds) {
-                    if ((action.getScheme() + action.getTerm()).equals(action_id)) {
+                    if ((action.getScheme() + action.getTerm()).equals(actionId)) {
                         extRet = ext;
                         break;
                     }
@@ -542,55 +542,6 @@ public class EntityManager {
         return false;
     }
 
-    /**
-     * Find an action object from entity definition kind and associated mixins.
-     *
-     * @param entity     Entity object model.
-     * @param actionTerm the action term like start.
-     * @return an action object must never return null.
-     * @throws ConfigurationException If no action is found or no entity defined throw this exception.
-     */
-    public static Action getActionFromEntityWithActionTerm(final Entity entity, String actionTerm) throws ConfigurationException {
-        Action action = null;
-        boolean found = false;
-        if (entity == null) {
-            throw new ConfigurationException("No entity defined for this action : " + actionTerm);
-        }
-        Kind kind = entity.getKind();
-        List<Action> actions = kind.getActions();
-
-        // Search the action on kind first.
-        for (Action actionKind : actions) {
-            if (actionKind.getTerm().equals(actionTerm)) {
-                action = actionKind;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            // Search on mixins.
-            List<Mixin> mixins = entity.getMixins();
-            for (Mixin mixin : mixins) {
-                actions = mixin.getActions();
-                for (Action actionMixin : actions) {
-                    if (actionMixin.getTerm().equals(actionTerm)) {
-                        action = actionMixin;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    break;
-                }
-            }
-        }
-        if (!found) {
-            throw new ConfigurationException("Action " + actionTerm + " not found on entity : " + entity.getId());
-        }
-
-        return action;
-    }
 
     /**
      * Find an action object from entity definition kind and associated mixins.
@@ -603,21 +554,26 @@ public class EntityManager {
     public static Action getActionFromEntityWithActionId(final Entity entity, final String actionId) throws ConfigurationException {
         Action action = null;
         boolean found = false;
+        List<Action> actions;
         if (entity == null) {
             throw new ConfigurationException("No entity defined for this action : " + actionId);
         }
         Kind kind = entity.getKind();
-        List<Action> actions = kind.getActions();
-
-        // Search the action on kind first.
-        for (Action actionKind : actions) {
-            if ((actionKind.getScheme() + actionKind.getTerm()).equals(actionId)) {
-                action = actionKind;
-                found = true;
-                break;
+        Kind currentKind = kind;
+        while (currentKind != null && !found) {
+            actions = kind.getActions();
+            for (Action actionModel : actions) {
+                if ((actionModel.getScheme() + actionModel.getTerm()).equals(actionId)) {
+                    // The action is referenced on this kind.
+                    found = true;
+                    action = actionModel;
+                    break;
+                }
+            }
+            if (!found) {
+                currentKind = currentKind.getParent();
             }
         }
-
         if (!found) {
             // Search on mixins.
             List<Mixin> mixins = entity.getMixins();
@@ -1477,19 +1433,15 @@ public class EntityManager {
 
     /**
      * Execute an action on an entity.
-     * @param entityUUID
-     * @param actionId
-     * @param actionAttributes
-     * @param owner
+     * @param entity entity object model
+     * @param actionId action scheme + term
+     * @param actionAttributes action attributes map of String (name), String (value)
+     * @param owner owner of the configuration model
      * @throws ConfigurationException
      */
-    public static void executeActionOnEntity(final String entityUUID, final String actionId, final Map<String, String> actionAttributes, final String owner) throws ConfigurationException {
-        if (entityUUID == null) {
-            throw new ConfigurationException("No entity defined to execute this action: " + actionId);
-        }
-        Entity entity = findEntity(entityUUID, owner);
+    public static void executeActionOnEntity(Entity entity, final String actionId, final Map<String, String> actionAttributes, final String owner) throws ConfigurationException {
         if (entity == null) {
-            throw new ConfigurationException("Entity : " + entityUUID + " doesnt exist on configuration");
+            throw new ConfigurationException("No entity defined to execute this action: " + actionId);
         }
 
         Extension ext = getExtensionForAction(actionId, owner);
@@ -1531,7 +1483,7 @@ public class EntityManager {
      * @param actionAttributes
      * @param owner
      */
-    public static void executeActionOnlocation(final String location, final String actionId, final Map<String, String> actionAttributes, final String owner) throws ConfigurationException {
+    public static void executeActionOnEntityLocation(final String location, final String actionId, final Map<String, String> actionAttributes, final String owner) throws ConfigurationException {
         if (location == null) {
             throw new ConfigurationException("No entity location defined.");
         }
@@ -1575,6 +1527,26 @@ public class EntityManager {
             throw new ConfigurationException(message, ex);
         }
 
+    }
+    /**
+     * Check if an action exist on model. Throws configuration exception if not found on model.
+     * @param action action scheme+term
+     */
+    public static void checkActionOnModel(final String action, final String username) throws ConfigurationException {
+
+        String message;
+        if (action == null || action.trim().isEmpty()) {
+            // No action defined.
+            message = "Action is not defined";
+            throw new ConfigurationException(message);
+        }
+
+        // Find action category on model.
+        Action actionModel = ConfigurationManager.findActionOnExtensions(action, username);
+        if (actionModel == null) {
+            message = "Action : " + action + " not found on referenced extensions";
+            throw new ConfigurationException(message);
+        }
     }
 
 

@@ -43,6 +43,10 @@ public class PostWorker extends ServletEntry {
             return occiResponse.parseMessage("No content to post.", HttpServletResponse.SC_BAD_REQUEST);
         }
 
+        if (occiRequest.isActionInvocationQuery() && occiRequest.isInterfQuery()) {
+            return occiResponse.parseMessage("You cannot use action invocation with interface query", HttpServletResponse.SC_BAD_REQUEST);
+        }
+
         OCCIRequestData contentData;
 
         // Partial update of the entity.
@@ -100,120 +104,117 @@ public class PostWorker extends ServletEntry {
             }
             return resp;
         }
-        // TODO : the following :
 
         // Create entity (or entity create collection) on /category/ (like /compute/ etc.) ==> for kind and mixin (not mixin tags).
+        if (occiRequest.isOnCategoryLocation() && !occiRequest.isActionInvocationQuery()) {
 
-        
+            // Check if content are entity instance ==> have a kind defined, if not, return an error message => bad request.
+            if (!occiRequest.areDatasEntities()) {
+                return occiResponse.parseMessage("Some content datas are not identified as entity, please check your query", HttpServletResponse.SC_BAD_REQUEST);
+            }
+
+            // datas are identified as entities, check if that entities have the same kind/mixin (not mixintags) as the term category path.
+            if (!occiRequest.areDatasHaveSameCategoryLocation()) {
+                return occiResponse.parseMessage("Some entities cannot be created on this location : " + occiRequest.getRequestPath() + " because they have not this category referenced", HttpServletResponse.SC_BAD_REQUEST);
+            }
+
+            String entityUUID;
+            // Create (or full update) the entities on path : /categorypath/entityuuid/, if a location is set on content for each entities, the location override the requestpath/uuid.
+
+            // First manage entity location.
+            for (OCCIRequestData data : datas) {
+                 entityUUID = data.getEntityUUID();
+                if (data.getLocation() == null && entityUUID != null) {
+                    // Format the location for example like this : /compute/entityuuid/
+                    data.setLocation(occiRequest.getRequestPath() + entityUUID + "/");
+                }
+                if (data.getLocation() == null && entityUUID == null) {
+                    entityUUID = occiRequest.createUUID();
+                    data.setEntityUUID(entityUUID);
+                    // Format the location for example like this : /compute/newEntityUuid/
+                    data.setLocation(occiRequest.getRequestPath() + entityUUID + "/");
+                }
+            }
+            occiRequest.createEntities(datas);
+            return resp;
+        }
+
+        // Create entities on custom location.
+        if (occiRequest.isOnBoundedLocation() && !occiRequest.isActionInvocationQuery()) {
+
+            // Check if content are entity instance ==> have a kind defined, if not, return an error message => bad request.
+            if (!occiRequest.areDatasEntities()) {
+                return occiResponse.parseMessage("Some content datas are not identified as entity, please check your query, the kind scheme term is mandatory", HttpServletResponse.SC_BAD_REQUEST);
+            }
+            String entityUUID;
+            for (OCCIRequestData data : datas) {
+                entityUUID = data.getEntityUUID();
+                if (data.getLocation() == null && entityUUID != null) {
+                    // Format the location for example like this : /mylocation/entityuuid/
+                    data.setLocation(occiRequest.getRequestPath() + entityUUID + "/");
+                }
+                if (data.getLocation() == null && entityUUID == null) {
+                    entityUUID = occiRequest.createUUID();
+                    data.setEntityUUID(entityUUID);
+                    // Format the location for example like this : /mylocation/newEntityUuid/
+                    data.setLocation(occiRequest.getRequestPath() + entityUUID + "/");
+                }
+            }
+            occiRequest.createEntities(datas);
+            return resp;
+        }
+
+        // Action invocation part
+        // ***********************
+
+        if (occiRequest.isActionInvocationQuery()) {
+            if (!occiRequest.isActionOnContentData()) {
+                return occiResponse.parseMessage("Content must contain action category scheme and term", HttpServletResponse.SC_BAD_REQUEST);
+            }
+            // Content collection are not authorized with an action invocation query on entity location request path.
+            if (occiRequest.isContentCollection()) {
+                return occiResponse.parseMessage("Malformed content action collection, the uri must specify one action to execute", HttpServletResponse.SC_BAD_REQUEST);
+            }
+        }
+
         // Action invocation on entity location path.
+        if (occiRequest.isOnEntityLocation() && occiRequest.isActionInvocationQuery()) {
+            OCCIRequestData data = datas.get(0);
+            List<String> locations = new LinkedList<>();
+            locations.add(occiRequest.getRequestPath());
+            occiRequest.executeActionOnEntities(data.getAction(), data.getAttrsValStr(), locations);
+            return resp;
+        }
 
-        // Action invocation on entity collection.
+
+        // Actions invocation on entity category collection path.
+        if (occiRequest.isOnCategoryLocation() && occiRequest.isActionInvocationQuery()) {
+            OCCIRequestData data = datas.get(0);
+            String requestCategoryTerm = occiRequest.getRequestPath();
+            if (requestCategoryTerm.startsWith("/")) {
+                requestCategoryTerm = requestCategoryTerm.substring(1);
+            }
+            if (requestCategoryTerm.endsWith("/")) {
+                requestCategoryTerm = requestCategoryTerm.substring(0, requestCategoryTerm.length() - 1);
+            }
+            occiRequest.executeActionOnCategory(data.getAction(), data.getAttrsValStr(), requestCategoryTerm);
+            return resp;
+        }
+
 
         // Action invocation on mixin tag defined collection.
+        if (occiRequest.isOnMixinTagLocation() && occiRequest.isActionInvocationQuery()) {
+            OCCIRequestData data = datas.get(0);
+            String mixinTag = occiRequest.getMixinTagSchemeTermFromLocation(occiRequest.getRequestPath());
+            occiRequest.executeActionOnMixinTag(data.getAction(), data.getAttrsValStr(), mixinTag);
+            return resp;
+        }
 
 
-
-
-
-
-
-//        List<OCCIRequestData> entityDatas = occiRequest.getContentDatas();
-//
-//
-//
-//        List<OCCIRequestData> otherDatas = new LinkedList<>();
-//
-//        if (occiRequest.isOnCollectionLocation()) {
-//            // Build a list of entities data to work with occi request api.
-//            Iterator<OCCIRequestData> it = entityDatas.iterator();
-//            OCCIRequestData data;
-//            while (it.hasNext()) {
-//                data = it.next();
-//                if (data.getKind() == null) {
-//                    otherDatas.add(data);
-//                    it.remove();
-//                }
-//            }
-//            if (!entityDatas.isEmpty()) {
-//                occiRequest.createEntities(entityDatas);
-//            }
-//            if (occiResponse.hasExceptions()) {
-//                return resp;
-//            }
-//
-//
-//
-//        }
-//
-//
-//
-//        for (OCCIRequestData data : datas) {
-//            if (occiRequest.isInterfQuery() && data.getMixinTag() == null) {
-//                return occiResponse.parseMessage("you cannot use interface query on POST method, only mixin tag definition is allowed with POST method and interface query /-/", HttpServletResponse.SC_BAD_REQUEST);
-//            }
-//
-//            // Action on entities.
-//            if (occiRequest.isActionInvocationQuery()) {
-//
-//                occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), buildCollectionFilter());
-//
-//                if (!occiResponse.hasExceptions()) {
-//
-//                    // finally execute the action on entities found previously.
-//                    List<OCCIRequestData> locationsOut = occiResponse.getOutputParser().getOutputDatas();
-//                    List<String> locations = new LinkedList<>();
-//                    for (OCCIRequestData locationData : locationsOut) {
-//                        locations.add(locationData.getLocation());
-//                    }
-//                    occiRequest.executeActionOnEntities(data.getAction(), data.getAttrsValStr(), locations);
-//                }
-//                return occiResponse.getHttpResponse();
-//            }
-//
-//            // determine if this is a mixin tag definition request, this is authorized only on POST method (see OCCI spec http_protocol page 8).
-//            if (occiRequest.isInterfQuery() && data.getMixinTag() != null) {
-//                occiRequest.createMixinTag(data.getMixinTagTitle(), data.getMixinTag(), data.getLocation(), data.getXocciLocations());
-//                isMixinTags = true;
-//                if (occiResponse.hasExceptions()) {
-//                    return resp;
-//                }
-//                continue;
-//            }
-//
-//            // Entities update attributes and/or mixin and mixinTag association.
-//            if (occiRequest.isOnCollectionLocation() && data.getKind() != null) {
-//                if (data.getLocation() == null) {
-//                    return occiResponse.parseMessage("No location set for entity : " + data.getEntityTitle() + " , id: " + data.getEntityUUID(), HttpServletResponse.SC_BAD_REQUEST);
-//                }
-//                occiRequest.createEntity(data.getEntityTitle(), data.getEntitySummary(), data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
-//
-//            } else if (occiRequest.isOnEntityLocation()) {
-//                if (data.getLocation() == null) {
-//                    // override with request path.
-//                    data.setLocation(occiRequest.getRequestPath());
-//                }
-//                // Update entity.
-//                occiRequest.updateEntity(data.getMixins(), data.getAttrsValStr(), data.getLocation());
-//            }
-//            if (occiResponse.hasExceptions()) {
-//                return resp;
-//            }
-//
-//        }
-//
-//        if (occiRequest.isOnCollectionLocation() && !occiResponse.hasExceptions()) {
-//            // Return the same as input data.
-//            occiResponse.getOutputParser().setOutputDatas(datas);
-//
-//        }
-//
-//
-//
-//        if (isMixinTags && !occiResponse.hasExceptions()) {
-//            // All ok, mixin tags defined.
-//            occiResponse.parseResponseMessage("ok");
-//            return resp;
-//        }
+        // Action invocation on a custom path collection.
+        if (occiRequest.isOnBoundedLocation() && occiRequest.isActionInvocationQuery()) {
+            occiResponse.parseMessage("Triggering actions on custom path collection is not implemented at this time", HttpServletResponse.SC_NOT_IMPLEMENTED);
+        }
 
         if (occiResponse.hasExceptions()) {
             return resp;
@@ -225,22 +226,4 @@ public class PostWorker extends ServletEntry {
         return resp;
     }
 
-
-    /**
-     * True if all content data are mixin tags
-     * @return
-     */
-    private boolean controlIfDatasHasMixinTagsOnly() {
-        boolean result = false;
-        List<OCCIRequestData> datas = occiRequest.getContentDatas();
-        for (OCCIRequestData data : datas) {
-            if (data.getMixinTag() == null) {
-                result = false;
-                break;
-            } else {
-                result = true;
-            }
-        }
-        return result;
-    }
 }

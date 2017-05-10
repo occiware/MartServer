@@ -1,0 +1,14 @@
+{
+  "id": "45d36ec4-9d56-4947-b8d2-27788dedefaf",
+  "title": "postcompute2",
+  "summary": "My compute created with a post method and no uuid set and custom location set",
+  "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+  "attributes": {
+    "occi.compute.speed": 3.0,
+    "occi.compute.memory": 4.0,
+    "occi.compute.cores": 4,
+    "occi.compute.architecture": "x64",
+    "occi.compute.state": "inactive"
+  },
+  "location": "/myresources/mypostcomputes/postcompute2"
+}

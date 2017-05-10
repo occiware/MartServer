@@ -53,9 +53,7 @@ public class GetWorker extends ServletEntry {
 
             return resp;
         }
-
         occiResponse.parseMessage("The request is malformed", HttpServletResponse.SC_BAD_REQUEST);
-
         return resp;
     }
 

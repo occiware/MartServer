@@ -1,0 +1,16 @@
+"mixins": [
+{
+  "location": "/mixins/my_mixin/",
+  "scheme": "http://occiware.org/occi/tags#",
+  "term": "my_mixin",
+  "attributes": {},
+  "title": "my mixin tag 1"
+},
+{
+  "location": "/mixins/my_mixin2/",
+  "scheme": "http://occiware.org/occi/tags#",
+  "term": "my_mixin2",
+  "attributes": {},
+  "title": "my mixin tag 2"
+}
+]
