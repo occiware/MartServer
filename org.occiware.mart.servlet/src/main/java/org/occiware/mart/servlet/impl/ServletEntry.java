@@ -1,3 +1,21 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
@@ -16,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Created by cgourdin on 13/04/2017.
@@ -24,14 +43,34 @@ import java.util.Map;
 public abstract class ServletEntry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServletEntry.class);
+    protected OCCIServletInputRequest occiRequest;
+    protected OCCIServletOutputResponse occiResponse;
+    private HttpServletRequest httpRequest;
+    private HeaderPojo headers;
+    private HttpServletResponse httpResponse;
+    private String path;
+    private String contentType = Constants.MEDIA_TYPE_JSON;
+    private String acceptType = Constants.MEDIA_TYPE_JSON;
+    /**
+     * If parameters are in inputquery, it must declared here. Key: name of the
+     * parameter Value: Value of the parameter (if url ==> decode before set the
+     * value).
+     */
+    private Map<String, String> parameters = new HashMap<>();
+    /**
+     * Uri of the server.
+     */
+    private URI serverURI;
+
 
     /**
      * Build a new Servlet input entry for workers.
+     *
      * @param serverURI http server uri object like http://localhost:8080
-     * @param resp Http servlet response.
-     * @param headers headers in a map KEY:String, Value: String.
-     * @param req http servlet request object.
-     * @param path the relative request path. ex: /mycompute/1/
+     * @param resp      Http servlet response.
+     * @param headers   headers in a map KEY:String, Value: String.
+     * @param req       http servlet request object.
+     * @param path      the relative request path. ex: /mycompute/1/
      */
     public ServletEntry(URI serverURI, HttpServletResponse resp, HeaderPojo headers, HttpServletRequest req, String path) {
         this.serverURI = serverURI;
@@ -40,31 +79,6 @@ public abstract class ServletEntry {
         this.httpRequest = req;
         this.path = path;
     }
-
-    private HttpServletRequest httpRequest;
-    private HeaderPojo headers;
-    private HttpServletResponse httpResponse;
-    private String path;
-
-    protected OCCIServletInputRequest occiRequest;
-    protected OCCIServletOutputResponse occiResponse;
-
-    private String contentType = Constants.MEDIA_TYPE_JSON;
-    private String acceptType = Constants.MEDIA_TYPE_JSON;
-
-    /**
-     * If parameters are in inputquery, it must declared here. Key: name of the
-     * parameter Value: Value of the parameter (if url ==> decode before set the
-     * value).
-     */
-    private Map<String, String> parameters = new HashMap<>();
-
-
-    /**
-     * Uri of the server.
-     */
-    private URI serverURI;
-
 
     /**
      * Get here the parameters of a request, this can be filters, action
@@ -80,7 +94,6 @@ public abstract class ServletEntry {
      * the entities defined in detail like a get on each entity (if text/occi
      * this may return a maximum of 3 entities not more due to limitations size
      * of header area in http).
-     *
      */
     public void parseRequestParameters() {
         Map<String, String[]> params = httpRequest.getParameterMap();
@@ -101,7 +114,6 @@ public abstract class ServletEntry {
     }
 
     /**
-     *
      * @return
      */
     public Map<String, String> getRequestParameters() {
@@ -114,6 +126,7 @@ public abstract class ServletEntry {
 
     /**
      * The server uri. (server part of the full url). like http://localhost:8080/
+     *
      * @return
      */
     public URI getServerURI() {
@@ -196,6 +209,7 @@ public abstract class ServletEntry {
 
     /**
      * Build a collection filter.
+     *
      * @return Must never return null.
      */
     public CollectionFilter buildCollectionFilter() {
@@ -258,8 +272,11 @@ public abstract class ServletEntry {
             categoryTermPath = words[words.length - 1];
             if (categoryTermPath != null && !categoryTermPath.trim().isEmpty()) {
                 // Check if this is really a category term.
-                categorySchemeTermFilter = occiRequest.getCategorySchemeTerm(categoryTermPath);
-                isCollectionOnCategoryPath = categorySchemeTermFilter != null;
+                Optional<String> optCat = occiRequest.getCategorySchemeTerm(categoryTermPath);
+                isCollectionOnCategoryPath = optCat.isPresent();
+                if (optCat.isPresent()) {
+                    categorySchemeTermFilter = optCat.get();
+                }
             }
         }
         if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
@@ -269,10 +286,10 @@ public abstract class ServletEntry {
         }
 
         // Case of the mixin tag entities request.
-        String mixinTagSchemeTerm = occiRequest.getMixinTagSchemeTermFromLocation(path);
-        if (mixinTagSchemeTerm != null) {
+        Optional<String> optMixinTag = occiRequest.getMixinTagSchemeTermFromLocation(path);
+        if (optMixinTag.isPresent()) {
             if (categoryFilter == null) {
-                filter.setCategoryFilter(mixinTagSchemeTerm);
+                filter.setCategoryFilter(optMixinTag.get());
                 filter.setFilterOnPath(null);
             }
         }

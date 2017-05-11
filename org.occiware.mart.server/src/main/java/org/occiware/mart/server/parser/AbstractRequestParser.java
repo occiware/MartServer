@@ -63,10 +63,12 @@ public abstract class AbstractRequestParser implements IRequestParser {
         }
         return inputDatas;
     }
+
     @Override
     public void setInputDatas(List<OCCIRequestData> inputDatas) {
         this.inputDatas = inputDatas;
     }
+
     @Override
     public List<OCCIRequestData> getOutputDatas() {
         if (outputDatas == null) {
@@ -74,6 +76,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
         }
         return outputDatas;
     }
+
     @Override
     public void setOutputDatas(List<OCCIRequestData> outputDatas) {
         this.outputDatas = outputDatas;
@@ -81,8 +84,8 @@ public abstract class AbstractRequestParser implements IRequestParser {
 
     /**
      * Convert an entity model object to a container object.
-     * @param entities a list of entity model.
      *
+     * @param entities a list of entity model.
      */
     @Override
     public void convertEntitiesToOutputData(List<Entity> entities) {
@@ -110,7 +113,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
                     // Check if mixin tag.
                     if (mixin.getAttributes().isEmpty()) {
                         // this mixin is a mixin tag.
-                        data.setMixinTag(mixin.getScheme()+mixin.getTerm());
+                        data.setMixinTag(mixin.getScheme() + mixin.getTerm());
 
                     }
                     mixinsToRender.add(mixin.getScheme() + mixin.getTerm());
@@ -125,6 +128,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
 
     /**
      * Convert a list of locations to output datas container object.
+     *
      * @param locations a list of locations (entities, etc).
      */
     @Override

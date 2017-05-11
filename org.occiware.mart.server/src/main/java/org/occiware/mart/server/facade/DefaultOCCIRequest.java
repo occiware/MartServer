@@ -18,7 +18,6 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.parser.IRequestParser;
 
 /**

@@ -1,3 +1,21 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.exception.ParseOCCIException;
@@ -17,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Created by cgourdin on 11/04/2017.
@@ -24,14 +43,11 @@ import java.util.Map;
 public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OCCIServletInputRequest.class);
-
+    private final String contentType;
     private HeaderPojo headers;
     private HttpServletRequest request;
     private String requestPath;
     private Map<String, String> requestParameters;
-    private final String contentType;
-
-
     private boolean onEntityLocation = false;
 
 
@@ -286,7 +302,14 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
         if (requestTerm.endsWith("/")) {
             requestTerm = requestTerm.substring(0, requestTerm.length() - 1);
         }
-        String categoryId = super.getCategorySchemeTerm(requestTerm);
+        Optional<String> optCat = super.getCategorySchemeTerm(requestTerm);
+        String categoryId;
+        if (optCat.isPresent()) {
+            categoryId = optCat.get();
+        } else {
+            return false;
+        }
+
         boolean found;
         for (OCCIRequestData data : datas) {
             // First control the kind.
@@ -313,6 +336,7 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
 
     /**
      * Helper to define if datas content have actions definitions.
+     *
      * @return true if content data is action content.
      */
     public boolean isActionOnContentData() {

@@ -196,9 +196,8 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
     /**
      * Build interface /-/ for accept type : text/occi.
      *
-     *
      * @param interfaceData
-     * @param user (the authorized username)
+     * @param user          (the authorized username)
      * @return interface to set in header.
      */
     @Override
@@ -330,7 +329,7 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         String actionLink;
         List<Action> actionsTmp = entity.getKind().getActions();
         for (Action action : actionsTmp) {
-            actionLink = location + entity.getId() + "?action=" + action.getTerm() + ";" + "rel=\""+action.getScheme()+action.getTerm() + "\"";
+            actionLink = location + entity.getId() + "?action=" + action.getTerm() + ";" + "rel=\"" + action.getScheme() + action.getTerm() + "\"";
             actionLinks.add(actionLink);
         }
 
@@ -338,7 +337,6 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         //    rel="http://actionScheme#actionTerm"
         return actionLinks;
     }
-
 
 
     /**
@@ -392,7 +390,8 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
                 }
                 sb.append('\"').append(";").append(Constants.CRLF);
             }
-            appendCategoryLocation(sb, ConfigurationManager.getLocation(mixin));
+
+            appendCategoryLocation(sb, ConfigurationManager.getLocation(mixin).get());
             appendAttributes(sb, mixin.getAttributes());
             appendActions(sb, mixin.getActions());
         }
@@ -519,7 +518,7 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
             if (parent != null) {
                 sb.append("rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"').append(";").append(Constants.CRLF);
             }
-            appendCategoryLocation(sb, ConfigurationManager.getLocation(kind));
+            appendCategoryLocation(sb, ConfigurationManager.getLocation(kind).get());
             appendAttributes(sb, kind.getAttributes());
             appendActions(sb, kind.getActions());
         }
@@ -579,14 +578,14 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
                 continue;
             }
             String value = null;
+            Optional<String> optValStr = EntityManager.getAttrValueStr(entity, name);
+            Optional<Number> optValNumber = EntityManager.getAttrValueNumber(entity, name);
 
-            String valStr = EntityManager.getAttrValueStr(entity, name);
-            Number valNumber = EntityManager.getAttrValueNumber(entity, name);
 
-            if (valStr != null) {
-                value = "\"" + valStr + "\"";
-            } else if (valNumber != null) {
-                value = "" + valNumber;
+            if (optValStr.isPresent()) {
+                value = "\"" + optValStr.get() + "\"";
+            } else if (optValNumber.isPresent()) {
+                value = "" + optValNumber.get();
             } else {
                 if (attribute.getValue() != null) {
                     value = "\"" + attribute.getValue() + "\"";
@@ -596,7 +595,6 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
             if (value == null) {
                 continue;
             }
-
             attributes.append(attribute.getName()).append('=').append(value).append(",").append(Constants.CRLF);
         }
 

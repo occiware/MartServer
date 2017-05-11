@@ -51,22 +51,23 @@ public interface OCCIApiResponse {
     public void setExceptionThrown(final Exception ex);
 
     /**
-     *
      * @return a parsed response message.
      */
     public Object getResponseMessage();
 
     /**
-     * Parse a response message, used when an exception is thrown or to say "ok" to output message.
-     * @param message a String simple message to be parsed on output message object.
-     */
-    public void parseResponseMessage(String message);
-
-    /**
      * May be string or other object type, depends on implementation.
+     *
      * @param responseMessage
      */
     public void setResponseMessage(Object responseMessage);
+
+    /**
+     * Parse a response message, used when an exception is thrown or to say "ok" to output message.
+     *
+     * @param message a String simple message to be parsed on output message object.
+     */
+    public void parseResponseMessage(String message);
 
     public IRequestParser getOutputParser();
 

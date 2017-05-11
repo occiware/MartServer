@@ -31,7 +31,7 @@ public class DefaultOCCIResponse extends AbstractOCCIApiResponse implements OCCI
 
     @Override
     public String getResponseMessage() {
-        return (String)super.getResponseMessage();
+        return (String) super.getResponseMessage();
     }
 
 }

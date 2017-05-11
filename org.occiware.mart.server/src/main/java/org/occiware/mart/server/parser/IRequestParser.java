@@ -33,9 +33,8 @@ public interface IRequestParser {
     /**
      * Get the model interface description.
      *
-     *
      * @param interfaceData
-     * @param user (the authorized username)
+     * @param user          (the authorized username)
      * @return an Object, this may be a String (for json or plain/text), this may be a Header Map object (for text/occi) or specific objects if other implementations (sextuple etc.).
      * @throws ParseOCCIException if anything goes wrong (in Model@runtime or in Parser).
      */

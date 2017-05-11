@@ -256,6 +256,7 @@ public class OCCIRequestData {
 
     /**
      * Check if this container has datas.
+     *
      * @return
      */
     public boolean hasDatas() {

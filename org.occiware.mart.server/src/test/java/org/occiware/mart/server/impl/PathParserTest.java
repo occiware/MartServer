@@ -20,8 +20,8 @@ package org.occiware.mart.server.impl;
 
 import junit.framework.TestCase;
 import org.junit.Test;
-import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.parser.OCCIRequestData;
 
 /**
  * Created by christophe on 19/11/2016.

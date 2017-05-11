@@ -126,11 +126,13 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
         // Define full overwrite of an existing entity.
         boolean overwrite = false;
+        Optional<Entity> optEntity = EntityManager.findEntityFromLocation(location, username);
+        Entity entity;
 
-        Entity entity = EntityManager.findEntityFromLocation(location, username);
         String entityId = null;
 
-        if (entity != null) {
+        if (optEntity.isPresent()) {
+            entity = optEntity.get();
             LOGGER.debug("Entity : " + location + " exist");
             overwrite = true;
             entityId = entity.getId();
@@ -139,7 +141,10 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             LOGGER.info("Creating entity : " + location + " with kind : " + kind + " with title: " + title);
         }
         if (entityId == null) {
-            entityId = EntityManager.getUUIDFromPath(location, attributes);
+            Optional<String> optUuid = EntityManager.getUUIDFromPath(location, attributes);
+            if (optUuid.isPresent()) {
+                entityId = optUuid.get();
+            }
         }
 
         // Check if entityId is null or there is a uuid on path, if this is not the case, generate the uuid.
@@ -162,8 +167,9 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             message = "Entity uuid is not valid : " + entityId + ", check the entity identifier, it must be set to a uuid v4 format, like -> f88486b7-0632-482d-a184-a9195733ddd0 ";
             throw new ConfigurationException(message);
         }
+
         // Check if there is a conflict between declared entityUUID and attribute uuid (core.id) if any.
-        if (entity != null && attributes.containsKey(Constants.OCCI_CORE_ID)) {
+        if (optEntity.isPresent() && attributes.containsKey(Constants.OCCI_CORE_ID)) {
             // check if this is the same id, if not there is a conflict..
             String coreIdObj = attributes.get(Constants.OCCI_CORE_ID);
             if (coreIdObj == null) {
@@ -201,8 +207,10 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         }
 
         // Execute model CRUD method.
-        entity = EntityManager.findEntityForUuid(entityId, username);
-        if (entity != null) {
+        // First refresh entity.
+        optEntity = EntityManager.findEntityForUuid(entityId, username);
+        if (optEntity.isPresent()) {
+            entity = optEntity.get();
             if (overwrite) {
                 entity.occiUpdate();
                 LOGGER.info("Update entity done returning location : " + location + " with id: " + entityId);
@@ -358,6 +366,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public OCCIApiResponse updateEntity(final List<String> mixins, final Map<String, String> attributes, final String location) {
         String message;
+        Optional<Entity> optEntity;
         if (mixins.isEmpty() && attributes.isEmpty()) {
             message = "No attributes to update or mixins to apply to entities";
             parseConfigurationExceptionMessageOutput(message);
@@ -376,18 +385,15 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         }
 
         // Load the entity with location.
-        Entity entity = EntityManager.findEntityFromLocation(location, username);
 
-        if (entity == null) {
+        optEntity = EntityManager.findEntityFromLocation(location, username);
+
+        if (!optEntity.isPresent()) {
             message = "Entity on location: " + location + " doesnt exist.";
             parseNotFoundExceptionMessageOutput(message);
             return occiApiResponse;
         }
-
-        // update attributes .
-        entity = EntityManager.updateAttributesToEntity(entity, attributes, username);
-        entity.occiUpdate();
-
+        Entity entity = optEntity.get();
         if (!mixins.isEmpty()) {
             try {
                 MixinManager.addMixinsToEntity(entity, mixins, username, false);
@@ -397,6 +403,11 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                 return occiApiResponse;
             }
         }
+        // update attributes .
+        entity = EntityManager.updateAttributesToEntity(entity, attributes, username);
+        // Launch crud update operation on this entity.
+        entity.occiUpdate();
+
         return occiApiResponse;
     }
 
@@ -408,24 +419,28 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
      */
     @Override
     public OCCIApiResponse deleteEntity(final String location) {
-        Entity entity = EntityManager.findEntityFromLocation(location, username);
+        Optional<Entity> optEntity = EntityManager.findEntityFromLocation(location, username);
+        Entity entity;
         String message;
         String entityId;
         String title;
-        if (entity == null) {
+        if (!optEntity.isPresent()) {
             message = "Entity not found on location: " + location;
             parseNotFoundExceptionMessageOutput(message);
             return occiApiResponse;
         }
-
+        entity = optEntity.get();
         entityId = entity.getId();
         title = entity.getTitle();
         entity.occiDelete();
-        EntityManager.removeOrDissociateFromConfiguration(entityId, username);
-        LOGGER.info("Remove entity: " + title + " --> " + entityId + " on location: " + location);
-
-        // No response to parse for a delete.
-
+        try {
+            LOGGER.info("Remove entity: " + title + " --> " + entityId + " on location: " + location);
+            EntityManager.removeOrDissociateFromConfiguration(entityId, username);
+            // if all ok, return no response (ok response).
+            occiApiResponse.parseResponseMessage("ok");
+        } catch (ConfigurationException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
         return occiApiResponse;
     }
 
@@ -458,13 +473,15 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
         if (isMixinTagRequest) {
             LOGGER.info("Mixin tag request... ");
-            Mixin mixin = MixinManager.getUserMixinFromLocation(location, username);
-            if (mixin == null) {
+            Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
+            Mixin mixin;
+            if (!optMixin.isPresent()) {
                 message = "The mixin location : " + location + " is not defined";
                 parseConfigurationExceptionMessageOutput(message);
                 return occiApiResponse;
             }
             if (categoryFilter == null) {
+                mixin = optMixin.get();
                 filter.setCategoryFilter(mixin.getTerm());
                 filter.setFilterOnPath(null);
             }
@@ -475,20 +492,21 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         if ((categoryFilter == null || categoryFilter.isEmpty()) && (filterOnPath == null || filterOnPath.isEmpty())) {
             boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
             if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-                filter.setCategoryFilter(ConfigurationManager.getCategoryFilterSchemeTerm(location, username));
+                Optional<String> optCat = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
+                String cat = null;
+                if (optCat.isPresent()) {
+                    cat = optCat.get();
+                }
+                filter.setCategoryFilter(cat);
             } else {
                 filter.setFilterOnPath(location);
             }
         }
-
-
         entities = EntityManager.findAllEntities(filter, username);
-
         for (Entity entity : entities) {
-            // Refresh object.
+            // Refresh object with crud method : retrieve.
             entity.occiRetrieve();
         }
-
         if (entities.size() > 1) {
             this.renderEntitiesOutput(entities);
         } else if (entities.size() == 1) {
@@ -497,8 +515,6 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             // Not found answer.
             parseNotFoundExceptionMessageOutput("Resource not found on location : " + location);
         }
-
-
         return this.occiApiResponse;
     }
 
@@ -530,7 +546,12 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         // Collection on categories. // Like : get on myhost/compute/
         boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
         if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-            filter.setCategoryFilter(ConfigurationManager.getCategoryFilterSchemeTerm(location, username));
+            Optional<String> optCat = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
+            String cat = null;
+            if (optCat.isPresent()) {
+                cat = optCat.get();
+            }
+            filter.setCategoryFilter(cat);
         } else {
             filter.setFilterOnPath(location);
         }
@@ -539,29 +560,24 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
         if (isMixinTagRequest) {
             LOGGER.info("Mixin tag request... ");
-            Mixin mixin = MixinManager.getUserMixinFromLocation(location, username);
-            if (mixin == null) {
+            Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
+            if (!optMixin.isPresent()) {
                 message = "The mixin location : " + location + " is not defined";
                 parseConfigurationExceptionMessageOutput(message);
                 return occiApiResponse;
             }
             if (categoryFilter == null) {
-                filter.setCategoryFilter(mixin.getTerm());
+                filter.setCategoryFilter(optMixin.get().getTerm());
                 filter.setFilterOnPath(null);
             }
         }
-
         entities = EntityManager.findAllEntities(filter, username);
-
         for (Entity entity : entities) {
-
             // Refresh object.
             entity.occiRetrieve();
         }
-
         if (!entities.isEmpty()) {
             this.renderEntitiesLocationOutput(entities);
-
         } else {
             // Not found answer.
             parseNotFoundExceptionMessageOutput("Resource not found on location : " + location);
@@ -590,7 +606,6 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             parseConfigurationExceptionMessageOutput(message);
             return occiApiResponse;
         }
-
         try {
 
             MixinManager.addUserMixinOnConfiguration(mixinTag, title, location, username);
@@ -598,8 +613,8 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             if (locations != null && !locations.isEmpty()) {
 
                 // Get the mixin scheme+term from path.
-                String categoryId = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
-                if (categoryId == null) {
+                Optional<String> optCat = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
+                if (!optCat.isPresent()) {
                     throw new ConfigurationException("Category is not defined");
                 }
 
@@ -609,19 +624,19 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                     // Build a list of entities from xoccilocations defined.
                     if (EntityManager.isEntityUUIDProvided(xOcciLocation, new HashMap<>())) {
                         // One entity.
-                        String uuid = EntityManager.getUUIDFromPath(xOcciLocation, new HashMap<>());
-                        if (uuid == null) {
+                        Optional<String> optUuid = EntityManager.getUUIDFromPath(xOcciLocation, new HashMap<>());
+                        if (!optUuid.isPresent()) {
                             message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
                             parseConfigurationExceptionMessageOutput(message);
                             return occiApiResponse;
                         }
-                        Entity entity = EntityManager.findEntityForUuid(uuid, ConfigurationManager.DEFAULT_OWNER);
-                        if (entity == null) {
+                        Optional<Entity> optEntity = EntityManager.findEntityForUuid(optUuid.get(), ConfigurationManager.DEFAULT_OWNER);
+                        if (!optEntity.isPresent()) {
                             message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
                             parseConfigurationExceptionMessageOutput(message);
                             return occiApiResponse;
                         }
-                        entities.add(entity.getId());
+                        entities.add(optEntity.get().getId());
                     } else {
                         // Maybe a collection on inbound or outbound path.
                         List<String> entitiesTmp = EntityManager.getEntityUUIDsFromPath(xOcciLocation, username);
@@ -632,7 +647,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                 }
                 // Full update mode.
                 if (!entities.isEmpty()) {
-                    MixinManager.saveMixinForEntities(categoryId, entities, true, username);
+                    MixinManager.saveMixinForEntities(optCat.get(), entities, true, username);
                 }
             }
         } catch (ConfigurationException ex) {
@@ -658,39 +673,41 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         String message;
 
         // First load the mixin object model.
-        Mixin mixinTagModel = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
-
-        if (mixinTagModel == null) {
+        Optional<Mixin> optMixin = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
+        if (!optMixin.isPresent()) {
             message = "User mixin doesnt exist on your configuration";
             parseConfigurationExceptionMessageOutput(message);
             return occiApiResponse;
         }
 
         List<Entity> entities = new LinkedList<>();
-        Entity entity;
         if (locations.isEmpty()) {
             // Remove all association.
             LOGGER.info("Remove all assocations for mixin tag : " + mixinTag);
-            EntityManager.removeOrDissociateFromConfiguration(mixinTag, username);
+            try {
+                EntityManager.removeOrDissociateFromConfiguration(mixinTag, username);
+            } catch (ConfigurationException ex) {
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
+                return occiApiResponse;
+            }
         }
 
         // Location must have entity object instance.
         for (String location : locations) {
-            entity = EntityManager.findEntityFromLocation(location, username);
-            if (entity == null) {
+            Optional<Entity> optEntity = EntityManager.findEntityFromLocation(location, username);
+            if (!optEntity.isPresent()) {
                 message = "Mixin tag association failed, the entity for location : " + location + " doesnt exist on configuration";
                 parseNotFoundExceptionMessageOutput(message);
                 return occiApiResponse;
             }
-            entities.add(entity);
+            entities.add(optEntity.get());
         }
         if (!entities.isEmpty()) {
             try {
                 MixinManager.saveMixinForEntitiesModel(mixinTag, entities, false, username);
                 renderEntitiesOutput(entities);
             } catch (ConfigurationException ex) {
-                message = ex.getMessage();
-                parseConfigurationExceptionMessageOutput(message);
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
                 return occiApiResponse;
             }
         }
@@ -717,19 +734,25 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         List<String> mixinTags = new ArrayList<>();
         if (mixin == null) {
             // Search mixin tag with location.
-            Mixin mixinTagModel = MixinManager.getUserMixinFromLocation(mixinTagLocation, username);
-            mixin = mixinTagModel.getScheme() + mixinTagModel.getTerm();
+            Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(mixinTagLocation, username);
+            if (optMixin.isPresent()) {
+                Mixin mixinTagModel = optMixin.get();
+                mixin = mixinTagModel.getScheme() + mixinTagModel.getTerm();
+                mixinTags.add(mixin);
+            }
         }
-        mixinTags.add(mixin);
+
 
         // Update mixin tags association.
         for (String xocciLocation : xlocations) {
-            entity = EntityManager.findEntityFromLocation(xocciLocation, username);
-            if (entity == null) {
+            Optional<Entity> optEntity = EntityManager.findEntityFromLocation(xocciLocation, username);
+
+            if (!optEntity.isPresent()) {
                 message = Constants.X_OCCI_LOCATION + " is not set correctly or the entity doesnt exist anymore";
                 parseNotFoundExceptionMessageOutput(message);
                 return occiApiResponse;
             }
+            entity = optEntity.get();
             try {
                 MixinManager.addMixinsToEntity(entity, mixinTags, username, false);
                 entities.add(entity);
@@ -758,10 +781,16 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             parseNotFoundExceptionMessageOutput(message);
             return occiApiResponse;
         }
+        try {
+            EntityManager.removeOrDissociateFromConfiguration(mixinTag, username);
+        } catch (ConfigurationException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+            return occiApiResponse;
+        }
 
-        EntityManager.removeOrDissociateFromConfiguration(mixinTag, username);
-        Mixin mixin = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
-        if (mixin == null) {
+        Optional<Mixin> optMixin = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
+
+        if (!optMixin.isPresent()) {
             message = "The mixin tag : " + mixinTag + " is already removed.";
             parseNotFoundExceptionMessageOutput(message);
             return occiApiResponse;
@@ -773,10 +802,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             parseConfigurationExceptionMessageOutput(message);
             return occiApiResponse;
         }
-
-
-        // empty response ==> ok.
-
+        occiApiResponse.parseResponseMessage("ok");
         return occiApiResponse;
     }
 
@@ -795,27 +821,40 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             parseNotFoundExceptionMessageOutput(message);
             return occiApiResponse;
         }
-        Mixin mixinModel = MixinManager.findMixinOnExtension(mixin, username);
-        if (mixinModel == null) {
+        Optional<Mixin> optMixin = MixinManager.findMixinOnExtension(mixin, username);
+        if (!optMixin.isPresent()) {
             message = "no mixin associations to remove, there is no mixin defined on model for : " + mixin;
             parseNotFoundExceptionMessageOutput(message);
             return occiApiResponse;
         }
+
         if (locations == null || locations.isEmpty()) {
             LOGGER.info("Remove all associations with this mixin : " + mixin);
-            EntityManager.removeOrDissociateFromConfiguration(mixin, username);
+            try {
+                EntityManager.removeOrDissociateFromConfiguration(mixin, username);
+            } catch (ConfigurationException ex) {
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
+                return occiApiResponse;
+            }
         } else {
             Entity entity;
             for (String currentLocation : locations) {
                 LOGGER.info("Remove association with mixin : " + mixin + " entity location : " + currentLocation);
-                entity = EntityManager.findEntityFromLocation(currentLocation, username);
-                if (entity != null) {
-                    MixinManager.dissociateMixinFromEntity(mixin, entity, username);
+                Optional<Entity> optEntity = EntityManager.findEntityFromLocation(currentLocation, username);
+
+                if (optEntity.isPresent()) {
+                    try {
+                        MixinManager.dissociateMixinFromEntity(mixin, optEntity.get(), username);
+                    } catch (ConfigurationException ex) {
+                        parseConfigurationExceptionMessageOutput(ex.getMessage());
+                        return occiApiResponse;
+                    }
                 } else {
                     LOGGER.warn("Entity on location: " + currentLocation + " not found for mixin dissociation : " + mixin);
                 }
             }
         }
+        occiApiResponse.parseResponseMessage("ok");
         return occiApiResponse;
     }
 
@@ -850,22 +889,35 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             try {
                 LOGGER.info("Triggering action : " + action + " on entity located on : " + location);
                 EntityManager.executeActionOnEntityLocation(location, action, actionAttributes, username);
-                entity = EntityManager.findEntityFromLocation(location, username);
-                entities.add(entity);
+                Optional<Entity> optEntity = EntityManager.findEntityFromLocation(location, username);
+
+                if (optEntity.isPresent()) {
+                    entity = optEntity.get();
+                    entity.occiRetrieve(); // refresh entity attributes and values, this is welcome if entity state change.
+                    entities.add(entity);
+                } else {
+                    message = "entity not found on location: " + location + " cannot trigger action : " + action + " on this entity";
+                    LOGGER.warn(message);
+                    parseNotFoundExceptionMessageOutput(message);
+                    return occiApiResponse;
+                }
+
             } catch (ConfigurationException ex) {
                 parseConfigurationExceptionMessageOutput(ex.getMessage());
                 return occiApiResponse;
             }
 
         }
+        // All ok, render entities to output.
         renderEntitiesOutput(entities);
         return occiApiResponse;
     }
 
     /**
      * Trigger an action on a category (kind or mixin) entity collection. This method will load entities from the category defined and execute the action on each entity.
-     * @param action action scheme + term.
-     * @param actionAttrs action attributes
+     *
+     * @param action       action scheme + term.
+     * @param actionAttrs  action attributes
      * @param categoryTerm category term
      */
     @Override
@@ -883,22 +935,23 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             return occiApiResponse;
         }
         // Check if category term is on extensions model.
-        String categoryId = getCategorySchemeTerm(categoryTerm);
-        if (categoryId == null) {
+        Optional<String> optCat = getCategorySchemeTerm(categoryTerm);
+        String categoryId;
+
+        if (!optCat.isPresent()) {
             message = "Category : " + categoryTerm + " is unknown";
             parseConfigurationExceptionMessageOutput(message);
             return occiApiResponse;
         }
-
-
+        categoryId = optCat.get();
         // Load all entities on scope of this category.
         List<Entity> entities = EntityManager.findAllEntitiesForKind(categoryId, username);
-        if (entities == null || entities.isEmpty()) {
+        if (entities.isEmpty()) {
             // Try on mixins.
             entities = EntityManager.findAllEntitiesForMixin(categoryId, username);
         }
 
-        if (entities == null || entities.isEmpty()) {
+        if (entities.isEmpty()) {
             message = "Category : " + categoryId + " has no referenced entities";
             parseConfigurationExceptionMessageOutput(message);
             return occiApiResponse;
@@ -921,8 +974,9 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public OCCIApiResponse executeActionOnMixinTag(final String action, final Map<String, String> actionAttrs, final String mixinTag) {
         String message;
-        Mixin mixinTagModel = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
-        if (mixinTagModel == null) {
+        Optional<Mixin> optMixin = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
+
+        if (!optMixin.isPresent()) {
             message = "User defined mixin doesnt exist on configuration model";
             parseConfigurationExceptionMessageOutput(message);
             return occiApiResponse;
@@ -952,6 +1006,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     // ****************
     // Helper methods
     // ****************
+
     /**
      * @param location
      * @return
@@ -979,18 +1034,20 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     }
 
     @Override
-    public String getCategorySchemeTerm(final String categoryTerm) {
+    public Optional<String> getCategorySchemeTerm(final String categoryTerm) {
         return ConfigurationManager.findCategorySchemeTermFromTerm(categoryTerm, username);
     }
 
     @Override
-    public String getMixinTagSchemeTermFromLocation(String location) {
-        String result = null;
-        Mixin mixin = MixinManager.getUserMixinFromLocation(location, username);
-        if (mixin != null) {
-            result = mixin.getScheme() + mixin.getTerm();
+    public Optional<String> getMixinTagSchemeTermFromLocation(String location) {
+        Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
+        Optional<String> optResult;
+        if (optMixin.isPresent()) {
+            optResult = Optional.of(optMixin.get().getScheme() + optMixin.get().getTerm());
+        } else {
+            optResult = Optional.empty();
         }
-        return result;
+        return optResult;
     }
 
     @Override
@@ -1018,7 +1075,6 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         String kind;
         Kind kindModel;
         List<String> mixins;
-        String mixinTag;
         Map<String, Object> attrs;
         Map<String, Object> attrsToControlOnActions;
         Map<String, Object> attrsToControlOnMixins;
@@ -1026,6 +1082,10 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         String attrKey;
         // TODO : Control input value datatype with models.
         Object attrValue;
+        Optional<Kind> optKind;
+        Optional<Action> optAction;
+        Optional<Mixin> optMixin;
+
         boolean found;
         List<OCCIRequestData> inputDatas = inputParser.getInputDatas();
         for (OCCIRequestData content : inputDatas) {
@@ -1033,19 +1093,19 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             kind = content.getKind();
             attrs = content.getAttrs();
             mixins = content.getMixins();
-            mixinTag = content.getMixinTag();
             action = content.getAction();
             attrsToControlOnActions = new LinkedHashMap<>();
             attrsToControlOnMixins = new LinkedHashMap<>();
-            found = false;
 
             if (kind != null) {
                 // Check the scheme+term on extensions.
-                kindModel = KindManager.findKindFromExtension(kind, username);
-                if (kindModel == null) {
+                optKind = KindManager.findKindFromExtension(kind, username);
+                if (!optKind.isPresent()) {
                     message = "The kind : " + kind + " doesnt exist on extensions.";
                     parseModelValidatorExceptionMessageOutput(message);
                     return occiApiResponse;
+                } else {
+                    kindModel = optKind.get();
                 }
 
                 // Check the attributes.
@@ -1139,11 +1199,14 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                     // mixins exists ?
                     // Are there applyable to this kind ?
                     for (String mixin : mixins) {
-                        mixinModel = MixinManager.findMixinOnExtension(mixin, username);
-                        if (mixinModel == null) {
+                        optMixin = MixinManager.findMixinOnExtension(mixin, username);
+
+                        if (!optMixin.isPresent()) {
                             message = "The mixin : " + mixin + " doesnt exist on extensions.";
                             parseModelValidatorExceptionMessageOutput(message);
                             return occiApiResponse;
+                        } else {
+                            mixinModel = optMixin.get();
                         }
                         // Check the attributes if any.
                         if (!attrsToControlOnMixins.isEmpty()) {
@@ -1175,11 +1238,14 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             // if this is an action invocation, is this action is present on extension's or present in parent kind of the entity.
             // Are the actions attributes are correct and defined in extension ?
             if (kind == null && action != null) {
-                Action actionModelWork = ConfigurationManager.findActionOnExtensions(action, username);
-                if (actionModelWork == null) {
+                optAction = ConfigurationManager.findActionOnExtensions(action, username);
+                Action actionModelWork = null;
+                if (!optAction.isPresent()) {
                     message = "Action : " + action + " doesnt exist on models.";
                     parseModelValidatorExceptionMessageOutput(message);
                     return occiApiResponse;
+                } else {
+                    actionModelWork = optAction.get();
                 }
 
                 // Control the attributes.

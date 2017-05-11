@@ -60,12 +60,13 @@ public class HeaderPojo {
 
     /**
      * Get the first value or null if key doesnt exist.
+     *
      * @param key
      */
     public String getFirst(final String key) {
         String val = null;
         List<String> values = headerMap.get(key);
-        if(values != null && !values.isEmpty()) {
+        if (values != null && !values.isEmpty()) {
             val = values.get(0);
         }
         return val;

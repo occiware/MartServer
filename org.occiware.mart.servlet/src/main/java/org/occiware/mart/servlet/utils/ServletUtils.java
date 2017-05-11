@@ -312,7 +312,7 @@ public class ServletUtils {
         }
 
         // Check with occi.core.id attribute.
-        String occiCoreId = (String)attr.get(Constants.OCCI_CORE_ID);
+        String occiCoreId = (String) attr.get(Constants.OCCI_CORE_ID);
         if (occiCoreId == null) {
             return null;
         }
@@ -542,6 +542,7 @@ public class ServletUtils {
 
     /**
      * Get headers from http javax servlet request.
+     *
      * @param request
      * @return
      */
@@ -555,7 +556,7 @@ public class ServletUtils {
             List<String> elements = new LinkedList<>();
             String key = (String) headerNames.nextElement();
             Enumeration<String> values = request.getHeaders(key);
-            while(values.hasMoreElements()) {
+            while (values.hasMoreElements()) {
                 elements.add(values.nextElement());
             }
             map.put(key, elements);

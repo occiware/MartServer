@@ -27,13 +27,13 @@ import org.eclipse.emf.ecore.EEnum;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.model.EntityManager;
 import org.occiware.mart.server.model.KindManager;
 import org.occiware.mart.server.model.MixinManager;
 import org.occiware.mart.server.parser.AbstractRequestParser;
-import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.IRequestParser;
-import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.occiware.mart.server.parser.json.render.*;
 import org.occiware.mart.server.parser.json.render.queryinterface.*;
@@ -415,9 +415,8 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
     /**
      * Get interface models.
      *
-     *
      * @param interfaceData
-     * @param user (the authorized username)
+     * @param user          (the authorized username)
      * @return a string content.
      * @throws ParseOCCIException
      */
@@ -482,7 +481,14 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
             actionsDefinitionJson = new LinkedList<>();
             actions = new LinkedList<>();
             MixinInterfacejson mixinInterfaceJson = new MixinInterfacejson();
-            mixinInterfaceJson.setLocation(ConfigurationManager.getLocation(mixin));
+            Optional<String> optLocation = ConfigurationManager.getLocation(mixin);
+            String loc;
+            if (optLocation.isPresent()) {
+                loc = optLocation.get();
+            } else {
+                loc = null;
+            }
+            mixinInterfaceJson.setLocation(loc);
             mixinInterfaceJson.setScheme(mixin.getScheme());
             mixinInterfaceJson.setTerm(mixin.getTerm());
             mixinInterfaceJson.setTitle(mixin.getTitle());
@@ -522,7 +528,14 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                     models.add(modelJson);
                 }
             } else {
-                Extension ext = MixinManager.getExtensionForMixin(mixin.getScheme() + mixin.getTerm(), user);
+                Optional<Extension> optExt = MixinManager.getExtensionForMixin(mixin.getScheme() + mixin.getTerm(), user);
+                Extension ext;
+                if (!optExt.isPresent()) {
+                    throw new ConfigurationException("Extension not found for mixin : " + mixin.getScheme() + mixin.getTerm());
+                } else {
+                    ext = optExt.get();
+                }
+
                 if (models.isEmpty()) {
                     modelJson = new ModelInterfaceJson();
                     modelJson.setId(ext.getScheme());
@@ -580,7 +593,14 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
             actionsDefinitionJson = new LinkedList<>();
             actions = new LinkedList<>();
             KindInterfaceJson kindInterfaceJson = new KindInterfaceJson();
-            kindInterfaceJson.setLocation(ConfigurationManager.getLocation(kind));
+            Optional<String> optKind = ConfigurationManager.getLocation(kind);
+            String locKind;
+            if (optKind.isPresent()) {
+                locKind = optKind.get();
+            } else {
+                throw new ConfigurationException("Location for kind : " + kind.getScheme() + kind.getTerm() + " is unknown on extension model");
+            }
+            kindInterfaceJson.setLocation(locKind);
             if (kind.getParent() != null) {
                 kindInterfaceJson.setParent(kind.getParent().getScheme() + kind.getParent().getTerm());
             }
@@ -605,8 +625,13 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
             }
             kindInterfaceJson.setActions(actions);
             ModelInterfaceJson modelJson = null;
-            Extension ext = KindManager.getExtensionForKind(kind.getScheme() + kind.getTerm(), user);
-
+            Optional<Extension> optExt = KindManager.getExtensionForKind(kind.getScheme() + kind.getTerm(), user);
+            Extension ext;
+            if (optExt.isPresent()) {
+                ext = optExt.get();
+            } else {
+                throw new ConfigurationException("Unknown extension for kind : " + kind.getScheme() + kind.getTerm());
+            }
             if (models.isEmpty()) {
                 modelJson = new ModelInterfaceJson();
                 modelJson.setId(ext.getScheme());
@@ -939,31 +964,29 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         for (AttributeState attr : attrsState) {
             String key = attr.getName();
             String val = attr.getValue();
-
+            // We must not include occi.core.title, occi.core.summary and occi.core.id as these attributes are already defined in the json output content (title, id, summary attributes).
             if (!key.equals(Constants.OCCI_CORE_SUMMARY) && !key.equals(Constants.OCCI_CORE_TITLE)
                     && !key.equals(Constants.OCCI_CORE_ID)) {
+                Optional<String> optValStr = EntityManager.getAttrValueStr(entity, key);
+                Optional<Number> optValNumber = EntityManager.getAttrValueNumber(entity, key);
 
-                String valStr = EntityManager.getAttrValueStr(entity, key);
-                Number valNumber = EntityManager.getAttrValueNumber(entity, key);
-
-                if (valStr != null) {
-                    attributes.put(key, valStr);
-                } else if (valNumber != null) {
-                    attributes.put(key, valNumber);
+                if (optValStr.isPresent()) {
+                    attributes.put(key, optValStr.get());
+                } else if (optValNumber.isPresent()) {
+                    attributes.put(key, optValNumber.get());
                 } else {
                     if (val != null) {
                         attributes.put(key, val);
                     }
                 }
+
             }
-            // We must not include occi.core.title, occi.core.summary and occi.core.id as these attributes are already defined in the json output content (title, id, summary attributes).
 //            if (key.equals(Constants.OCCI_CORE_ID)) {
 //                if (val != null && !val.startsWith(Constants.URN_UUID_PREFIX)) {
 //                    val = Constants.URN_UUID_PREFIX + val;
 //                }
 //                attributes.put(key, val);
 //            }
-
         }
 
         resJson.setAttributes(attributes);
@@ -1024,32 +1047,34 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                         && !key.equals(Constants.OCCI_CORE_ID)
                         && !key.equals(Constants.OCCI_CORE_SOURCE)
                         && !key.equals(Constants.OCCI_CORE_TARGET)) {
+                    Optional<EDataType> optEDataType = EntityManager.getEAttributeType(entity, key);
+                    EDataType eAttrType;
 
-                    EDataType eAttrType = EntityManager.getEAttributeType(entity, key);
-
-                    if (eAttrType != null
-                            && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
-                        // value with quote only for String and EEnum type.
-                        attributes.put(key, val);
-                    } else if (eAttrType == null) {
+                    if (optEDataType.isPresent()) {
+                        eAttrType = optEDataType.get();
+                        if (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class) {
+                            // value with quote only for String and EEnum type.
+                            attributes.put(key, val);
+                        } else {
+                            // Not a string nor an enum val.
+                            try {
+                                Number num = ConfigurationManager.parseNumber(val, eAttrType.getInstanceClassName());
+                                attributes.put(key, num);
+                            } catch (NumberFormatException ex) {
+                                attributes.put(key, val);
+                            }
+                        }
+                    } else {
                         // Cant determine the type.
                         attributes.put(key, val);
-                    } else {
-                        // Not a string nor an enum val.
-                        try {
-                            Number num = ConfigurationManager.parseNumber(val, eAttrType.getInstanceClassName());
-                            attributes.put(key, num);
-                        } catch (NumberFormatException ex) {
-                            attributes.put(key, val);
-                        }
                     }
                 }
-                if (key.equals(Constants.OCCI_CORE_ID)) {
-                    if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
-                        val = Constants.URN_UUID_PREFIX + val;
-                    }
-                    attributes.put(key, val);
-                }
+//                if (key.equals(Constants.OCCI_CORE_ID)) {
+//                    if (!val.startsWith(Constants.URN_UUID_PREFIX)) {
+//                        val = Constants.URN_UUID_PREFIX + val;
+//                    }
+//                    attributes.put(key, val);
+//                }
             }
         }
         Resource resSrc = link.getSource();

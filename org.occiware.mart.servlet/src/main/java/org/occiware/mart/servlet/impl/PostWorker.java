@@ -1,15 +1,33 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.servlet.impl;
 
-import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.parser.HeaderPojo;
+import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.utils.Constants;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by cgourdin on 13/04/2017.
@@ -61,7 +79,7 @@ public class PostWorker extends ServletEntry {
             return resp;
         }
 
-        // Mixin tag definition (this may be multiple definitions.
+        // Mixin tag definition (this may be multiple definitions).
         // Defines if datas has only mixinTags definition.
 
         if (occiRequest.isInterfQuery() && datas.size() >= 1 && !occiRequest.isActionInvocationQuery()) {
@@ -123,7 +141,7 @@ public class PostWorker extends ServletEntry {
 
             // First manage entity location.
             for (OCCIRequestData data : datas) {
-                 entityUUID = data.getEntityUUID();
+                entityUUID = data.getEntityUUID();
                 if (data.getLocation() == null && entityUUID != null) {
                     // Format the location for example like this : /compute/entityuuid/
                     data.setLocation(occiRequest.getRequestPath() + entityUUID + "/");
@@ -205,7 +223,14 @@ public class PostWorker extends ServletEntry {
         // Action invocation on mixin tag defined collection.
         if (occiRequest.isOnMixinTagLocation() && occiRequest.isActionInvocationQuery()) {
             OCCIRequestData data = datas.get(0);
-            String mixinTag = occiRequest.getMixinTagSchemeTermFromLocation(occiRequest.getRequestPath());
+            Optional<String> optMixinTag = occiRequest.getMixinTagSchemeTermFromLocation(occiRequest.getRequestPath());
+            String mixinTag;
+            if (optMixinTag.isPresent()) {
+                mixinTag = optMixinTag.get();
+            } else {
+                occiResponse.parseMessage("Unknown mixin tag location : " + occiRequest.getRequestPath(), HttpServletResponse.SC_NOT_FOUND);
+                return resp;
+            }
             occiRequest.executeActionOnMixinTag(data.getAction(), data.getAttrsValStr(), mixinTag);
             return resp;
         }

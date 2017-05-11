@@ -26,6 +26,7 @@ import org.occiware.mart.server.parser.json.render.ActionJson;
 import org.occiware.mart.server.parser.json.render.OcciMainJson;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,7 +35,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Christophe Gourdin

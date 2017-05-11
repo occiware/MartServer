@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.occiware.clouddesigner.occi.Configuration;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Created by christophe on 15/04/2017.
@@ -47,8 +47,6 @@ public class ConfigurationManagerTest {
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(username);
         assertNotNull(configuration);
     }
-
-
 
 
 }

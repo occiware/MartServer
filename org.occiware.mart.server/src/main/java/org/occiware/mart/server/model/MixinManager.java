@@ -49,7 +49,7 @@ public class MixinManager {
      * @param owner
      * @return
      */
-    public static Mixin findUserMixinOnConfiguration(final String mixinId, final String owner) {
+    public static Optional<Mixin> findUserMixinOnConfiguration(final String mixinId, final String owner) {
         Mixin mixinToReturn = null;
         Configuration config;
         EList<Mixin> mixins;
@@ -61,7 +61,7 @@ public class MixinManager {
                 break;
             }
         }
-        return mixinToReturn;
+        return Optional.ofNullable(mixinToReturn);
     }
 
     /**
@@ -69,9 +69,9 @@ public class MixinManager {
      *
      * @param mixinId
      * @param owner
-     * @return a mixin found or null if not found
+     * @return a mixin found or empty optional if not found
      */
-    static Mixin findMixinOnEntities(final String mixinId, final String owner) {
+    public static Optional<Mixin> findMixinOnEntities(final String mixinId, final String owner) {
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
         Mixin mixinToReturn = null;
         boolean mixinOk;
@@ -109,7 +109,7 @@ public class MixinManager {
 
         }
 
-        return mixinToReturn;
+        return Optional.ofNullable(mixinToReturn);
     }
 
     /**
@@ -119,7 +119,7 @@ public class MixinManager {
      * @param owner
      * @return
      */
-    public static Mixin findMixinOnExtension(final String mixinId, final String owner) {
+    public static Optional<Mixin> findMixinOnExtension(final String mixinId, final String owner) {
         Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
         Mixin mixinToReturn = null;
         for (Extension ext : config.getUse()) {
@@ -135,7 +135,7 @@ public class MixinManager {
             }
         }
 
-        return mixinToReturn;
+        return Optional.ofNullable(mixinToReturn);
     }
 
     /**
@@ -145,7 +145,7 @@ public class MixinManager {
      * @param owner owner of the configuration
      * @return
      */
-    public static Extension getExtensionForMixin(final String mixin, final String owner) {
+    public static Optional<Extension> getExtensionForMixin(final String mixin, final String owner) {
         Extension extRet = null;
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
         EList<Extension> exts = configuration.getUse();
@@ -163,7 +163,7 @@ public class MixinManager {
             }
         }
 
-        return extRet;
+        return Optional.ofNullable(extRet);
     }
 
     /**
@@ -173,7 +173,7 @@ public class MixinManager {
      * @param owner
      * @return
      */
-    public static Mixin getUserMixinFromLocation(final String locationMixin, final String owner) {
+    public static Optional<Mixin> getUserMixinFromLocation(final String locationMixin, final String owner) {
         // Search for the mixin id.
         Mixin mixin = null;
         Set<String> keys = userMixinLocationMap.keySet();
@@ -186,13 +186,14 @@ public class MixinManager {
 
             if (location.equals(locationCompare)) {
                 // Search the mixin from this scheme+term.
-                mixin = findUserMixinOnConfiguration(key, owner);
-                break;
+                Optional<Mixin> optMixin = findUserMixinOnConfiguration(key, owner);
+                if (optMixin.isPresent()) {
+                    mixin = optMixin.get();
+                    break;
+                }
             }
-
         }
-        return mixin;
-
+        return Optional.ofNullable(mixin);
     }
 
     /**
@@ -204,10 +205,10 @@ public class MixinManager {
      */
     public static boolean isMixinTags(final String mixinTag, final String owner) {
         boolean result = false;
+        Optional<Mixin> optMixin = findUserMixinOnConfiguration(mixinTag, owner);
 
-        Mixin mixin = findUserMixinOnConfiguration(mixinTag, owner);
         String location = userMixinLocationMap.get(mixinTag);
-        if (location != null && mixin != null) {
+        if (location != null && optMixin.isPresent()) {
             result = true;
         }
         return result;
@@ -281,30 +282,36 @@ public class MixinManager {
      * @throws ConfigurationException
      */
     public static void addMixinsToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) throws ConfigurationException {
+
+        Optional<Mixin> optMixin;
+        Mixin mixin;
         if (updateMode) {
             entity.getMixins().clear();
         }
         if (mixins != null && !mixins.isEmpty()) {
 
             for (String mixinStr : mixins) {
-                // Check if this mixin exist in realm extensions.
-                Mixin mixin = findMixinOnExtension(mixinStr, owner);
+                optMixin = findMixinOnExtension(mixinStr, owner);
 
-                if (mixin == null) {
+                // Check if this mixin exist in realm extensions.
+
+                if (!optMixin.isPresent()) {
                     LOGGER.info("Mixin not found on extensions, searching on referenced entities: --> Term : " + mixinStr);
                     // Search the mixin on entities.
-                    mixin = findMixinOnEntities(mixinStr, owner);
+                    optMixin = findMixinOnEntities(mixinStr, owner);
 
-                    if (mixin == null) {
+                    if (!optMixin.isPresent()) {
                         // Search on the mixin tag.
-                        mixin = findUserMixinOnConfiguration(mixinStr, owner);
-                        if (mixin == null) {
+                        optMixin = findUserMixinOnConfiguration(mixinStr, owner);
+                        if (!optMixin.isPresent()) {
                             throw new ConfigurationException("Mixin " + mixinStr + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
                         }
                     }
+                    mixin = optMixin.get();
                     LOGGER.info("Mixin found on configuration : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
 
                 } else {
+                    mixin = optMixin.get();
                     LOGGER.info("Mixin found on used extensions : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
                 }
 
@@ -340,18 +347,19 @@ public class MixinManager {
                                             final boolean updateMode, final String owner) throws ConfigurationException {
 
 
-
         // searching for the mixin to register.
         List<Entity> entities = new ArrayList<>();
+        Optional<Entity> optEntity;
 
         for (String entityId : entityIds) {
-            Entity entity = EntityManager.findEntityForUuid(entityId, owner);
-            if (entity == null) {
+            optEntity = EntityManager.findEntityForUuid(entityId, owner);
+
+            if (!optEntity.isPresent()) {
                 // Find entity by location.
-                entity = EntityManager.findEntityFromLocation(entityId, owner);
+                optEntity = EntityManager.findEntityFromLocation(entityId, owner);
             }
-            if (entity != null) {
-                entities.add(entity);
+            if (optEntity.isPresent()) {
+                entities.add(optEntity.get());
             }
         }
 
@@ -365,28 +373,31 @@ public class MixinManager {
      * Associate a list of entities with a mixin, replacing existing list if
      * any. if mixin doest exist, this will throw a new exception.
      *
-     * @param mixinId Mixin term + scheme, this may be a user defined mixin tag.
-     * @param entities List of entity model object.
+     * @param mixinId    Mixin term + scheme, this may be a user defined mixin tag.
+     * @param entities   List of entity model object.
      * @param updateMode update mode : if false, dissociate mixin from entities that are not in the entities list parameter.
-     * @param owner username for this configuration.
+     * @param owner      username for this configuration.
      * @throws ConfigurationException
      */
     public static void saveMixinForEntitiesModel(final String mixinId, final List<Entity> entities,
-                                            final boolean updateMode, final String owner) throws ConfigurationException {
+                                                 final boolean updateMode, final String owner) throws ConfigurationException {
 
+        Optional<Mixin> optMixin = findMixinOnExtension(mixinId, owner);
         // searching for the mixin to register.
-        Mixin mixin = findMixinOnExtension(mixinId, owner);
+        Mixin mixin;
 
-        if (mixin == null) {
-            mixin = findMixinOnEntities(mixinId, owner);
-            if (mixin == null) {
+        if (!optMixin.isPresent()) {
+
+            optMixin = findMixinOnEntities(mixinId, owner);
+            if (!optMixin.isPresent()) {
                 // Search on the mixin tag.
-                mixin = findUserMixinOnConfiguration(mixinId, owner);
-                if (mixin == null) {
+                optMixin = findUserMixinOnConfiguration(mixinId, owner);
+                if (!optMixin.isPresent()) {
                     throw new ConfigurationException("Mixin " + mixinId + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
                 }
             }
         }
+        mixin = optMixin.get();
         LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
 
         for (Entity entity : entities) {
@@ -436,15 +447,16 @@ public class MixinManager {
         if (owner == null || id == null || location == null) {
             return;
         }
-
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
 
         // Check if this mixin already exist on configuration, if this is the case, overwrite mixin definition.
-        Mixin mixin = findUserMixinOnConfiguration(id, owner);
-        if (mixin == null) {
+        Optional<Mixin> optMixin = findUserMixinOnConfiguration(id, owner);
+        Mixin mixin = null;
+        if (!optMixin.isPresent()) {
             mixin = createMixin(id);
             mixin.setTitle(title);
         } else {
+            mixin = optMixin.get();
             // Check if this mixin is a mixin extension..
             if (!isMixinTags(id, owner)) {
                 throw new ConfigurationException("This mixin : " + id + " is not a mixin tag, but it exist on referenced extension and configuration.");
@@ -466,9 +478,9 @@ public class MixinManager {
      * @param mixin
      * @param owner
      */
-    static void dissociateMixinFromEntities(final Mixin mixin, final String owner) {
+    static void dissociateMixinFromEntities(final Mixin mixin, final String owner) throws ConfigurationException {
         if (mixin == null) {
-            return;
+            throw new ConfigurationException("No mixin to dissociate");
         }
         List<Entity> entities = EntityManager.findAllEntitiesForMixin(mixin.getScheme() + mixin.getTerm(), owner);
         for (Entity entity : entities) {
@@ -487,15 +499,15 @@ public class MixinManager {
      * @param owner
      * @return
      */
-    public static boolean dissociateMixinFromEntity(final String mixinId, Entity entity, final String owner) {
-        boolean result = false;
+    public static void dissociateMixinFromEntity(final String mixinId, Entity entity, final String owner) throws ConfigurationException {
+
         if (mixinId == null) {
-            return false;
+            throw new ConfigurationException("No mixin defined to dissociate from entity");
         }
         // Load the mixin object.
         List<Mixin> mixins = entity.getMixins();
         if (mixins.isEmpty()) {
-            return true;
+            return;
         }
         Mixin myMixin = null;
         for (Mixin mixin : mixins) {
@@ -511,12 +523,9 @@ public class MixinManager {
             if (!attributesToRemove.isEmpty()) {
                 EntityManager.removeEntityAttributes(entity, attributesToRemove);
             }
-
             entity.getMixins().remove(myMixin);
             EntityManager.updateVersion(owner, entity.getId());
-            result = true;
         }
-        return result;
     }
 
     /**
@@ -532,14 +541,15 @@ public class MixinManager {
         }
 
         // Search for userMixin.
-        Mixin mixin = findUserMixinOnConfiguration(mixinId, owner);
+        Optional<Mixin> optMixin = findUserMixinOnConfiguration(mixinId, owner);
 
-        if (mixin == null) {
+        Mixin mixin;
+
+        if (!optMixin.isPresent()) {
             LOGGER.info("mixin not found on configurations.");
             throw new ConfigurationException("mixin : " + mixinId + " not found on configuration.");
-
         }
-
+        mixin = optMixin.get();
         // We remove the mixin location from the userMixin map.
         userMixinLocationMap.remove(mixinId);
 
@@ -568,31 +578,6 @@ public class MixinManager {
     }
 
     /**
-     * Load a list of mixin from used extensions models.
-     *
-     * @param mixins
-     * @return
-     * @throws ConfigurationException
-     */
-    public static List<Mixin> loadMixinFromSchemeTerm(List<String> mixins) throws ConfigurationException {
-        List<Mixin> mixinModel = new LinkedList<>();
-
-        Mixin mixinTmp;
-        for (String mixinId : mixins) {
-            mixinTmp = findMixinOnExtension(mixinId, ConfigurationManager.DEFAULT_OWNER);
-            if (mixinTmp == null) {
-                mixinTmp = findUserMixinOnConfiguration(mixinId, ConfigurationManager.DEFAULT_OWNER);
-                if (mixinTmp == null) {
-                    throw new ConfigurationException("Mixin : " + mixinId + " not found on used extensions models");
-                }
-            } else {
-                mixinModel.add(mixinTmp);
-            }
-        }
-        return mixinModel;
-    }
-
-    /**
      * Check if path is on a mixin tag (mixin without attributes and applied and
      * depends).
      *
@@ -601,10 +586,8 @@ public class MixinManager {
      * @return false if the path and request is not on mixin tag.
      */
     public static boolean isMixinTagRequest(final String path, final String owner) {
-        boolean result;
-        Mixin mixin = getUserMixinFromLocation(path, owner);
-        result = mixin != null;
-        return result;
+        Optional<Mixin> optMixin = getUserMixinFromLocation(path, owner);
+        return optMixin.isPresent();
     }
 
     /**

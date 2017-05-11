@@ -1,3 +1,21 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.parser.HeaderPojo;
@@ -9,9 +27,8 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by cgourdin on 13/04/2017.
@@ -104,9 +121,16 @@ public class PutWorker extends ServletEntry {
             occiRequest.createEntity(data.getEntityTitle(), data.getEntitySummary(), data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
         }
 
-        // Unique case to add collection entities.
+        // Reference collection entities on mixin tag (replace all mixin tag referenced collection of entities).
         if (occiRequest.isOnMixinTagLocation()) {
-            String mixinTag = occiRequest.getMixinTagSchemeTermFromLocation(requestPath);
+            Optional<String> optMixinTag = occiRequest.getMixinTagSchemeTermFromLocation(requestPath);
+            String mixinTag;
+            if (optMixinTag.isPresent()) {
+                mixinTag = optMixinTag.get();
+            } else {
+                occiResponse.parseMessage("Unknown mixin tag location : " + requestPath, HttpServletResponse.SC_NOT_FOUND);
+                return resp;
+            }
             List<String> xOcciLocations = data.getXocciLocations();
             // X occi location may be empty, this will remove all entity instance for this mixin tag.
             occiRequest.replaceMixinTagCollection(mixinTag, xOcciLocations);

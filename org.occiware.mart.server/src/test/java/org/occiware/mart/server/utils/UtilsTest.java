@@ -40,28 +40,28 @@ public class UtilsTest {
         Map<String, String> attr = new HashMap<>();
         String path = "/tmp/testuuid/f88486b7-0632-482d-a184-a9195733ddd0";
 
-        uuidResult = EntityManager.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr).get();
 
         assertEquals(uuidToTest, uuidResult);
 
         path = "/tmp/testuuid/";
 
-        uuidResult = EntityManager.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr).get();
         assertNull(uuidResult);
 
         attr.put("occi.core.id", "urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0");
 
-        uuidResult = EntityManager.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr).get();
         assertEquals(uuidToTest, uuidResult);
 
         attr.put("occi.core.id", "f88486b7-0632-482d-a184-a9195733ddd0");
 
-        uuidResult = EntityManager.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr).get();
         assertEquals(uuidToTest, uuidResult);
 
         attr.put("occi.core.id", "urn:uuid:test/toto/");
 
-        uuidResult = EntityManager.getUUIDFromPath(path, attr);
+        uuidResult = EntityManager.getUUIDFromPath(path, attr).get();
         assertNull(uuidResult);
     }
 

@@ -62,16 +62,18 @@ public class EntityManager {
 
     /**
      * Find an Entity used by an owner, whatever is its configuration.
-     * @param id may be an uuid, a path/uuid or a location.
+     *
+     * @param id    may be an uuid, a path/uuid or a location.
      * @param owner the user owner of this entity
-     * @return an Entity model object if found else null.
+     * @return an Entity model object encapsulated in an optional object if found else empty optional.
      */
-    private static Entity findEntity(final String id, final String owner) {
+    public static Optional<Entity> findEntity(final String id, final String owner) {
         Entity entity = null;
         if (id == null || owner == null) {
-            return null;
+            return Optional.empty();
         }
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+
         // Search entity with uuid.
         LOGGER.info("Search entity with uuid: " + id);
         if (isUUIDValid(id)) {
@@ -82,7 +84,7 @@ public class EntityManager {
             // search entity with id ==> location.
             entity = entitiesOwner.getEntityByLocation(id);
         }
-        return entity;
+        return Optional.ofNullable(entity);
     }
 
 
@@ -91,40 +93,44 @@ public class EntityManager {
      *
      * @param id    (may be an uuid, a path/uuid or a path.)
      * @param owner (the user owner of this entity)
-     * @return an OCCI resource else null if not found.
+     * @return an OCCI resource else empty optional if not found.
      */
-    private static Resource findResource(final String id, final String owner) {
+    private static Optional<Resource> findResource(final String id, final String owner) {
         Entity entity;
         if (id == null || owner == null) {
-            return null;
+            return Optional.empty();
         }
-        entity = findEntity(id, owner);
-
-        if (entity != null && entity instanceof Resource) {
-            return (Resource) entity;
+        Optional<Entity> optEntity = findEntity(id, owner);
+        if (optEntity.isPresent()) {
+            entity = optEntity.get();
+            if (entity instanceof Resource) {
+                return Optional.of((Resource) entity);
+            }
         }
-        return null;
+        return Optional.empty();
     }
 
     /**
      * Find a link on all chains of resources.
      *
-     * @param id may be an uuid, a path/uuid or a path.
+     * @param id    may be an uuid, a path/uuid or a path.
      * @param owner the user owner of this entity.
-     * @return a Link OCCI entity model object else null if not found.
+     * @return a Link OCCI entity model object else empty Optional object if not found.
      */
-    private static Link findLink(final String id, final String owner) {
+    private static Optional<Link> findLink(final String id, final String owner) {
         Entity entity;
         if (id == null || owner == null) {
             return null;
         }
-        entity = findEntity(id, owner);
-
-        if (entity != null && entity instanceof Link) {
-            return (Link) entity;
+        Optional<Entity> optEntity = findEntity(id, owner);
+        if (optEntity.isPresent()) {
+            entity = optEntity.get();
+            if (entity instanceof Link) {
+                return Optional.of((Link) entity);
+            }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -133,7 +139,7 @@ public class EntityManager {
      * @return true if entity exist or false if it doesnt exist.
      */
     public static boolean isEntityExist(final String id, final String owner) {
-        return findEntity(id, owner) != null;
+        return findEntity(id, owner).isPresent();
     }
 
     /**
@@ -141,12 +147,12 @@ public class EntityManager {
      * entity list and it's not used here.
      *
      * @param filter a collection filter object.
-     * @param owner owner of this collection.
-     * @return a list of entities (key: owner, value : List of entities).
+     * @param owner  owner of this collection.
+     * @return a list of entities (key: owner, value : List of entities), never return null, if no entities found, return empty list.
      */
     public static List<Entity> findAllEntities(final CollectionFilter filter, final String owner) {
         List<Entity> entities = new LinkedList<>();
-        
+
         if (owner == null || owner.isEmpty()) {
             return entities;
         }
@@ -162,7 +168,7 @@ public class EntityManager {
      * Find all entities referenced for an owner.
      *
      * @param owner
-     * @return
+     * @return a global list of entities user by owner of model configuration, if none return empty list of entities.
      */
     public static List<Entity> findAllEntitiesOwner(final String owner) {
         List<Entity> entities = new ArrayList<>();
@@ -181,7 +187,7 @@ public class EntityManager {
      * Find all entities with that kind. (replace getEntities from kind object).
      *
      * @param categoryId Scheme+term category.
-     * @param owner owner of these entities.
+     * @param owner      owner of these entities.
      * @return a list of entities or empty list if none.
      */
     public static List<Entity> findAllEntitiesForKind(final String categoryId, final String owner) {
@@ -207,7 +213,7 @@ public class EntityManager {
      * Find all entities for a mixin.
      *
      * @param categoryId the category scheme + term.
-     * @param owner  username
+     * @param owner      username
      * @return a list of entities objects.
      */
     public static List<Entity> findAllEntitiesForMixin(final String categoryId, final String owner) {
@@ -232,7 +238,7 @@ public class EntityManager {
     }
 
     /**
-     * Get all the attributes of an Entity instance.
+     * Get all the attributes of an Entity instance, this method will add automatically the attributes if none are initialized on Entity instance.
      *
      * @param entity the given Entity instance.
      * @return all the attributes of the given instance.
@@ -253,11 +259,11 @@ public class EntityManager {
      * Find a used extension for an action Kind.
      *
      * @param actionId (action : scheme+term)
-     * @param owner     (owner of the configuration).
-     * @return extension found, may return null if no extension found with this
+     * @param owner    (owner of the configuration).
+     * @return an optional extension object, may return empty optional object if no extension found with this
      * configuration.
      */
-    public static Extension getExtensionForAction(final String actionId, final String owner) {
+    public static Optional<Extension> getExtensionForAction(final String actionId, final String owner) {
         Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
         EList<Extension> exts = config.getUse();
         Extension extRet = null;
@@ -284,11 +290,12 @@ public class EntityManager {
             }
         }
 
-        return extRet;
+        return Optional.ofNullable(extRet);
     }
 
     /**
      * Determine if entity is a Resource or a Link from the provided attributes.
+     *
      * @param attr = attributes of an entity
      * @return false if this entity is a link, true otherwise.
      */
@@ -305,17 +312,24 @@ public class EntityManager {
     /**
      * Apply filter where possible. startIndex starts at 1
      *
-     * @param filter Collection filter object.
+     * @param filter  Collection filter object.
      * @param sources A list of entities to filter.
-     * @param owner the owner of the entities.
+     * @param owner   the owner of the entities.
      * @return a filtered list of entities.
      */
     private static List<Entity> filterEntities(final CollectionFilter filter, List<Entity> sources, final String owner) {
 
         String categoryFilter = filter.getCategoryFilter();
+
+
         if (categoryFilter != null && !categoryFilter.isEmpty()
                 && !ConfigurationManager.checkIfCategorySchemeTerm(categoryFilter, owner)) {
-            categoryFilter = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, owner);
+            Optional<String> optCategory = ConfigurationManager.findCategorySchemeTermFromTerm(categoryFilter, owner);
+            if (optCategory.isPresent()) {
+                categoryFilter = optCategory.get();
+            } else {
+                LOGGER.warn("Category filter : " + categoryFilter + " has not been found on current configuration.");
+            }
         }
 
         String filterOnPath = filter.getFilterOnPath();
@@ -372,7 +386,7 @@ public class EntityManager {
      * Check if entity respect filter location path (relative).
      *
      * @param filterOnPath partial location to filter.
-     * @param entity entity to check.
+     * @param entity       entity to check.
      * @param owner
      * @return true if constraint path is respected (or if filter on path is null or empty) and false elsewhere.
      */
@@ -497,10 +511,10 @@ public class EntityManager {
      * Get an attribute state object for key parameter.
      *
      * @param key ex: occi.core.title.
-     * @return an AttributeState object, if attribute doesnt exist, null value
+     * @return an AttributeState object, if attribute doesnt exist, empty optional object value
      * is returned.
      */
-    private static AttributeState getAttributeStateObject(Entity entity, final String key) {
+    private static Optional<AttributeState> getAttributeStateObject(Entity entity, final String key) {
         AttributeState attr = null;
         if (key == null) {
             return null;
@@ -513,35 +527,8 @@ public class EntityManager {
             }
         }
 
-        return attr;
+        return Optional.ofNullable(attr);
     }
-
-    /**
-     * @param category
-     * @param entity
-     * @return
-     */
-    public static boolean isCategoryReferencedOnEntity(final String category, final Entity entity) {
-        if (entity == null || category == null) {
-            return false; // must not arrive.
-        }
-
-        Kind kind = entity.getKind();
-        List<Mixin> mixins = entity.getMixins();
-        String kindId = kind.getScheme() + kind.getTerm();
-
-        if (kindId.equals(category)) {
-            return true;
-        }
-        for (Mixin mixin : mixins) {
-            String mixinId = mixin.getScheme() + mixin.getTerm();
-            if (mixinId.equals(category)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     /**
      * Find an action object from entity definition kind and associated mixins.
@@ -591,19 +578,19 @@ public class EntityManager {
                 }
             }
         }
-
         if (!found) {
-            throw new ConfigurationException("Action " + actionId + " not found on entity : " + entity.getId());
+            String message = "Action : " + actionId + " is not referenced on entity : " + entity.getId() + ", this action is not referenced on the kind : " + entity.getKind();
+            LOGGER.error(message);
+            throw new ConfigurationException(message);
         }
-
         return action;
     }
 
     /**
      * Get the location of an entity registered by his uuid, if not found, throw a ConfigurationException.
      *
-     * @param uuid uuid v4 of the entity.
-     * @param owner
+     * @param uuid  uuid v4 of the entity.
+     * @param owner owner of the entity.
      * @return a location for uuid provided.
      * @throws ConfigurationException General configuration exception.
      */
@@ -633,7 +620,6 @@ public class EntityManager {
         }
 
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
-        // TODO : Check if in future we have location defined in connectors.
         String location = entitiesOwner.getEntityLocation(entity);
         if (location == null) {
             location = "/"; // On root path by default.
@@ -654,7 +640,7 @@ public class EntityManager {
      * @param attrName
      * @return
      */
-    public static EDataType getEAttributeType(Entity entity, String attrName) {
+    public static Optional<EDataType> getEAttributeType(Entity entity, String attrName) {
         EDataType eDataType = null;
         String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
         final EStructuralFeature eStructuralFeature = entity.eClass().getEStructuralFeature(eAttributeName);
@@ -664,7 +650,7 @@ public class EntityManager {
                 eDataType = ((EAttribute) eStructuralFeature).getEAttributeType();
             }
         }
-        return eDataType;
+        return Optional.ofNullable(eDataType);
     }
 
     /**
@@ -672,7 +658,7 @@ public class EntityManager {
      * @param attrName
      * @return an object container value from EMF attribute object.
      */
-    private static Object getEMFValueObject(Entity entity, String attrName) {
+    private static Optional<Object> getEMFValueObject(Entity entity, String attrName) {
         EAttribute eAttr;
         Object result = null;
         String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
@@ -683,25 +669,30 @@ public class EntityManager {
                 result = entity.eGet(eAttr);
             }
         }
-        return result;
+        return Optional.ofNullable(result);
     }
 
     /**
-     * @param entity
-     * @param attrName
-     * @return
+     * Get an attribute value from entity with attribute name given.
+     *
+     * @param entity   Entity object model
+     * @param attrName Attribute name
+     * @return an attribute value, String, may return empty optional if no value found.
      */
-    public static String getAttrValueStr(Entity entity, String attrName) {
+    public static Optional<String> getAttrValueStr(Entity entity, String attrName) {
         String result = null;
-        EDataType eAttrType = getEAttributeType(entity, attrName);
+        Optional<EDataType> optEdataType = getEAttributeType(entity, attrName);
+        if (optEdataType.isPresent()) {
+            EDataType eAttrType = optEdataType.get();
 
-        if (eAttrType != null && eAttrType.getInstanceClass() == String.class || eAttrType instanceof EEnum) {
-            Object eValue = getEMFValueObject(entity, attrName);
-            if (eValue != null) {
-                result = eValue.toString();
+            if (eAttrType.getInstanceClass() == String.class || eAttrType instanceof EEnum) {
+                Object eValue = getEMFValueObject(entity, attrName);
+                if (eValue != null) {
+                    result = eValue.toString();
+                }
             }
         }
-        return result;
+        return Optional.ofNullable(result);
     }
 
     /**
@@ -709,38 +700,42 @@ public class EntityManager {
      * @param attrName
      * @return
      */
-    public static Number getAttrValueNumber(Entity entity, String attrName) {
+    public static Optional<Number> getAttrValueNumber(Entity entity, String attrName) {
         Number result = null;
-        EDataType eAttrType = getEAttributeType(entity, attrName);
-        if (eAttrType != null &&
-                (eAttrType.getInstanceClass() == Float.class
-                        || eAttrType.getInstanceClass() == Integer.class
-                        || eAttrType.getInstanceClass() == BigDecimal.class
-                        || eAttrType.getInstanceClass() == Number.class
-                        || eAttrType.getInstanceClass() == Double.class
-                        || eAttrType.getInstanceClass() == Short.class)) {
+        Optional<EDataType> optEAttrType = getEAttributeType(entity, attrName);
+        if (optEAttrType.isPresent()) {
+            EDataType eAttrType = optEAttrType.get();
+            if ((eAttrType.getInstanceClass() == Float.class
+                    || eAttrType.getInstanceClass() == Integer.class
+                    || eAttrType.getInstanceClass() == BigDecimal.class
+                    || eAttrType.getInstanceClass() == Number.class
+                    || eAttrType.getInstanceClass() == Double.class
+                    || eAttrType.getInstanceClass() == Short.class)) {
 
-            Object eValue = getEMFValueObject(entity, attrName);
-            if (eValue != null) {
-                result = (Number) eValue;
+                Optional<Object> optEValue = getEMFValueObject(entity, attrName);
+                if (optEValue.isPresent()) {
+                    Object eValue = optEValue.get();
+                    result = (Number) eValue;
+                }
             }
-        }
-        if (result == null && eAttrType != null) {
-            if (eAttrType.getInstanceClassName() != null) {
-                String instanceClassName = eAttrType.getInstanceClassName();
-                if (instanceClassName.equals("float")
-                        || instanceClassName.equals("int")
-                        || instanceClassName.equals("double")
-                        || instanceClassName.equals("short")) {
-                    Object eValue = getEMFValueObject(entity, attrName);
-                    if (eValue != null) {
-                        result = (Number) eValue;
+            if (result == null) {
+                if (eAttrType.getInstanceClassName() != null) {
+                    String instanceClassName = eAttrType.getInstanceClassName();
+                    if (instanceClassName.equals("float")
+                            || instanceClassName.equals("int")
+                            || instanceClassName.equals("double")
+                            || instanceClassName.equals("short")) {
+
+                        Optional<Object> optEValue = getEMFValueObject(entity, attrName);
+                        if (optEValue.isPresent()) {
+                            Object eValue = optEValue.get();
+                            result = (Number) eValue;
+                        }
                     }
                 }
             }
         }
-
-        return result;
+        return Optional.ofNullable(result);
     }
 
     /**
@@ -748,14 +743,14 @@ public class EntityManager {
      * to ensure that only one entity exist for this path.
      *
      * @param location entity location.
-     * @param owner the entity owner.
+     * @param owner    the entity owner.
      * @return an entity from a location, if entity doesnt exist on path,
-     * return null.
+     * return empty optional.
      */
-    public static Entity findEntityFromLocation(final String location, final String owner) {
+    public static Optional<Entity> findEntityFromLocation(final String location, final String owner) {
         Entity entity;
         if (location == null) {
-            return null;
+            return Optional.empty();
         }
         // Path must be ended with slash.
         String pathParam = location;
@@ -763,23 +758,27 @@ public class EntityManager {
             pathParam = pathParam + "/";
         }
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        if (entitiesOwner == null) {
+            LOGGER.warn("Empty entities owner map !! for owner: " + owner);
+            return Optional.empty();
+        }
         entity = entitiesOwner.getEntityByLocation(pathParam);
-        return entity;
+        return Optional.ofNullable(entity);
     }
 
     /**
      * Add a new resource entity to a configuration and update the
      * configuration's map accordingly.
      *
-     * @param uuid         Entity id : "uuid unique identifier"
-     * @param title        Title of the entity.
-     * @param kind         scheme+term
-     * @param mixins       (ex:
-     *                     mixins=[http://schemas.ogf.org/occi/infrastructure/network# ipnetwork])
-     * @param attributes   (ex: attributes={occi.network.vlan=12,
-     *                     occi.network.label=private, occi.network.address=10.1.0.0/16,
-     *                     occi.network.gateway=10.1.255.254})
-     * @param owner        Owner of this entity to create.
+     * @param uuid       Entity id : "uuid unique identifier"
+     * @param title      Title of the entity.
+     * @param kind       scheme+term
+     * @param mixins     (ex:
+     *                   mixins=[http://schemas.ogf.org/occi/infrastructure/network# ipnetwork])
+     * @param attributes (ex: attributes={occi.network.vlan=12,
+     *                   occi.network.label=private, occi.network.address=10.1.0.0/16,
+     *                   occi.network.gateway=10.1.255.254})
+     * @param owner      Owner of this entity to create.
      * @throws ConfigurationException
      */
     public static void addResourceToConfiguration(String uuid, String title, String summary, String kind, List<String> mixins,
@@ -794,19 +793,26 @@ public class EntityManager {
         // Assign a new resource to configuration, if configuration has resource
         // existed, inform by logger but overwrite existing one.
         boolean resourceOverwrite;
-        Resource resource = findResource(uuid, owner);
-        if (resource == null) {
+        Optional<Resource> optResource = findResource(uuid, owner);
+        Resource resource;
+        if (!optResource.isPresent()) {
+
             resourceOverwrite = false;
 
             Kind occiKind;
 
             // Check if kind already exist in realm (on extension model).
-            occiKind = KindManager.findKindFromExtension(kind, owner);
+            Optional<Kind> optKind = KindManager.findKindFromExtension(kind, owner);
 
-            if (occiKind == null) {
+            if (!optKind.isPresent()) {
                 // Kind not found on extension, searching on entities.
-                occiKind = KindManager.findKindFromEntities(kind, owner);
+                optKind = KindManager.findKindFromEntities(kind, owner);
             }
+
+            if (!optKind.isPresent()) {
+                throw new ConfigurationException("Kind not found on used extensions");
+            }
+            occiKind = optKind.get();
             try {
                 // Create an OCCI resource with good resource type (via extension model).
                 resource = (Resource) OcciHelper.createEntity(occiKind);
@@ -836,6 +842,7 @@ public class EntityManager {
             }
         } else {
             LOGGER.info("resource already exist, overwriting...");
+            resource = optResource.get();
             resourceOverwrite = true;
             resource.setTitle(title);
             resource.setSummary(summary);
@@ -879,32 +886,40 @@ public class EntityManager {
                                               String target, Map<String, String> attributes, String location, String owner) throws ConfigurationException {
 
         if (owner == null || owner.isEmpty()) {
-            // Assume if owner is not used to a default user uuid "anonymous".
-            owner = ConfigurationManager.DEFAULT_OWNER;
+            throw new ConfigurationException("No user defined for the current configuration.");
         }
 
         boolean overwrite = false;
-        Resource resourceSrc = findResource(src, owner);
-        Resource resourceDest = findResource(target, owner);
+        Optional<Resource> optResSrc = findResource(src, owner);
+        ;
+        Optional<Resource> optResDest = findResource(target, owner);
 
-        if (resourceSrc == null) {
+        if (!optResSrc.isPresent()) {
             throw new ConfigurationException("Cannot find the source of the link: " + id);
         }
-        if (resourceDest == null) {
+        if (!optResDest.isPresent()) {
             throw new ConfigurationException("Cannot find the target of the link: " + id);
         }
 
-        Link link = findLink(id, owner);
-        if (link == null) {
+        Resource resourceSrc = optResSrc.get();
+        Resource resourceDest = optResDest.get();
+        Optional<Link> optLink = findLink(id, owner);
+        Link link = null;
+        if (!optLink.isPresent()) {
 
             Kind occiKind;
             // Check if kind already exist in realm (on extension model).
-            occiKind = KindManager.findKindFromExtension(kind, owner);
+            Optional<Kind> optKind = KindManager.findKindFromExtension(kind, owner);
 
-            if (occiKind == null) {
+            if (!optKind.isPresent()) {
                 // Kind not found on extension, searching on entities.
-                occiKind = KindManager.findKindFromEntities(kind, owner);
+                optKind = KindManager.findKindFromEntities(kind, owner);
             }
+
+            if (!optKind.isPresent()) {
+                throw new ConfigurationException("Kind not found on used extensions");
+            }
+            occiKind = optKind.get();
             try {
                 // Link doesnt exist on configuration, we create it.
                 link = (Link) OcciHelper.createEntity(occiKind);
@@ -927,14 +942,13 @@ public class EntityManager {
             }
         } else {
             // Link exist upon our configuration, we update it.
-
+            link = optLink.get();
             overwrite = true;
             link.setTitle(title);
             MixinManager.addMixinsToEntity(link, mixins, owner, true);
 
             updateAttributesToEntity(link, attributes, owner);
         }
-
 
         link.setSource(resourceSrc);
         link.setTarget(resourceDest);
@@ -989,12 +1003,13 @@ public class EntityManager {
     /**
      * Update / add attributes to entity.
      *
-     * @param entity
-     * @param attributes
-     * @param owner
-     * @return Updated entity object.
+     * @param entity     entity to update.
+     * @param attributes Attributes to update.
+     * @param owner      owner of the entity to update.
+     * @return Updated entity object, never null.
      */
     public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes, final String owner) {
+
         if (attributes == null || attributes.isEmpty()) {
             // TODO : Check if concrete object attributes are deleted, or update MART with a remove attributes method.
             entity.getAttributes().clear();
@@ -1014,9 +1029,10 @@ public class EntityManager {
                 LOGGER.debug("Attribute set value : " + attrValue);
 
                 OcciHelper.setAttribute(entity, attrName, attrValue);
-
-                AttributeState attrState = getAttributeStateObject(entity, attrName);
-                if (attrState != null) {
+                Optional<AttributeState> optAttrState = getAttributeStateObject(entity, attrName);
+                AttributeState attrState = null;
+                if (optAttrState.isPresent()) {
+                    attrState = optAttrState.get();
                     String attrStateValue = attrState.getValue();
                     if (attrStateValue != null && !attrStateValue.equals(attrValue)) {
                         // update the attribute value.
@@ -1060,59 +1076,49 @@ public class EntityManager {
      *
      * @param id    (kind id or mixin id or entity Id!)
      * @param owner owner of the model object to remove.
+     * @throws ConfigurationException global model exception if no remove operation from id value is found.
      */
-    public static void removeOrDissociateFromConfiguration(final String id, final String owner) {
-        boolean found = false;
-        boolean resourceToDelete = false;
-        boolean kindEntitiesToDelete = false;
-        boolean linkToDelete = false;
-        boolean mixinToDissociate = false;
+    public static void removeOrDissociateFromConfiguration(final String id, final String owner) throws ConfigurationException {
 
-        Kind kind = null;
+        Kind kind;
         Resource resource;
-        Link link = null;
-        Mixin mixin = null;
+        Link link;
+        Mixin mixin;
 
         // searching in resources.
-        resource = findResource(id, owner);
-        if (resource != null) {
-            found = true;
-            resourceToDelete = true;
-        }
-        if (!found) {
-            link = findLink(id, owner);
-            if (link != null) {
-                found = true;
-                linkToDelete = true;
-            }
-        }
-        if (!found) {
-            // check if this is a kind id.
-            kind = KindManager.findKindFromEntities(id, owner);
-            if (kind != null) {
-                kindEntitiesToDelete = true;
-                found = true;
-            }
-        }
-        if (!found) {
-            mixin = MixinManager.findMixinOnEntities(id, owner);
-            if (mixin != null) {
-                mixinToDissociate = true;
-            }
+        Optional<Resource> optRes = findResource(id, owner);
+
+
+        if (optRes.isPresent()) {
+            resource = optRes.get();
+            removeResource(resource, owner);
+            return;
         }
 
-        if (resourceToDelete) {
-            removeResource(resource, owner);
-        }
-        if (linkToDelete) {
+        Optional<Link> optLink = findLink(id, owner);
+        if (optLink.isPresent()) {
+            link = optLink.get();
             removeLink(link, owner);
+            return;
         }
-        if (kindEntitiesToDelete) {
+
+        // check if this is a kind id.
+        Optional<Kind> optKind = KindManager.findKindFromEntities(id, owner);
+
+        if (optKind.isPresent()) {
+            kind = optKind.get();
             removeEntitiesForKind(kind, owner);
+            return;
         }
-        if (mixinToDissociate) {
+
+        Optional<Mixin> optMixin = MixinManager.findMixinOnEntities(id, owner);
+        if (optMixin.isPresent()) {
+            mixin = optMixin.get();
             MixinManager.dissociateMixinFromEntities(mixin, owner);
+            return;
         }
+        LOGGER.warn("Removing or dissociate object model operation not found.");
+        throw new ConfigurationException("Removing or dissociate object model operation not found");
     }
 
     /**
@@ -1245,11 +1251,11 @@ public class EntityManager {
     /**
      * Search for UUID on a entityId String before attribute occi.core.id.
      *
-     * @param path
-     * @param attr
-     * @return the UUID provided may return null if uuid not found.
+     * @param path a location like /mylocation/myuuid/
+     * @param attr a map of attributes.
+     * @return the UUID provided may return optional empty if uuid not found.
      */
-    public static String getUUIDFromPath(final String path, final Map<String, String> attr) {
+    public static Optional<String> getUUIDFromPath(final String path, final Map<String, String> attr) {
         String[] uuids = path.split("/");
         String uuidToReturn = null;
 
@@ -1260,13 +1266,13 @@ public class EntityManager {
             }
         }
         if (uuidToReturn != null) {
-            return uuidToReturn;
+            return Optional.of(uuidToReturn);
         }
 
         // Check with occi.core.id attribute.
         String occiCoreId = attr.get(Constants.OCCI_CORE_ID);
         if (occiCoreId == null) {
-            return null;
+            return Optional.empty();
         }
         occiCoreId = occiCoreId.replace(Constants.URN_UUID_PREFIX, "");
         if (!occiCoreId.isEmpty()) {
@@ -1275,13 +1281,13 @@ public class EntityManager {
                 uuids = occiCoreId.split(spl);
                 for (String uuid : uuids) {
                     if (uuid.matches(REGEX_CONTROL_UUID)) {
-                        return uuid;
+                        return Optional.of(uuid);
                     }
                 }
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -1295,47 +1301,6 @@ public class EntityManager {
             return false;
         }
         return uuid.matches(REGEX_CONTROL_UUID);
-    }
-
-    /**
-     * Print on logger an entity.
-     * Used only for debugging purpose.
-     * @param entity
-     */
-    public static void printEntity(Entity entity) {
-
-        StringBuilder builder = new StringBuilder("");
-        if (entity instanceof Resource) {
-            builder.append("Entity is a resource. \n");
-        }
-        if (entity instanceof Link) {
-            builder.append("Entity is a link.\n");
-        }
-        builder.append("id : ").append(entity.getId()).append(" \n");
-        builder.append("kind : ").append(entity.getKind().getScheme()).append(entity.getKind().getTerm()).append(" \n ");
-        if (!entity.getMixins().isEmpty()) {
-            builder.append("mixins : ").append(entity.getMixins().toString()).append(" \n ");
-        } else {
-            builder.append("entity has no mixins" + " \n ");
-        }
-        builder.append("Entity attributes : " + " \n ");
-        if (entity.getAttributes().isEmpty()) {
-            builder.append("no attributes found." + " \n ");
-        }
-        for (AttributeState attribute : entity.getAttributes()) {
-            builder.append("--> name : ").append(attribute.getName()).append(" \n ");
-            builder.append("-- value : ").append(attribute.getValue()).append(" \n ");
-        }
-        if (entity.getKind().getActions().isEmpty()) {
-            builder.append("entity has no action \n ");
-        } else {
-            builder.append("entity has actions available : \n ");
-            for (Action action : entity.getKind().getActions()) {
-                builder.append(action.getTitle()).append("--> ").append(action.getScheme()).append(action.getTerm()).append(" \n ");
-            }
-        }
-        LOGGER.debug(builder.toString());
-
     }
 
     /**
@@ -1383,7 +1348,7 @@ public class EntityManager {
     /**
      * Convert entity attributes to Map object. String name, Object value
      *
-     * @param entity
+     * @param entity must never be null
      * @return attributes map, this must never return null.
      */
     public static Map<String, Object> convertEntityAttributesToMap(final Entity entity) {
@@ -1397,25 +1362,29 @@ public class EntityManager {
                         && !key.equals(Constants.OCCI_CORE_ID)
                         && !key.equals(Constants.OCCI_CORE_SOURCE)
                         && !key.equals(Constants.OCCI_CORE_TARGET)) {
+                    Optional<EDataType> opteAttrType = getEAttributeType(entity, key);
 
-                    EDataType eAttrType = getEAttributeType(entity, key);
+                    EDataType eAttrType;
 
-                    if (eAttrType != null
-                            && (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class)) {
-                        // value with quote only for String and EEnum type.
-                        attributes.put(key, val);
-                    } else if (eAttrType == null) {
-                        // Cant determine the type.
-                        attributes.put(key, val);
-                    } else {
-                        // Not a string nor an enum val.
-                        try {
-                            Number num = ConfigurationManager.parseNumber(val, eAttrType.getInstanceClassName());
-                            attributes.put(key, num);
-                        } catch (NumberFormatException ex) {
-                            // TODO : Check here if boolean object works.
+                    if (opteAttrType.isPresent()) {
+                        eAttrType = opteAttrType.get();
+                        if (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class) {
+                            // value with quote only for String and EEnum type.
                             attributes.put(key, val);
+
+                        } else {
+                            // Not a string nor an enum val.
+                            try {
+                                Number num = ConfigurationManager.parseNumber(val, eAttrType.getInstanceClassName());
+                                attributes.put(key, num);
+                            } catch (NumberFormatException ex) {
+                                LOGGER.warn("Exception thrown when trying to convert a value : " + val + " to an emf datatype : " + eAttrType.getName());
+                                attributes.put(key, val);
+                            }
                         }
+                    } else {
+                        // Cant define the data type.
+                        attributes.put(key, val);
                     }
                 }
                 if (key.equals(Constants.OCCI_CORE_ID)) {
@@ -1433,10 +1402,11 @@ public class EntityManager {
 
     /**
      * Execute an action on an entity.
-     * @param entity entity object model
-     * @param actionId action scheme + term
+     *
+     * @param entity           entity object model
+     * @param actionId         action scheme + term
      * @param actionAttributes action attributes map of String (name), String (value)
-     * @param owner owner of the configuration model
+     * @param owner            owner of the configuration model
      * @throws ConfigurationException
      */
     public static void executeActionOnEntity(Entity entity, final String actionId, final Map<String, String> actionAttributes, final String owner) throws ConfigurationException {
@@ -1444,18 +1414,13 @@ public class EntityManager {
             throw new ConfigurationException("No entity defined to execute this action: " + actionId);
         }
 
-        Extension ext = getExtensionForAction(actionId, owner);
-        if (ext == null) {
+        Optional<Extension> optExt = getExtensionForAction(actionId, owner);
+        if (!optExt.isPresent()) {
             LOGGER.error("Action " + actionId + " doesnt exist on referenced extensions");
             throw new ConfigurationException("Action " + actionId + " doesnt exist on referenced extensions");
         }
 
         Action action = getActionFromEntityWithActionId(entity, actionId);
-
-        if (action == null) {
-            LOGGER.error("Action cannot be executed on entity : " + entity.getId() + ", this action is not referenced on the kind : " + entity.getKind());
-            throw new ConfigurationException("Action cannot be executed on entity : " + entity.getId() + ", this action is not referenced on the kind : " + entity.getKind());
-        }
         String actionTerm = action.getTerm();
         String[] actionParameters = Utils.getActionParametersArray(actionAttributes);
         try {
@@ -1478,31 +1443,37 @@ public class EntityManager {
 
     /**
      * Execute action on an entity location.
-     * @param location
-     * @param actionId
-     * @param actionAttributes
-     * @param owner
+     *
+     * @param location         entity location
+     * @param actionId         action scheme + term
+     * @param actionAttributes map of action attributes
+     * @param owner            the owner of the entity where to trigger the action
      */
     public static void executeActionOnEntityLocation(final String location, final String actionId, final Map<String, String> actionAttributes, final String owner) throws ConfigurationException {
+
+        Optional<Entity> optEntity;
+        Optional<Extension> optExt;
+        Entity entity;
+
+
         if (location == null) {
             throw new ConfigurationException("No entity location defined.");
         }
         if (actionId == null) {
             throw new ConfigurationException("No action scheme+term defined.");
         }
+        optEntity = findEntityFromLocation(location, owner);
 
-        Entity entity = findEntityFromLocation(location, owner);
-
-        if (entity == null) {
+        if (!optEntity.isPresent()) {
             throw new ConfigurationException("Entity on location: " + location + " doesnt exist on configuration");
         }
 
-        Extension ext = getExtensionForAction(actionId, owner);
-        if (ext == null) {
+        optExt = getExtensionForAction(actionId, owner);
+        if (!optExt.isPresent()) {
             LOGGER.error("Action " + actionId + " doesnt exist on referenced extensions");
             throw new ConfigurationException("Action " + actionId + " doesnt exist on referenced extensions");
         }
-
+        entity = optEntity.get();
         Action action = getActionFromEntityWithActionId(entity, actionId);
 
         if (action == null) {
@@ -1528,8 +1499,10 @@ public class EntityManager {
         }
 
     }
+
     /**
      * Check if an action exist on model. Throws configuration exception if not found on model.
+     *
      * @param action action scheme+term
      */
     public static void checkActionOnModel(final String action, final String username) throws ConfigurationException {
@@ -1542,8 +1515,9 @@ public class EntityManager {
         }
 
         // Find action category on model.
-        Action actionModel = ConfigurationManager.findActionOnExtensions(action, username);
-        if (actionModel == null) {
+        Optional<Action> optAct = ConfigurationManager.findActionOnExtensions(action, username);
+
+        if (!optAct.isPresent()) {
             message = "Action : " + action + " not found on referenced extensions";
             throw new ConfigurationException(message);
         }
@@ -1554,9 +1528,51 @@ public class EntityManager {
         entitiesOwnerMap.put(owner, new EntitiesOwner(owner));
     }
 
-    public static Entity findEntityForUuid(final String entityId, final String owner) {
+    public static Optional<Entity> findEntityForUuid(final String entityId, final String owner) {
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
         Entity entity = entitiesOwner.getEntityByUuid(entityId);
-        return entity;
+        return Optional.ofNullable(entity);
+    }
+
+    /**
+     * Print on logger an entity.
+     * Used only for debugging purpose.
+     *
+     * @param entity
+     */
+    public static void printEntity(Entity entity) {
+
+        StringBuilder builder = new StringBuilder("");
+        if (entity instanceof Resource) {
+            builder.append("Entity is a resource. \n");
+        }
+        if (entity instanceof Link) {
+            builder.append("Entity is a link.\n");
+        }
+        builder.append("id : ").append(entity.getId()).append(" \n");
+        builder.append("kind : ").append(entity.getKind().getScheme()).append(entity.getKind().getTerm()).append(" \n ");
+        if (!entity.getMixins().isEmpty()) {
+            builder.append("mixins : ").append(entity.getMixins().toString()).append(" \n ");
+        } else {
+            builder.append("entity has no mixins" + " \n ");
+        }
+        builder.append("Entity attributes : " + " \n ");
+        if (entity.getAttributes().isEmpty()) {
+            builder.append("no attributes found." + " \n ");
+        }
+        for (AttributeState attribute : entity.getAttributes()) {
+            builder.append("--> name : ").append(attribute.getName()).append(" \n ");
+            builder.append("-- value : ").append(attribute.getValue()).append(" \n ");
+        }
+        if (entity.getKind().getActions().isEmpty()) {
+            builder.append("entity has no action \n ");
+        } else {
+            builder.append("entity has actions available : \n ");
+            for (Action action : entity.getKind().getActions()) {
+                builder.append(action.getTitle()).append("--> ").append(action.getScheme()).append(action.getTerm()).append(" \n ");
+            }
+        }
+        LOGGER.debug(builder.toString());
+
     }
 }

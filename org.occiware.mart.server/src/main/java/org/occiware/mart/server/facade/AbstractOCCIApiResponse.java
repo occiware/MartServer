@@ -30,22 +30,17 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractOCCIApiResponse.class);
-
+    private final String username;
     /**
      * Main response message. Used principally for HTTP to render String output (html, json, text etc.).
      */
     private Object response = null;
-
     private String exceptionMessage = null;
-
     private Exception exceptionThrown = null;
-
-    private final String username;
-
     private IRequestParser outputParser;
 
     /**
-     * @param username if null, default to "anonymous" user.
+     * @param username     if null, default to "anonymous" user.
      * @param outputParser if null, use default parser for rendering output.
      */
     public AbstractOCCIApiResponse(String username, IRequestParser outputParser) {
@@ -90,6 +85,11 @@ public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
     }
 
     @Override
+    public void setResponseMessage(Object responseMessage) {
+        this.response = responseMessage;
+    }
+
+    @Override
     public void parseResponseMessage(final String message) {
         try {
             setResponseMessage(outputParser.parseMessage(message));
@@ -101,11 +101,6 @@ public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
             this.setExceptionThrown(ex);
             this.setResponseMessage(message);
         }
-    }
-
-    @Override
-    public void setResponseMessage(Object responseMessage) {
-        this.response = responseMessage;
     }
 
     @Override

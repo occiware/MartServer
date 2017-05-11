@@ -24,10 +24,7 @@ import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by christophe on 22/04/2017.
@@ -58,11 +55,11 @@ public class KindManager {
     /**
      * Search for a kind.
      *
-     * @param id
-     * @param owner
-     * @return
+     * @param id    kind id scheme + term.
+     * @param owner owner of the configuration
+     * @return an optional kind object model or optional empty if kind is not found.
      */
-    static Kind findKindFromEntities(final String id, final String owner) {
+    static Optional<Kind> findKindFromEntities(final String id, final String owner) {
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
         Kind kind = null;
         EList<Link> links;
@@ -87,7 +84,7 @@ public class KindManager {
 
         }
 
-        return kind;
+        return Optional.ofNullable(kind);
 
     }
 
@@ -98,7 +95,7 @@ public class KindManager {
      * @param owner
      * @return
      */
-    public static Kind findKindFromExtension(final String kindId, final String owner) {
+    public static Optional<Kind> findKindFromExtension(final String kindId, final String owner) {
         Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
         Kind kindToReturn = null;
         EList<Kind> kinds;
@@ -143,7 +140,7 @@ public class KindManager {
             }
         }
 
-        return kindToReturn;
+        return Optional.ofNullable(kindToReturn);
 
     }
 
@@ -154,7 +151,7 @@ public class KindManager {
      * @param owner owner of the configuration
      * @return
      */
-    public static Extension getExtensionForKind(String kind, String owner) {
+    public static Optional<Extension> getExtensionForKind(String kind, String owner) {
         Extension extRet = null;
         Configuration configuration = ConfigurationManager.getConfigurationForOwner(owner);
         EList<Extension> exts = configuration.getUse();
@@ -172,7 +169,7 @@ public class KindManager {
             }
         }
 
-        return extRet;
+        return Optional.ofNullable(extRet);
     }
 
     /**

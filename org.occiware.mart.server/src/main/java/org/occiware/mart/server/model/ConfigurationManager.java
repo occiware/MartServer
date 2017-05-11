@@ -22,7 +22,6 @@ import org.occiware.clouddesigner.occi.*;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.MART;
 import org.occiware.mart.server.exception.ConfigurationException;
-import org.occiware.mart.server.model.container.EntitiesOwner;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,13 +135,14 @@ public class ConfigurationManager {
     /**
      * Get the location of a category, this is used too with user mixin tag.
      *
-     * @param category
+     * @param category (kind or mixin) instance.
      * @return a location for a category like this : /categoryTerm/
      * Must never return null value.
      */
-    public static String getLocation(Category category) {
+    public static Optional<String> getLocation(Category category) {
         if (category == null) {
-            return "";
+            LOGGER.warn("Category is null when invoking ConfigurationManager.getLocation(Category) method.");
+            return Optional.empty();
         }
         if (category instanceof Mixin) {
             String mixinId = category.getScheme() + category.getTerm();
@@ -150,10 +150,10 @@ public class ConfigurationManager {
                 MixinManager.userMixinLocationMap = new ConcurrentHashMap<>();
             }
             if (MixinManager.userMixinLocationMap.get(mixinId) != null) {
-                return MixinManager.userMixinLocationMap.get(mixinId);
+                return Optional.of(MixinManager.userMixinLocationMap.get(mixinId));
             }
         }
-        return '/' + category.getTerm() + '/';
+        return Optional.of('/' + category.getTerm() + '/');
     }
 
 
@@ -162,9 +162,9 @@ public class ConfigurationManager {
      *
      * @param categoryTerm
      * @param user
-     * @return a String, scheme + term or null if not found on configuration.
+     * @return a String, scheme + term or optional empty if not found on configuration.
      */
-    public static String findCategorySchemeTermFromTerm(String categoryTerm, String user) {
+    public static Optional<String> findCategorySchemeTermFromTerm(final String categoryTerm, final String user) {
         List<Kind> kinds = KindManager.getAllConfigurationKind(user);
         List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
         String term;
@@ -176,7 +176,7 @@ public class ConfigurationManager {
                 scheme = action.getScheme();
                 id = scheme + term;
                 if (categoryTerm.equalsIgnoreCase(term)) {
-                    return id;
+                    return Optional.of(id);
                 }
             }
 
@@ -184,7 +184,7 @@ public class ConfigurationManager {
             scheme = kind.getScheme();
             id = scheme + term;
             if (categoryTerm.equalsIgnoreCase(term)) {
-                return id;
+                return Optional.of(id);
             }
 
         }
@@ -194,12 +194,11 @@ public class ConfigurationManager {
             scheme = mixin.getScheme();
             id = scheme + term;
             if (categoryTerm.equalsIgnoreCase(term)) {
-                return id;
+                return Optional.of(id);
             }
         }
 
-        return null;
-
+        return Optional.empty();
     }
 
 
@@ -322,16 +321,17 @@ public class ConfigurationManager {
 
     /**
      * Find action model object from the used extensions.
+     *
      * @param actionId action scheme + term.
-     * @param owner owner of the configuration.
-     * @return an action model object, return null if not found.
+     * @param owner    owner of the configuration.
+     * @return an action model object, return empty optional if not found.
      */
-    public static Action findActionOnExtensions(final String actionId, final String owner) {
+    public static Optional<Action> findActionOnExtensions(final String actionId, final String owner) {
         Action action = null;
         List<Kind> kinds = KindManager.getAllConfigurationKind(owner);
         List<Mixin> mixins = MixinManager.getAllConfigurationMixins(owner);
         if (actionId == null) {
-            return null;
+            return Optional.empty();
         }
         for (Kind kind : kinds) {
             for (Action actionModel : kind.getActions()) {
@@ -355,11 +355,14 @@ public class ConfigurationManager {
                 }
             }
         }
-
-        return action;
-
+        return Optional.ofNullable(action);
     }
 
+    /**
+     * Create a new uuid.
+     *
+     * @return new uuid, never return null value.
+     */
     public static String createUUID() {
         return UUID.randomUUID().toString();
 
@@ -372,9 +375,9 @@ public class ConfigurationManager {
      * @param path
      * @param user
      * @return a category term if found on configuration, if not found return
-     * null.
+     * empty optional.
      */
-    public static String getCategoryFilter(final String path, final String user) {
+    public static Optional<String> getCategoryFilter(final String path, final String user) {
         List<Kind> kinds = KindManager.getAllConfigurationKind(user);
         List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
         String term;
@@ -383,25 +386,25 @@ public class ConfigurationManager {
             for (Action action : kind.getActions()) {
                 term = action.getTerm();
                 if (path.contains(term) || path.contains(term.toLowerCase())) {
-                    return term;
+                    return Optional.of(term);
 
                 }
             }
 
             term = kind.getTerm();
             if (path.contains(term) || path.contains(term.toLowerCase())) {
-                return term;
+                return Optional.of(term);
             }
 
         }
         for (Mixin mixin : mixins) {
             term = mixin.getTerm();
             if (path.contains(term) || path.contains(term.toLowerCase())) {
-                return term;
+                return Optional.of(term);
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -411,9 +414,9 @@ public class ConfigurationManager {
      * @param path
      * @param user
      * @return a category term if found on configuration, if not found return
-     * null.
+     * empty optional.
      */
-    public static String getCategoryFilterSchemeTerm(final String path, final String user) {
+    public static Optional<String> getCategoryFilterSchemeTerm(final String path, final String user) {
         List<Kind> kinds = KindManager.getAllConfigurationKind(user);
         List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
         String term;
@@ -421,7 +424,7 @@ public class ConfigurationManager {
         String id;
 
         if (path == null) {
-            return null;
+            return Optional.empty();
         }
 
         String pathTerm = path;
@@ -438,7 +441,7 @@ public class ConfigurationManager {
                 scheme = action.getScheme();
                 id = scheme + term;
                 if (pathTerm.equals(term) || pathTerm.equals(term.toLowerCase())) {
-                    return id;
+                    return Optional.of(id);
 
                 }
             }
@@ -447,7 +450,7 @@ public class ConfigurationManager {
             scheme = kind.getScheme();
             id = scheme + term;
             if (pathTerm.equals(term) || path.equals(term.toLowerCase())) {
-                return id;
+                return Optional.of(id);
             }
 
         }
@@ -457,21 +460,21 @@ public class ConfigurationManager {
             scheme = mixin.getScheme();
             id = scheme + term;
             if (pathTerm.equals(term) || pathTerm.equals(term.toLowerCase())) {
-                return id;
+                return Optional.of(id);
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     /**
      * Return true if categoryFilter is a scheme + term.
      *
-     * @param categoryFilter
-     * @param user
-     * @return
+     * @param categoryFilter kind or mixin or action scheme + term
+     * @param user           a username (owner)
+     * @return true if category is on user's configuration.
      */
-    public static boolean checkIfCategorySchemeTerm(String categoryFilter, String user) {
+    public static boolean checkIfCategorySchemeTerm(final String categoryFilter, final String user) {
 
         List<Kind> kinds = KindManager.getAllConfigurationKind(user);
         List<Mixin> mixins = MixinManager.getAllConfigurationMixins(user);
@@ -518,8 +521,8 @@ public class ConfigurationManager {
      * @return
      */
     public static boolean isCollectionOnCategory(final String location, final String owner) {
-        String categoryId = getCategoryFilterSchemeTerm(location, owner);
-        return categoryId != null;
+        Optional<String> optCategoryId = getCategoryFilterSchemeTerm(location, owner);
+        return optCategoryId.isPresent();
     }
 
     /**

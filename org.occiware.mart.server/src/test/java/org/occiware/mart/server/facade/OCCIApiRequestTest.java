@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import static org.junit.Assert.*;
 
 /**
@@ -141,10 +142,7 @@ public class OCCIApiRequestTest {
         System.out.println("Exception message: " + occiResponse.getExceptionMessage());
 
 
-
     }
-
-
 
 
 }
