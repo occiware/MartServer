@@ -23,9 +23,9 @@ import org.occiware.mart.server.model.EntityManager;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 /**
  * Created by Christophe Gourdin on 19/11/2016.
@@ -39,15 +39,20 @@ public class UtilsTest {
         String uuidResult;
         Map<String, String> attr = new HashMap<>();
         String path = "/tmp/testuuid/f88486b7-0632-482d-a184-a9195733ddd0";
+        Optional<String> optUuid = EntityManager.getUUIDFromPath(path, attr);
 
-        uuidResult = EntityManager.getUUIDFromPath(path, attr).get();
+        if (optUuid.isPresent()) {
+            uuidResult = optUuid.get();
+        } else {
+            throw new RuntimeException("No value for uuid on path.");
+        }
 
         assertEquals(uuidToTest, uuidResult);
 
         path = "/tmp/testuuid/";
 
-        uuidResult = EntityManager.getUUIDFromPath(path, attr).get();
-        assertNull(uuidResult);
+        optUuid = EntityManager.getUUIDFromPath(path, attr);
+        assertFalse(optUuid.isPresent());
 
         attr.put("occi.core.id", "urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0");
 
@@ -61,8 +66,8 @@ public class UtilsTest {
 
         attr.put("occi.core.id", "urn:uuid:test/toto/");
 
-        uuidResult = EntityManager.getUUIDFromPath(path, attr).get();
-        assertNull(uuidResult);
+        optUuid = EntityManager.getUUIDFromPath(path, attr);
+        assertFalse(optUuid.isPresent());
     }
 
 
