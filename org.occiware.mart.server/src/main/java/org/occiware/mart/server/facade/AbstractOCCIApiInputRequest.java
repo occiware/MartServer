@@ -453,53 +453,16 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public OCCIApiResponse deleteEntities(final String location, CollectionFilter filter) {
         String message;
-        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
-        int page = Constants.DEFAULT_CURRENT_PAGE;
-
-        if (filter == null) {
-            // Build a default filter.
-            filter = new CollectionFilter();
-            filter.setCurrentPage(page);
-            filter.setNumberOfItemsPerPage(items);
-            filter.setOperator(0);
-        }
         List<Entity> entities;
-        // Important to note : filters are defined in concrete implementation (categoryFilter, attributes filter, filter on a value etc.)
-        String categoryFilter = filter.getCategoryFilter();
-        String filterOnPath = filter.getFilterOnPath();
-        // Case of the mixin tag entities request.
-        boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
-        if (isMixinTagRequest) {
-            LOGGER.info("Mixin tag request... ");
-            Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
-            Mixin mixin;
-            if (!optMixin.isPresent()) {
-                message = "The mixin location : " + location + " is not defined";
-                parseConfigurationExceptionMessageOutput(message);
+        if (filter == null) {
+            try {
+                filter = buildDefaultCollectionFilter(location);
+            } catch (ConfigurationException ex) {
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
                 return occiApiResponse;
             }
-            if (categoryFilter == null) {
-                mixin = optMixin.get();
-                filter.setCategoryFilter(mixin.getTerm());
-                filter.setFilterOnPath(null);
-            }
         }
-        // Determine if this is a collection or an entity location.
-        // Collection on categories. // Like : get on myhost/compute/
-        if ((categoryFilter == null || categoryFilter.isEmpty()) && (filterOnPath == null || filterOnPath.isEmpty())) {
-            boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
-            if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-                Optional<String> optCat = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
-                String cat = null;
-                if (optCat.isPresent()) {
-                    cat = optCat.get();
-                }
-                filter.setCategoryFilter(cat);
-            } else {
-                filter.setFilterOnPath(location);
-            }
-        }
-
+        // Important to note : filters are defined in concrete implementation (categoryFilter, attributes filter, filter on a value etc.)
         entities = EntityManager.findAllEntities(filter, username);
         Optional<Entity> optEntityCheck; // To check if a link is present and have no resource deleted previously.
         for (Entity entity : entities) {
@@ -526,8 +489,6 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         }
 
         return occiApiResponse;
-
-
     }
 
     /**
@@ -540,54 +501,16 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public OCCIApiResponse findEntities(final String location, CollectionFilter filter) {
         String message;
-        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
-        int page = Constants.DEFAULT_CURRENT_PAGE;
-
         if (filter == null) {
-            // Build a default filter.
-            filter = new CollectionFilter();
-            filter.setCurrentPage(page);
-            filter.setNumberOfItemsPerPage(items);
-            filter.setOperator(0);
+            try {
+                filter = buildDefaultCollectionFilter(location);
+            } catch (ConfigurationException ex) {
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
+                return occiApiResponse;
+            }
         }
         List<Entity> entities;
         // Important to note : filters are defined in concrete implementation (categoryFilter, attributes filter, filter on a value etc.)
-
-        String categoryFilter = filter.getCategoryFilter();
-        String filterOnPath = filter.getFilterOnPath();
-        // Case of the mixin tag entities request.
-        boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
-        if (isMixinTagRequest) {
-            LOGGER.info("Mixin tag request... ");
-            Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
-            Mixin mixin;
-            if (!optMixin.isPresent()) {
-                message = "The mixin location : " + location + " is not defined";
-                parseConfigurationExceptionMessageOutput(message);
-                return occiApiResponse;
-            }
-            if (categoryFilter == null) {
-                mixin = optMixin.get();
-                filter.setCategoryFilter(mixin.getTerm());
-                filter.setFilterOnPath(null);
-            }
-        }
-
-        // Determine if this is a collection or an entity location.
-        // Collection on categories. // Like : get on myhost/compute/
-        if ((categoryFilter == null || categoryFilter.isEmpty()) && (filterOnPath == null || filterOnPath.isEmpty())) {
-            boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
-            if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-                Optional<String> optCat = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
-                String cat = null;
-                if (optCat.isPresent()) {
-                    cat = optCat.get();
-                }
-                filter.setCategoryFilter(cat);
-            } else {
-                filter.setFilterOnPath(location);
-            }
-        }
         entities = EntityManager.findAllEntities(filter, username);
         for (Entity entity : entities) {
             // Refresh object with crud method : retrieve.
@@ -614,49 +537,16 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public OCCIApiResponse findEntitiesLocations(final String location, CollectionFilter filter) {
         String message;
-        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
-        int page = Constants.DEFAULT_CURRENT_PAGE;
-
         if (filter == null) {
-            // Build a default filter.
-            filter = new CollectionFilter();
-            filter.setCurrentPage(page);
-            filter.setNumberOfItemsPerPage(items);
-            filter.setOperator(0);
+            try {
+                filter = buildDefaultCollectionFilter(location);
+            } catch (ConfigurationException ex) {
+                parseConfigurationExceptionMessageOutput(ex.getMessage());
+                return occiApiResponse;
+            }
         }
         List<Entity> entities;
         // Important to note : filters are defined in concrete implementation (categoryFilter, attributes filter, filter on a value etc.)
-
-        String categoryFilter = filter.getCategoryFilter();
-        // Determine if this is a collection or an entity location.
-        // Collection on categories. // Like : get on myhost/compute/
-        boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
-        if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-            Optional<String> optCat = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
-            String cat = null;
-            if (optCat.isPresent()) {
-                cat = optCat.get();
-            }
-            filter.setCategoryFilter(cat);
-        } else {
-            filter.setFilterOnPath(location);
-        }
-
-        // Case of the mixin tag entities request.
-        boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
-        if (isMixinTagRequest) {
-            LOGGER.info("Mixin tag request... ");
-            Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
-            if (!optMixin.isPresent()) {
-                message = "The mixin location : " + location + " is not defined";
-                parseConfigurationExceptionMessageOutput(message);
-                return occiApiResponse;
-            }
-            if (categoryFilter == null) {
-                filter.setCategoryFilter(optMixin.get().getTerm());
-                filter.setFilterOnPath(null);
-            }
-        }
         entities = EntityManager.findAllEntities(filter, username);
         for (Entity entity : entities) {
             // Refresh object.
@@ -1389,6 +1279,57 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         // TODO : Save all configurations model to disk.
     }
 
+
+    /**
+     * Build a default collection filter with provided location.
+     * @param location
+     * @return
+     * @throws ConfigurationException
+     */
+    private CollectionFilter buildDefaultCollectionFilter(final String location) throws ConfigurationException {
+        if (location == null) {
+            throw new ConfigurationException("Location is not set for building a collection filter.");
+        }
+        CollectionFilter filter;
+        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
+        int page = Constants.DEFAULT_CURRENT_PAGE;
+        // Build a default filter.
+        filter = new CollectionFilter();
+        filter.setCurrentPage(page);
+        filter.setNumberOfItemsPerPage(items);
+        filter.setOperator(0);
+        String message;
+        // Case of the mixin tag entities request.
+        boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
+        if (isMixinTagRequest) {
+            LOGGER.info("Mixin tag request... ");
+            Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
+            Mixin mixin;
+            if (!optMixin.isPresent()) {
+                message = "The mixin location : " + location + " is not defined";
+                throw new ConfigurationException(message);
+            }
+            mixin = optMixin.get();
+            filter.setCategoryFilter(mixin.getTerm());
+            filter.setFilterOnPath(null);
+        }
+
+        // Determine if this is a collection or an entity location.
+        // Collection on categories. // Like : get on myhost/compute/
+        boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
+        if (isCollectionOnCategoryPath && !isMixinTagRequest) {
+            Optional<String> optCat = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
+            String cat = null;
+            if (optCat.isPresent()) {
+                cat = optCat.get();
+            }
+            filter.setCategoryFilter(cat);
+        } else {
+            filter.setFilterOnPath(location);
+        }
+
+        return filter;
+    }
 
 
 }
