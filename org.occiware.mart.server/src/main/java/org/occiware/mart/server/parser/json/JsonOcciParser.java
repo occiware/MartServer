@@ -80,82 +80,76 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         OcciMainJson occiMain;
-        boolean isCollectionRes;
-        boolean isResourceSingle;
-        boolean isLinkSingle = false;
-        boolean isMixinTagSingle = false;
-        boolean isActionInvocation = false;
         String messages = "";
-
-        if (!contentJson.isEmpty()) {
-            // Try on occi main json (for multiple resources/links/mixins).
-            try {
-                occiMain = mapper.readValue(contentJson, OcciMainJson.class);
-                parseMainInput(occiMain);
-                isCollectionRes = true;
-            } catch (IOException ex) {
-                messages += ex.getMessage();
-                isCollectionRes = false;
-            }
-
-            // for one resource, if this is not a collection (resources,links etc..).
-            // it goes to try to get a single resource.
-            if (!isCollectionRes) {
-                try {
-                    ResourceJson resJson = mapper.readValue(contentJson, ResourceJson.class);
-                    parseResourceJsonInput(resJson);
-                    isResourceSingle = true;
-                } catch (IOException ex) {
-                    messages += " " + ex.getMessage();
-                    isResourceSingle = false;
-                }
-
-                if (!isResourceSingle) {
-                    try {
-                        LinkJson linkJson = mapper.readValue(contentJson, LinkJson.class);
-                        parseLinkJsonInput(linkJson);
-                        isLinkSingle = true;
-                    } catch (IOException ex) {
-                        messages += " " + ex.getMessage();
-                        isLinkSingle = false;
-                    }
-                }
-
-                // Try to parse single mixin tag.
-                if (!isResourceSingle && !isLinkSingle) {
-                    try {
-                        MixinJson mixinJson = mapper.readValue(contentJson, MixinJson.class);
-                        parseMixinJsonTagInput(mixinJson);
-                        isMixinTagSingle = true;
-                    } catch (IOException ex) {
-                        messages += " " + ex.getMessage();
-                        isMixinTagSingle = false;
-                    }
-                }
-                // Try to read action json invocation.
-                if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle) {
-                    try {
-                        ActionJson actionJson = mapper.readValue(contentJson, ActionJson.class);
-                        parseActionJsonInvocationInput(actionJson);
-                        isActionInvocation = true;
-                    } catch (IOException ex) {
-                        messages += " " + ex.getMessage();
-                        isActionInvocation = false;
-                    }
-                }
-
-                // If all tries are failed throw an exception with otherall exception messages.
-                if (!isResourceSingle && !isLinkSingle && !isMixinTagSingle && !isActionInvocation) {
-                    LOGGER.error("Unknown json input file, please check your file input. " + messages);
-                    throw new ParseOCCIException("Unknown json input file, please check your file. " + messages);
-                }
-            }
-
-        } else {
+        if (contentJson.isEmpty()) {
             // No content input.
             super.getInputDatas().clear();
+            return;
+        }
+        // Try on occi main json (for multiple resources/links/mixins).
+        try {
+            occiMain = mapper.readValue(contentJson, OcciMainJson.class);
+            parseMainInput(occiMain);
+            return;
+        } catch (IOException ex) {
+            messages += ex.getMessage();
+        }
+
+        // for one resource, if this is not a collection (resources,links etc..).
+        // it goes to try to get a single resource.
+
+        try {
+            ResourceJson resJson = mapper.readValue(contentJson, ResourceJson.class);
+            parseResourceJsonInput(resJson);
+            return;
+        } catch (IOException ex) {
+            messages += " " + ex.getMessage();
+        }
+        // Try with link.
+        try {
+            LinkJson linkJson = mapper.readValue(contentJson, LinkJson.class);
+            parseLinkJsonInput(linkJson);
+            return;
+        } catch (IOException ex) {
+            messages += " " + ex.getMessage();
+        }
+
+
+        // Try to parse single mixin tag definition.
+        try {
+            MixinJson mixinJson = mapper.readValue(contentJson, MixinJson.class);
+            parseMixinJsonTagInput(mixinJson);
+            return;
+        } catch (IOException ex) {
+            messages += " " + ex.getMessage();
 
         }
+
+        // Try to read action json invocation.
+
+        try {
+            ActionJson actionJson = mapper.readValue(contentJson, ActionJson.class);
+            parseActionJsonInvocationInput(actionJson);
+            return;
+        } catch (IOException ex) {
+            messages += " " + ex.getMessage();
+        }
+
+        // Try to read locations for mixin tag association.
+        try {
+            LocationsJson locationsJson = mapper.readValue(contentJson, LocationsJson.class);
+            parseLocationsJsonInput(locationsJson);
+            return;
+        } catch (IOException ex) {
+            messages += " " + ex.getMessage();
+        }
+
+
+        // If all tries are failed throw an exception with otherall exception messages.
+        LOGGER.error("Unknown json input file, please check your file input. " + messages);
+        throw new ParseOCCIException("Unknown json input file, please check your file. " + messages);
+
+
     }
 
     /**
@@ -392,6 +386,33 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         occiRequestDatas.add(data);
         super.setInputDatas(occiRequestDatas);
     }
+
+    /**
+     * Parse mixin tag define in MixinJson object.
+     *
+     * @param content
+     * @throws ParseOCCIException
+     */
+    private void parseLocationsJsonInput(LocationsJson content) throws ParseOCCIException {
+        List<OCCIRequestData> occiRequestDatas = super.getInputDatas();
+
+
+        List<String> locations = content.getLocations();
+        if (locations == null || locations.isEmpty()) {
+            throw new ParseOCCIException("Locations are not set.");
+        }
+        OCCIRequestData data = new OCCIRequestData();
+        for (String location : locations) {
+            if (location.isEmpty()) {
+                throw new ParseOCCIException("A location must be set.");
+            }
+        }
+        // add locations to x occi location data ==> usage with mixin tag association.
+        data.setXocciLocations(locations);
+        occiRequestDatas.add(data);
+        super.setInputDatas(occiRequestDatas);
+    }
+
 
     /**
      * Parse action invocation.

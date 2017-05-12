@@ -784,8 +784,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         try {
             EntityManager.removeOrDissociateFromConfiguration(mixinTag, username);
         } catch (ConfigurationException ex) {
-            parseConfigurationExceptionMessageOutput(ex.getMessage());
-            return occiApiResponse;
+            // no association with entities, ignore the exception.
         }
 
         Optional<Mixin> optMixin = MixinManager.findUserMixinOnConfiguration(mixinTag, username);
@@ -1052,20 +1051,12 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
     @Override
     public boolean isMixinTagLocation(final String location) {
-        boolean onMixinTagLocation = false;
-        if (MixinManager.getUserMixinFromLocation(location, username) != null) {
-            onMixinTagLocation = true;
-        }
-        return onMixinTagLocation;
+        return MixinManager.getUserMixinFromLocation(location, username).isPresent();
     }
 
     @Override
     public boolean isEntityLocation(final String location) {
-        boolean onEntityLocation = false;
-        if (EntityManager.findEntityFromLocation(location, username) != null) {
-            onEntityLocation = true;
-        }
-        return onEntityLocation;
+        return EntityManager.findEntityFromLocation(location, username).isPresent();
     }
 
 

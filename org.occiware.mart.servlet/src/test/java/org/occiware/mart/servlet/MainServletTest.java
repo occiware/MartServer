@@ -82,8 +82,18 @@ public class MainServletTest {
     @Test
     public void testServerRequests() {
         try {
-            createResourcesWithPutAndPost();
+            // All the tests are based on occi json.
+            // Test operation with /-/ to be compliant with occi spec.
+            testInterfaceMethods();
 
+            // Test operation with /myresources/...
+            testsOnEntityLocation();
+
+
+
+
+            // createResourcesWithPutAndPost();
+            // postMixinTagsAssociation();
             // updateResourcesTest();
             // testGetResourceLink();
 
@@ -96,11 +106,149 @@ public class MainServletTest {
 
     }
 
+    public void testInterfaceMethods() throws Exception {
+        System.out.println("Testing interface methods on path /-/");
+        ContentResponse response;
+        String result;
+        HttpMethod httpMethod;
+        // First query the interface with GET method.
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                null,
+                "Test query interface with GET method on uri /-/");
+
+        // Interface with filter on category network (kind).
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/-/?category=network", HttpServletResponse.SC_OK,
+                null,
+                "Test query interface with GET Method interface /-/ with network category collection filtering.");
+
+        result = response.getContentAsString();
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"term\" : \"network\","));
+
+        // Interface with filter on category ipnetwork (mixin).
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/-/?category=ipnetwork", HttpServletResponse.SC_OK,
+                null,
+                "Test query interface with GET Method interface /-/ with network category collection filtering.");
+        result = response.getContentAsString();
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"term\" : \"ipnetwork\","));
+
+        // System.out.println("Same tests interface methods on /.wellknown../-/ path");
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/.well-known/org/ogf/occi/-/", HttpServletResponse.SC_OK,
+                null,
+                "Test query interface with GET method on uri /.well-known/org/ogf/occi/-/");
+
+        // Interface with filter on category network (kind).
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/.well-known/org/ogf/occi/-/?category=network", HttpServletResponse.SC_OK,
+                null,
+                "Test query interface with GET Method interface /-/ with network category collection filtering.");
+
+        result = response.getContentAsString();
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"term\" : \"network\","));
+
+        // Interface with filter on category ipnetwork (mixin).
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/.well-known/org/ogf/occi/-/?category=ipnetwork", HttpServletResponse.SC_OK,
+                null,
+                "Test query interface with GET Method interface /-/ with network category collection filtering.");
+        result = response.getContentAsString();
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"term\" : \"ipnetwork\","));
+
+        System.out.println("Add user mixin tests");
+        httpMethod = HttpMethod.POST;
+        // Add user defined mixins
+        // Define a mixin tag
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_usermixin1.json",
+                "Create a mixin tag named usermixin1 - POST method");
+
+        // define a second mixin tag
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_usermixin2.json",
+                "Create a mixin tag named usermixin2 - POST method");
+
+        // redefine the mixin user tag 1.
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_usermixin1.json",
+                "Redefine the mixin user tag 1 - POST method");
+
+        // redefine mixin user tags with a collection of mixins.
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/definemixintags.json",
+                "Redefine all the mixin user tags with a collection of mixins  - POST method");
+
+        // Create other collection of mixin tags.
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_collection.json",
+                "Define another collection of mixin tags - POST method");
+
+        // Retrieve mixin tags definition
+        httpMethod = HttpMethod.GET;
+        response = executeQuery(httpMethod, "http://localhost:9090/-/?category=usermixin1", HttpServletResponse.SC_OK,
+                null,
+                "Retrieve mixin tag usermixin1 on interface - GET method");
+
+        result = response.getContentAsString();
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"term\" : \"usermixin1\","));
+
+        response = executeQuery(httpMethod, "http://localhost:9090/-/?category=usermixin2", HttpServletResponse.SC_OK,
+                null,
+                "Retrieve mixin tag usermixin2 on interface - GET method");
+        result = response.getContentAsString();
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"term\" : \"usermixin2\","));
+
+
+        // Remove a user defined mixin
+
+        response = executeQuery(HttpMethod.DELETE, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/delete/remove_mixin_tag_usermixin2.json",
+                "Remove user mixin tag usermixin2 from interface - DELETE method");
+
+
+        // Check that mixin usermixin2 is totally removed.
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/-/?category=usermixin2", HttpServletResponse.SC_OK,
+                null,
+                "Retrieve mixin tag usermixin2 on interface - GET method");
+        result = response.getContentAsString();
+        assertFalse(result.contains("\"term\" : \"usermixin2\","));
+
+
+        // Now testing PUT method with interface, this must fail.
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/-/", HttpServletResponse.SC_BAD_REQUEST,
+                "/testjson/integration/creation/mixintag_usermixin1.json",
+                "Test query interface with PUT method. Must fail with bad request.");
+
+        // Test with action post :
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/-/?action=stop", HttpServletResponse.SC_BAD_REQUEST,
+                "/testjson/integration/update/action_invocation_test.json",
+                "Test query interface with action trigger on POST method. Must fail with bad request.");
+
+    }
+
+    public void testsOnEntityLocation() {
+        System.out.println("Testing entities creation methods on uri /myresources/etc.");
+
+        ContentResponse response;
+        String result;
+        HttpMethod httpMethod;
+
+        
+
+
+
+
+    }
+
+
+
     // @Test
     public void createResourcesWithPutAndPost() throws Exception {
         HttpMethod httpMethod = HttpMethod.PUT;
         System.out.println("Testing PUT method ==> PutWorker");
-        // Test interface.
+        // Test interface on PUT.
         ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_BAD_REQUEST,
                 "/testjson/integration/creation/mixintag_usermixin1.json",
                 "Test query interface with PUT method. Must fail with bad request.");
@@ -195,18 +343,141 @@ public class MainServletTest {
                 "/testjson/integration/creation/mixintag_usermixin1.json",
                 "Redefine the mixin user tag 1");
 
-        // define other mixin user tags with a collection of mixins.
+        // redefine mixin user tags with a collection of mixins.
         response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/definemixintags.json",
                 "Redefine all the mixin user tags with a collection of mixins");
 
-        // TODO : associate mixin tags with some entities
+        // Define a new collection of mixin tags
+        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_collection.json",
+                "Define a new collection of mixin tags");
 
         // TODO : PUT other entities collection on mixins tag path and check if the new ones replace old entities association.
 
 
     }
 
+    public void postMixinTagsAssociation() throws Exception {
+        HttpMethod httpMethod = HttpMethod.POST;
+
+        // Add a collection of resources to a mixin tag.
+        executeQuery(httpMethod, "http://localhost:9090/tags/mixin1/", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/resource1.json",
+                "Associate a mixin tag to entities from its mixin tag location path.");
+
+
+    }
+
+
+    public void updateResourcesTest() throws Exception {
+        HttpMethod httpMethod = HttpMethod.POST;
+        // Update a resource.
+        executeQuery(httpMethod, "http://localhost:9090/mycomputes/", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/resource1.json",
+                "Update a resource with POST, must be updated.");
+
+
+        System.out.println("POST Request on resource location : /f88486b7-0632-482d-a184-a9195733ddd0");
+
+
+
+        // Check after update GET :
+        ContentResponse response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
+                null,
+                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0");
+
+        String result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
+
+        // associate a mixin tag to a resource.
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/mixintag_asso.json",
+                "Associate a mixin tag to a resource");
+
+        // Get the resource.
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
+                null,
+                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0");
+
+        result = response.getContentAsString();
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("\"http://occiware.org/occi/tags#my_mixin2\""));
+
+
+        // action invocation.
+        // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                "/testjson/integration/update/action_invocation_test.json",
+                "POST Request action stop graceful invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop");
+
+
+        // Action invocation without attributes field. ==> Start
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                "/testjson/integration/update/action_invocation_test.json",
+                "POST Request action start invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
+
+        // action invocation with direct term without the action kind definition.
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                null,
+                "POST action invocation with direct term without the action kind definition on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
+
+        // bad action invocation the action doesnt exist on entity.
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test", HttpServletResponse.SC_BAD_REQUEST,
+                null,
+                "POST Request action test invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
+
+        // 5 : bad action invocation the action scheme+term doesnt exist on entity.
+        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=titi", HttpServletResponse.SC_BAD_REQUEST,
+                "/testjson/integration/update/update_attributes_computes.json",
+                "POST Request action test invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
+
+        // 6 : update attributes on collection /compute/
+        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/update_attributes_computes.json",
+                "update attributes on collection /compute/ ");
+
+        // 7 : Get on /compute/ to check if content has been updated.
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
+                null,
+                "GET Request http://localhost:9090/compute/");
+        // TODO : Check content updated result.
+
+
+        // 8 : POST Request on collection mixin tag /mixins/my_mixin2/
+        response = executeQuery(httpMethod, "http://localhost:9090/mixins/my_mixin2/", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/update_attributes_with_mixintag.json",
+                "POST Request on collection mixin tag /mixins/my_mixin2/");
+
+        // 9 : Get to check result.
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mixins/my_mixin2", HttpServletResponse.SC_OK,
+                null,
+                "POST Request on collection mixin tag /mixins/my_mixin2/");
+
+        // TODO : Check content updated result.
+
+        // Post on collection with a filter set. here : ?category=network.
+        response = executeQuery(httpMethod, "http://localhost:9090/?category=network", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/update_attributes_with_mixintag.json",
+                "POST Request on collection with filter ?category=network");
+
+        // Get collection on kind network.
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+                null,
+                "Get collection on kind /network/");
+        result = response.getContentAsString();
+        assertTrue(result.contains("public"));
+
+
+        // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
+        String titleVal = UrlEncoded.encodeString("other compute 1 title", Charset.forName("UTF-8"));
+        response = executeQuery(httpMethod, "http://localhost:9090/?attribute=occi.core.title&value=" + titleVal, HttpServletResponse.SC_OK,
+                "/testjson/integration/update/update_attributes_with_title_filter.json",
+                "POST Request on collection with filter ?category=network");
+    }
 
     public void testGetResourceLink() throws Exception {
         HttpMethod httpMethod = HttpMethod.GET;
@@ -325,114 +596,7 @@ public class MainServletTest {
     }
 
 
-    public void updateResourcesTest() throws Exception {
-        HttpMethod httpMethod = HttpMethod.POST;
-        // Update a resource.
-        executeQuery(httpMethod, "http://localhost:9090/mycomputes/", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/resource1.json",
-                "Update a resource with POST, must be updated.");
 
-
-        System.out.println("POST Request on resource location : /f88486b7-0632-482d-a184-a9195733ddd0");
-
-
-
-        // Check after update GET :
-        ContentResponse response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0");
-
-        String result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
-
-        // associate a mixin tag to a resource.
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/mixintag_asso.json",
-                "Associate a mixin tag to a resource");
-
-        // Get the resource.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0");
-
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("\"http://occiware.org/occi/tags#my_mixin2\""));
-
-
-        // action invocation.
-        // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                "/testjson/integration/update/action_invocation_test.json",
-                "POST Request action stop graceful invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop");
-
-
-        // Action invocation without attributes field. ==> Start
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                "/testjson/integration/update/action_invocation_test.json",
-                "POST Request action start invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
-
-        // action invocation with direct term without the action kind definition.
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                null,
-                "POST action invocation with direct term without the action kind definition on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start");
-
-        // bad action invocation the action doesnt exist on entity.
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test", HttpServletResponse.SC_BAD_REQUEST,
-                null,
-                "POST Request action test invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
-
-        // 5 : bad action invocation the action scheme+term doesnt exist on entity.
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=titi", HttpServletResponse.SC_BAD_REQUEST,
-                "/testjson/integration/update/update_attributes_computes.json",
-                "POST Request action test invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test");
-
-        // 6 : update attributes on collection /compute/
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/update_attributes_computes.json",
-                "update attributes on collection /compute/ ");
-
-        // 7 : Get on /compute/ to check if content has been updated.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/compute/");
-        // TODO : Check content updated result.
-
-
-        // 8 : POST Request on collection mixin tag /mixins/my_mixin2/
-        response = executeQuery(httpMethod, "http://localhost:9090/mixins/my_mixin2/", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/update_attributes_with_mixintag.json",
-                "POST Request on collection mixin tag /mixins/my_mixin2/");
-
-        // 9 : Get to check result.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mixins/my_mixin2", HttpServletResponse.SC_OK,
-                null,
-                "POST Request on collection mixin tag /mixins/my_mixin2/");
-
-        // TODO : Check content updated result.
-
-        // Post on collection with a filter set. here : ?category=network.
-        response = executeQuery(httpMethod, "http://localhost:9090/?category=network", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/update_attributes_with_mixintag.json",
-                "POST Request on collection with filter ?category=network");
-
-        // Get collection on kind network.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
-                null,
-                "Get collection on kind /network/");
-        result = response.getContentAsString();
-        assertTrue(result.contains("public"));
-
-
-        // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
-        String titleVal = UrlEncoded.encodeString("other compute 1 title", Charset.forName("UTF-8"));
-        response = executeQuery(httpMethod, "http://localhost:9090/?attribute=occi.core.title&value=" + titleVal, HttpServletResponse.SC_OK,
-                "/testjson/integration/update/update_attributes_with_title_filter.json",
-                "POST Request on collection with filter ?category=network");
-    }
 
     /**
      *

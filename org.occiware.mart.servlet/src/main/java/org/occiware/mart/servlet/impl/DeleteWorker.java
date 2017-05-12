@@ -49,23 +49,51 @@ public class DeleteWorker extends ServletEntry {
             // Validation failed.
             return occiResponse.getHttpResponse();
         }
+        if (occiRequest.isActionInvocationQuery()) {
+            return occiResponse.parseMessage("You cannot use an action trigger with DELETE method.", HttpServletResponse.SC_BAD_REQUEST);
+        }
+
+        List<OCCIRequestData> datas = occiRequest.getContentDatas();
         if (getContentType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
             return occiResponse.parseMessage("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/", HttpServletResponse.SC_BAD_REQUEST);
         }
 
-        if (occiRequest.isInterfQuery()) {
-            return occiResponse.parseMessage("you cannot use interface query on DELETE method", HttpServletResponse.SC_BAD_REQUEST);
+        if (occiRequest.isInterfQuery() && datas.isEmpty()) {
+            return occiResponse.parseMessage("you cannot use interface query that way on DELETE method, the interface must be used with remove mixin tag operation", HttpServletResponse.SC_BAD_REQUEST);
         }
-        if (occiRequest.isActionInvocationQuery()) {
-            return occiResponse.parseMessage("You cannot use an action with DELETE method.", HttpServletResponse.SC_BAD_REQUEST);
+        if (occiRequest.isInterfQuery() && datas.size() >= 1) {
+            // Check if mixin tags datas.
+            if (!isMixinTagsDatas()) {
+                return occiResponse.parseMessage("you cannot use interface query that way on DELETE method, the interface must be used with remove mixin tag operation", HttpServletResponse.SC_BAD_REQUEST);
+            }
         }
 
-        List<OCCIRequestData> datas = occiRequest.getContentDatas();
-        // TODO...
+        // Remove mixin tag(s) operation.
+        if (occiRequest.isInterfQuery() && isMixinTagsDatas()) {
+            for (OCCIRequestData data : datas) {
+                occiRequest.deleteMixinTag(data.getMixinTag());
+                if (occiResponse.hasExceptions()) {
+                    return resp;
+                }
+            }
+            return resp;
+        }
 
-        // Against data, we call the removeFromModel method.
-        // occiRequest.removeFromModel();
+
         resp = occiResponse.getHttpResponse();
         return resp;
     }
+
+    private boolean isMixinTagsDatas() {
+        boolean isMixinTags = true;
+        List<OCCIRequestData> datas = occiRequest.getContentDatas();
+        for (OCCIRequestData data : datas) {
+            if (data.getMixinTag() == null) {
+                isMixinTags = false;
+                break;
+            }
+        }
+        return isMixinTags;
+    }
 }
+
