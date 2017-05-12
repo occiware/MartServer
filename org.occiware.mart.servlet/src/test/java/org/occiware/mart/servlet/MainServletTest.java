@@ -249,7 +249,7 @@ public class MainServletTest {
                 "/testjson/integration/update/update_attributes_computes.json",
                 "Update compute attribute cores and memory attribute - POST method, must be updated on path : /myresources/compute1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
-        // Action invocation start on this entity.
+        // Action invocation stop on this entity.
         response = executeQuery(HttpMethod.POST, "http://localhost:9090/myresources/compute1?action=stop", HttpServletResponse.SC_OK,
                         "/testjson/integration/update/action_invocation_test.json",
                         "Trigger action stop on entity - POST method, must be triggered on location : /myresources/compute1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
@@ -346,7 +346,7 @@ public class MainServletTest {
         // Get request on /compute/ using text/uri-list.
         response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
                 null,
-                "Get resource collection for the compute kind , location : /compute/ ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_TEXT_URI_LIST);
+                "Get resource collection for the compute kind , location : /compute/ using text/uri-list", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_TEXT_URI_LIST);
 
         // Search response on headers.
         HttpFields fields = response.getHeaders();
@@ -356,96 +356,52 @@ public class MainServletTest {
             System.out.println("Location in header X-OCCI-Location: " + location);
         }
 
+        // Querying on /network/
+        response = executeQuery(httpMethod, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+                null,
+                "Get resource collection for the compute kind , location : /network/ ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+        // Same query with text/uri-list
+        response = executeQuery(httpMethod, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+                null,
+                "Get resource collection for the compute kind , location : /network/ using text/uri-list", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_TEXT_URI_LIST);
+
+        fields = response.getHeaders();
+        xlocations = fields.getValuesList("X-OCCI-Location");
+        assertFalse(xlocations.isEmpty());
+        for (final String location : xlocations) {
+            System.out.println("Location in header X-OCCI-Location: " + location);
+        }
+
+        // Action trigger on collection :  Stop all compute resources kind.
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/compute/?action=stop", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/action_invocation_test.json",
+                "Trigger action stop on entity - POST method, must be triggered on location : /compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+
+        // Add a new network.
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/resource6.json",
+                "Create resource network2 - POST method - on location: /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // remove all network.
+        response = executeQuery(HttpMethod.DELETE, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+                null,
+                "Remove all network - DELETE method, on location : /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
+        // String titleVal = UrlEncoded.encodeString("other compute 1 title", Charset.forName("UTF-8"));
+        // response = executeQuery(httpMethod, "http://localhost:9090/?attribute=occi.core.title&value=" + titleVal, HttpServletResponse.SC_OK,
+        //         "/testjson/integration/update/update_attributes_with_title_filter.json",
+        //         "POST Request on collection with filter ?category=network", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
 
     }
 
 
-
-
-    // @Test
-    public void createResourcesWithPutAndPost() throws Exception {
-        HttpMethod httpMethod = HttpMethod.PUT;
-        System.out.println("Testing PUT method ==> PutWorker");
-        // Test interface on PUT.
-        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_BAD_REQUEST,
-                "/testjson/integration/creation/mixintag_usermixin1.json",
-                "Test query interface with PUT method. Must fail with bad request.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute1/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource1.json",
-                "create a resource with PUT, must be created.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Check if root path with PUT request is authorized, this must not be allowed.
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                "/testjson/integration/creation/bad_resource.json",
-                "Check if root path with PUT request is authorized, this must not be allowed.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Check Create a bad resource (with a kind definition does not exist on extension / configuration).
-        response = executeQuery(httpMethod, "http://localhost:9090/mybadcompute/mybadresource/", HttpServletResponse.SC_BAD_REQUEST,
-                "/testjson/integration/creation/bad_resource.json",
-                "Check Create a bad resource (with a kind definition does not exist on extension / configuration).", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        // Create the second resource with mixins and no uuid defined.
-        response = executeQuery(httpMethod, "http://localhost:9090/mynetworks/mainnetwork/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource1bis.json",
-                "Create the second resource with mixin on location : /mynetworks/mainnetwork.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Create a collection of resources, this must not be authorized in PUT REQUEST, this is authorized in POST request.
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                "/testjson/integration/creation/resource3.json",
-                "Create a collection of resources with PUT method.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Other test create resource without ending slash.
-        response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute2", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resourceonly.json",
-                "Other test create resource without ending slash on location : /myresources/compute2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // This test location conflict on put method (request path differ from location).
-        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_CONFLICT,
-                "/testjson/integration/creation/resource_location.json",
-                "Create a resource with integrated location value but conflict with request path.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Create a resource with integrated location value.
-        response = executeQuery(httpMethod, "http://localhost:9090/testlocation/f89486b7-0632-482d-a184-a9195733ddd9", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource_location.json",
-                "Create a resource with integrated location value.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Create a resource without uuid set.
-        response = executeQuery(httpMethod, "http://localhost:9090/myresources/compute3/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource_without_uuid.json",
-                "Create a resource without uuid", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        httpMethod = HttpMethod.POST;
-
-
-        // POST creation part.
-
-        // Create a new entity subtype instance on /compute/
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource4_no_location.json",
-                "Create resource postcompute1 with POST using json and collection category path, but no locations set on resource, on location: /compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource5_with_location.json",
-                "Create resource postcompute2 with POST using location, and id set on id value, on location: /myresources/mypostcomputes/postcompute2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_BAD_REQUEST,
-                "/testjson/integration/creation/resource6.json",
-                "Create resource network2 with POST, must fail, because network is not a compute, on location: /compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        // Create resources with POST using json and collections.
-        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource_collection2.json",
-                "Create resources with POST using json and collections, but no locations set on resources, this will fail.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Create resources with POST using json and collections with locations set.
-        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/resource3.json",
-                "Create resources with POST using json and collections and locations set for each entity.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
+    public void postMixinTagsAssociation() throws Exception {
+        // TODO : PUT other entities collection on mixins tag path and check if the new ones replace old entities association.
+        HttpMethod httpMethod = HttpMethod.POST;
+        ContentResponse response;
         // Define a mixin tag
         response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/mixintag_usermixin1.json",
@@ -470,132 +426,13 @@ public class MainServletTest {
         response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/mixintag_collection.json",
                 "Define a new collection of mixin tags", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // TODO : PUT other entities collection on mixins tag path and check if the new ones replace old entities association.
-
-
-    }
-
-    public void postMixinTagsAssociation() throws Exception {
-        HttpMethod httpMethod = HttpMethod.POST;
-
         // Add a collection of resources to a mixin tag.
         executeQuery(httpMethod, "http://localhost:9090/tags/mixin1/", HttpServletResponse.SC_OK,
                 "/testjson/integration/update/resource1.json",
                 "Associate a mixin tag to entities from its mixin tag location path.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
     }
 
 
-    public void updateResourcesTest() throws Exception {
-        HttpMethod httpMethod = HttpMethod.POST;
-        // Update a resource.
-        executeQuery(httpMethod, "http://localhost:9090/mycomputes/", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/resource1.json",
-                "Update a resource with POST, must be updated.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        System.out.println("POST Request on resource location : /f88486b7-0632-482d-a184-a9195733ddd0");
-
-
-
-        // Check after update GET :
-        ContentResponse response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        String result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("4.1")); // Check value occi.compute.memory.
-
-        // associate a mixin tag to a resource.
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/mixintag_asso.json",
-                "Associate a mixin tag to a resource", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Get the resource.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("\"http://occiware.org/occi/tags#my_mixin2\""));
-
-
-        // action invocation.
-        // We dont use a connector, in the basic implementation the result for an action is "java.lang.UnsupportedOperationException".
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                "/testjson/integration/update/action_invocation_test.json",
-                "POST Request action stop graceful invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=stop", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        // Action invocation without attributes field. ==> Start
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                "/testjson/integration/update/action_invocation_test.json",
-                "POST Request action start invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // action invocation with direct term without the action kind definition.
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                null,
-                "POST action invocation with direct term without the action kind definition on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=start", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // bad action invocation the action doesnt exist on entity.
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test", HttpServletResponse.SC_BAD_REQUEST,
-                null,
-                "POST Request action test invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // 5 : bad action invocation the action scheme+term doesnt exist on entity.
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=titi", HttpServletResponse.SC_BAD_REQUEST,
-                "/testjson/integration/update/update_attributes_computes.json",
-                "POST Request action test invocation on location: http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0/?action=test", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // 6 : update attributes on collection /compute/
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/update_attributes_computes.json",
-                "update attributes on collection /compute/ ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // 7 : Get on /compute/ to check if content has been updated.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-        // TODO : Check content updated result.
-
-
-        // 8 : POST Request on collection mixin tag /mixins/my_mixin2/
-        response = executeQuery(httpMethod, "http://localhost:9090/mixins/my_mixin2/", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/update_attributes_with_mixintag.json",
-                "POST Request on collection mixin tag /mixins/my_mixin2/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // 9 : Get to check result.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mixins/my_mixin2", HttpServletResponse.SC_OK,
-                null,
-                "POST Request on collection mixin tag /mixins/my_mixin2/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // TODO : Check content updated result.
-
-        // Post on collection with a filter set. here : ?category=network.
-        response = executeQuery(httpMethod, "http://localhost:9090/?category=network", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/update_attributes_with_mixintag.json",
-                "POST Request on collection with filter ?category=network", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Get collection on kind network.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
-                null,
-                "Get collection on kind /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-        result = response.getContentAsString();
-        assertTrue(result.contains("public"));
-
-
-        // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
-        String titleVal = UrlEncoded.encodeString("other compute 1 title", Charset.forName("UTF-8"));
-        response = executeQuery(httpMethod, "http://localhost:9090/?attribute=occi.core.title&value=" + titleVal, HttpServletResponse.SC_OK,
-                "/testjson/integration/update/update_attributes_with_title_filter.json",
-                "POST Request on collection with filter ?category=network", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-    }
 
     public void testGetResourceLink() throws Exception {
         HttpMethod httpMethod = HttpMethod.GET;

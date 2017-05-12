@@ -10,5 +10,5 @@
     "occi.network.label": "private",
     "occi.network.address": "10.1.0.0/16",
     "occi.network.gateway": "10.1.255.254"
-  }
+  }, "location":"/mainnetwork/network2"
 }
