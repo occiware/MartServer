@@ -408,6 +408,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         // Launch crud update operation on this entity.
         entity.occiUpdate();
 
+        renderEntityOutput(entity);
         return occiApiResponse;
     }
 
@@ -442,6 +443,91 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             parseConfigurationExceptionMessageOutput(ex.getMessage());
         }
         return occiApiResponse;
+    }
+
+    /**
+     * Delete a collection of entities under the specified location.
+     * @param location
+     * @param filter
+     */
+    @Override
+    public OCCIApiResponse deleteEntities(final String location, CollectionFilter filter) {
+        String message;
+        int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
+        int page = Constants.DEFAULT_CURRENT_PAGE;
+
+        if (filter == null) {
+            // Build a default filter.
+            filter = new CollectionFilter();
+            filter.setCurrentPage(page);
+            filter.setNumberOfItemsPerPage(items);
+            filter.setOperator(0);
+        }
+        List<Entity> entities;
+        // Important to note : filters are defined in concrete implementation (categoryFilter, attributes filter, filter on a value etc.)
+        String categoryFilter = filter.getCategoryFilter();
+        String filterOnPath = filter.getFilterOnPath();
+        // Case of the mixin tag entities request.
+        boolean isMixinTagRequest = MixinManager.isMixinTagRequest(location, username);
+        if (isMixinTagRequest) {
+            LOGGER.info("Mixin tag request... ");
+            Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
+            Mixin mixin;
+            if (!optMixin.isPresent()) {
+                message = "The mixin location : " + location + " is not defined";
+                parseConfigurationExceptionMessageOutput(message);
+                return occiApiResponse;
+            }
+            if (categoryFilter == null) {
+                mixin = optMixin.get();
+                filter.setCategoryFilter(mixin.getTerm());
+                filter.setFilterOnPath(null);
+            }
+        }
+        // Determine if this is a collection or an entity location.
+        // Collection on categories. // Like : get on myhost/compute/
+        if ((categoryFilter == null || categoryFilter.isEmpty()) && (filterOnPath == null || filterOnPath.isEmpty())) {
+            boolean isCollectionOnCategoryPath = ConfigurationManager.isCollectionOnCategory(location, username);
+            if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
+                Optional<String> optCat = ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
+                String cat = null;
+                if (optCat.isPresent()) {
+                    cat = optCat.get();
+                }
+                filter.setCategoryFilter(cat);
+            } else {
+                filter.setFilterOnPath(location);
+            }
+        }
+
+        entities = EntityManager.findAllEntities(filter, username);
+        Optional<Entity> optEntityCheck; // To check if a link is present and have no resource deleted previously.
+        for (Entity entity : entities) {
+
+            String entityId = entity.getId();
+            String title = entity.getTitle();
+            optEntityCheck = EntityManager.findEntity(entityId, username);
+            if (optEntityCheck.isPresent()) {
+                entity.occiDelete();
+                try {
+                    LOGGER.info("Remove entity: " + title + " --> " + entityId + " on location: " + location);
+                    EntityManager.removeOrDissociateFromConfiguration(entityId, username);
+
+                } catch (ConfigurationException ex) {
+                    parseConfigurationExceptionMessageOutput(ex.getMessage());
+                }
+            } else {
+                LOGGER.warn("Entity : " + title + " --> " + entityId + " on location: " + location + " is already removed from configuration.");
+            }
+        }
+        if (entities.isEmpty()) {
+            // Not found answer.
+            parseNotFoundExceptionMessageOutput("Entities not found on location : " + location);
+        }
+
+        return occiApiResponse;
+
+
     }
 
     /**
@@ -1016,20 +1102,19 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         if (location == null || location.trim().isEmpty()) {
             return false;
         }
-        String[] fragments = location.split("/");
-        if (fragments.length > 0) {
-            // Check only the first and the second fragment.
-            if (isCategoryTerm(fragments[0]) || (fragments.length > 1 && isCategoryTerm(fragments[1]))) {
-                onCategoryLocation = true;
-            }
+        String locationWork = location;
+        if (locationWork.startsWith("/")) {
+            locationWork = locationWork.substring(1);
         }
-        return onCategoryLocation;
-
+        if (locationWork.endsWith("/")) {
+            locationWork = locationWork.substring(0, locationWork.length() - 1);
+        }
+        return isCategoryTerm(locationWork);
     }
 
     @Override
     public boolean isCategoryTerm(final String categoryTerm) {
-        return this.getCategorySchemeTerm(categoryTerm) != null;
+        return this.getCategorySchemeTerm(categoryTerm).isPresent();
     }
 
     @Override
@@ -1303,6 +1388,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     public void saveModelToDisk() throws ConfigurationException {
         // TODO : Save all configurations model to disk.
     }
+
 
 
 }

@@ -686,8 +686,9 @@ public class EntityManager {
             EDataType eAttrType = optEdataType.get();
 
             if (eAttrType.getInstanceClass() == String.class || eAttrType instanceof EEnum) {
-                Object eValue = getEMFValueObject(entity, attrName);
-                if (eValue != null) {
+                Optional<Object> optEValue = getEMFValueObject(entity, attrName);
+                if (optEValue.isPresent()) {
+                    Object eValue = optEValue.get();
                     result = eValue.toString();
                 }
             }
@@ -1030,7 +1031,7 @@ public class EntityManager {
 
                 OcciHelper.setAttribute(entity, attrName, attrValue);
                 Optional<AttributeState> optAttrState = getAttributeStateObject(entity, attrName);
-                AttributeState attrState = null;
+                AttributeState attrState;
                 if (optAttrState.isPresent()) {
                     attrState = optAttrState.get();
                     String attrStateValue = attrState.getValue();
@@ -1494,6 +1495,13 @@ public class EntityManager {
                 message = "Internal error while executing action : " + actionTerm + ", message: " + ex.getMessage();
             } else {
                 message = "Internal error while executing action : " + actionTerm;
+            }
+            if (ex.getCause() != null) {
+                message += ", cause: " + ex.getCause().getClass().getName();
+                if (ex.getCause().getMessage() != null) {
+                    message += ", " + message;
+                }
+
             }
             throw new ConfigurationException(message, ex);
         }

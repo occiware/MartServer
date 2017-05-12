@@ -59,6 +59,15 @@
             <version>0.1.0-SNAPSHOT</version>
             <scope>runtime</scope>
         </dependency>
+        <!-- To replace by infrastructure real connector -->
+        <dependency>
+            <groupId>org.occiware</groupId>
+            <artifactId>org.occiware.clouddesigner.occi.infrastructure.connector.dummy</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- emf dependencies -->
         <dependency>
             <groupId>org.eclipse.core</groupId>
             <artifactId>commands</artifactId>

@@ -73,14 +73,26 @@ public class DeleteWorker extends ServletEntry {
             for (OCCIRequestData data : datas) {
                 occiRequest.deleteMixinTag(data.getMixinTag());
                 if (occiResponse.hasExceptions()) {
-                    return resp;
+                    break;
                 }
             }
             return resp;
         }
 
+        if (occiRequest.isOnEntityLocation()) {
+            // Remove the entity.
+            occiRequest.deleteEntity(occiRequest.getRequestPath());
+            return resp;
+        }
 
-        resp = occiResponse.getHttpResponse();
+        if (occiRequest.isOnCollectionLocation()) {
+            occiRequest.deleteEntities(occiRequest.getRequestPath(), buildCollectionFilter());
+            return resp;
+        }
+
+        // If we are here this is an unknown request.
+        occiResponse.parseMessage("The request is malformed", HttpServletResponse.SC_BAD_REQUEST);
+
         return resp;
     }
 

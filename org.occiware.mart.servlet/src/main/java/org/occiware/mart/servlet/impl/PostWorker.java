@@ -133,7 +133,7 @@ public class PostWorker extends ServletEntry {
 
             // datas are identified as entities, check if that entities have the same kind/mixin (not mixintags) as the term category path.
             if (!occiRequest.areDatasHaveSameCategoryLocation()) {
-                return occiResponse.parseMessage("Some entities cannot be created on this location : " + occiRequest.getRequestPath() + " because they have not this category referenced", HttpServletResponse.SC_BAD_REQUEST);
+                return occiResponse.parseMessage("Some entities cannot be created on this location : " + occiRequest.getRequestPath() + " the category term on location is not the same on entity", HttpServletResponse.SC_BAD_REQUEST);
             }
 
             String entityUUID;
@@ -218,7 +218,6 @@ public class PostWorker extends ServletEntry {
             occiRequest.executeActionOnCategory(data.getAction(), data.getAttrsValStr(), requestCategoryTerm);
             return resp;
         }
-
 
         // Action invocation on mixin tag defined collection.
         if (occiRequest.isOnMixinTagLocation() && occiRequest.isActionInvocationQuery()) {

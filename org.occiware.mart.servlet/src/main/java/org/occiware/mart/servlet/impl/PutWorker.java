@@ -53,7 +53,7 @@ public class PutWorker extends ServletEntry {
 
         // Root request are not allowed by PUT method ==> 405 http error.
         if (requestPath.trim().isEmpty() || requestPath.equals("/")) {
-            return occiResponse.parseMessage("This url : " + occiRequest.getRequestPath() + " is not supported by HTTP PUT method.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            return occiResponse.parseMessage("This uri : " + occiRequest.getRequestPath() + " is not supported by HTTP PUT method.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         }
         if (occiRequest.isInterfQuery()) {
             return occiResponse.parseMessage("you cannot use interface query on PUT method", HttpServletResponse.SC_BAD_REQUEST);
@@ -119,6 +119,7 @@ public class PutWorker extends ServletEntry {
             }
             // This is an entity creation query.
             occiRequest.createEntity(data.getEntityTitle(), data.getEntitySummary(), data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
+            return resp;
         }
 
         // Reference collection entities on mixin tag (replace all mixin tag referenced collection of entities).
@@ -134,7 +135,11 @@ public class PutWorker extends ServletEntry {
             List<String> xOcciLocations = data.getXocciLocations();
             // X occi location may be empty, this will remove all entity instance for this mixin tag.
             occiRequest.replaceMixinTagCollection(mixinTag, xOcciLocations);
+            return resp;
         }
+
+        // If we are here this is an unknown request.
+        occiResponse.parseMessage("The request is malformed", HttpServletResponse.SC_BAD_REQUEST);
 
         return resp;
     }
