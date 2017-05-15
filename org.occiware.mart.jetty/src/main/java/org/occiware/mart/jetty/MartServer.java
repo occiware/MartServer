@@ -50,6 +50,7 @@ public class MartServer {
     private static int port;
     private static String logDirectoryPath;
     private static String httpProtocol;
+    private static Server server;
 
     public static void main(String[] args) {
 
@@ -86,7 +87,7 @@ public class MartServer {
         // config.packages("org.occiware.mart.server.servlet");
         // ServletHolder servlet = new ServletHolder(new ServletContainer(config));
 
-        Server server = new Server(port);
+        server = new Server(port);
         server.setHandler(handler);
 
         // ServletContextHandler context = new ServletContextHandler(server, "/*");
@@ -202,5 +203,15 @@ public class MartServer {
         httpProtocol = HTTP_PROTOCOL;
     }
 
+    public static void stopServer() {
+        if (server != null) {
+            try {
+                server.stop();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            server.destroy();
+        }
+    }
 
 }

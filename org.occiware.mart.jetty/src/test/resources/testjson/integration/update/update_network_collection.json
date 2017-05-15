@@ -1,9 +1,0 @@
-{
-  "kind": "http://schemas.ogf.org/occi/infrastructure#network",
-  "attributes": {
-    "occi.network.vlan": 255,
-    "occi.network.label": "public",
-    "occi.network.address": "10.254.0.0/16",
-    "occi.network.gateway": "10.5.24.252"
-  }
-}

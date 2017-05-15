@@ -1,7 +1,0 @@
-{
-  "id": "urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
-  "kind": "http://schemas.ogf.org/occi/infrastructure#networkinterface",
-  "mixins": [
-    "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"
-  ]
-}
