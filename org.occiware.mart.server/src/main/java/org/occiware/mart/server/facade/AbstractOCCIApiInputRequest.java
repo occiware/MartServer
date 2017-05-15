@@ -1167,6 +1167,10 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                     // Are there applyable to this kind ?
                     for (String mixin : mixins) {
                         optMixin = MixinManager.findMixinOnExtension(mixin, username);
+                        if (!optMixin.isPresent()) {
+                            // Check if this is a mixin tag.
+                            optMixin = MixinManager.findUserMixinOnConfiguration(mixin, username);
+                        }
 
                         if (!optMixin.isPresent()) {
                             message = "The mixin : " + mixin + " doesnt exist on extensions.";

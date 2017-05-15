@@ -95,7 +95,7 @@ public class MainServletTest {
             testsOnKindCollection();
 
             // Test operations on collection mixin tag location (/my_stuff/).
-
+            testsOnMixinTagsAssociation();
 
             // Test operations on custom location /myresources/*...
 
@@ -217,7 +217,6 @@ public class MainServletTest {
                 "Retrieve mixin tag usermixin2 on interface - GET method", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
         result = response.getContentAsString();
         assertFalse(result.contains("\"term\" : \"usermixin2\","));
-
 
         // Now testing PUT method with interface, this must fail.
         response = executeQuery(HttpMethod.PUT, "http://localhost:9090/-/", HttpServletResponse.SC_BAD_REQUEST,
@@ -423,6 +422,91 @@ public class MainServletTest {
             System.out.println("Location in header X-OCCI-Location: " + location);
         }
 
+    }
+
+
+    public void testsOnMixinTagsAssociation() throws Exception {
+
+        HttpMethod httpMethod = HttpMethod.POST;
+        ContentResponse response;
+        // Define a mixin tag
+
+        // Add a collection of resources to a mixin tag using entities locations.
+        response = executeQuery(httpMethod, "http://localhost:9090/tags/mixin1/", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/mixintag_add_entities.json",
+                "Associate a mixin tag with entities", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // Get collection mixin :
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin1/", HttpServletResponse.SC_OK,
+                null,
+                "Get entities collection from location mixin : /tags/mixin1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_TEXT_URI_LIST);
+        // Search response on headers.
+        HttpFields fields = response.getHeaders();
+        List<String> xlocations = fields.getValuesList("X-OCCI-Location");
+        assertFalse(xlocations.isEmpty());
+        for (final String location : xlocations) {
+            System.out.println("Location in header X-OCCI-Location: " + location);
+        }
+
+        // Re create the mixin usermixin2 for further tests (in post method)...
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/mixintag_usermixin2.json",
+                "Recreate a mixin tag named usermixin2 - POST method, this for further testing...", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+
+
+        // Add one other resource to a mixin tag using resource rendering, using entity update method.
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/myresources/mypostcomputes/postcompute2", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/mixintag_add_resource.json",
+                "Associate a mixin tag via update entity method - POST method", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+
+        // TO check that mixin 2 has the resource added
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin2/", HttpServletResponse.SC_OK,
+                null,
+                "Get entities collection from location mixin : /tags/mixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_TEXT_URI_LIST);
+
+        // Search response on headers.
+        fields = response.getHeaders();
+        xlocations = fields.getValuesList("X-OCCI-Location");
+        assertFalse(xlocations.isEmpty());
+        for (final String location : xlocations) {
+            System.out.println("Location in header X-OCCI-Location: " + location);
+        }
+
+
+        // Replace all associated entities using PUT method.
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/tags/mixin1/", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/mixintag_replace_all_entities.json",
+                "Replace associated entities by new ones", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // Mixin associate with entity collection must have been replaced.
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin1/", HttpServletResponse.SC_OK,
+                null,
+                "Get mixin1 collection and check if entity replaced on location /tags/mixin1 - GET method", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_TEXT_URI_LIST);
+
+        // Search response on headers.
+        fields = response.getHeaders();
+        xlocations = fields.getValuesList("X-OCCI-Location");
+        assertFalse(xlocations.isEmpty());
+        assertFalse(xlocations.contains("/mainnetwork/network1"));
+        assertTrue(xlocations.contains("/mainnetwork/network4"));
+        for (final String location : xlocations) {
+            System.out.println("Location in header X-OCCI-Location: " + location);
+        }
+
+        // Get entities with filter using mixin tag location.
+        String titleVal = UrlEncoded.encodeString("postcompute2", Charset.forName("UTF-8"));
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin1/?attribute=occi.core.title&value=" + titleVal + "&number=-1&page=1", HttpServletResponse.SC_OK,
+                null,
+                "Get entities via mixin tag location : /tags/mixin1/ - GET method ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // Check with category filter where we display only the first one found of the collection (number ==> number of entities to display per page).
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin1/?category=compute", HttpServletResponse.SC_OK,
+                null,
+                "Get entities via mixin tag location : /tags/mixin1/ - GET method ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+
 
         // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
         // String titleVal = UrlEncoded.encodeString("other compute 1 title", Charset.forName("UTF-8"));
@@ -431,41 +515,6 @@ public class MainServletTest {
         //         "POST Request on collection with filter ?category=network", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
 
-    }
-
-
-    public void postMixinTagsAssociation() throws Exception {
-        // TODO : PUT other entities collection on mixins tag path and check if the new ones replace old entities association.
-        HttpMethod httpMethod = HttpMethod.POST;
-        ContentResponse response;
-        // Define a mixin tag
-        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/mixintag_usermixin1.json",
-                "Create a mixin tag named usermixin1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // define a second mixin tag
-        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/mixintag_usermixin2.json",
-                "Create a mixin tag named usermixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // redefine the mixin user tag 1.
-        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/mixintag_usermixin1.json",
-                "Redefine the mixin user tag 1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // redefine mixin user tags with a collection of mixins.
-        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/definemixintags.json",
-                "Redefine all the mixin user tags with a collection of mixins", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Define a new collection of mixin tags
-        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
-                "/testjson/integration/creation/mixintag_collection.json",
-                "Define a new collection of mixin tags", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-        // Add a collection of resources to a mixin tag.
-        executeQuery(httpMethod, "http://localhost:9090/tags/mixin1/", HttpServletResponse.SC_OK,
-                "/testjson/integration/update/resource1.json",
-                "Associate a mixin tag to entities from its mixin tag location path.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
     }
 
 

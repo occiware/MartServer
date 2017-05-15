@@ -1,0 +1,7 @@
+{
+  "id": "45d36ec4-9d56-4947-b8d2-27788dedefaf",
+  "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+  "mixins": [
+    "http://occiware.org/occi/tags#usermixin2"
+  ]
+}
