@@ -151,6 +151,8 @@ public interface OCCIApiInputRequest {
 
     Optional<String> getCategorySchemeTerm(String categoryTerm);
 
+    Optional<String> getCategorySchemeTermFromLocation(String location);
+
     Optional<String> getMixinTagSchemeTermFromLocation(String location);
 
     boolean isMixinTagLocation(String location);

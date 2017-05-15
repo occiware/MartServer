@@ -38,6 +38,11 @@ public class CollectionFilter {
      */
     private String categoryFilter = "";
     /**
+     * If the filter apply on a sub category (like mixin tag collection filter with a compute in sub category.
+     */
+    private String subCategoryFilter = "";
+
+    /**
      * Attribute on which apply the constraint (or empty string for any
      * attributes).
      */
@@ -46,7 +51,7 @@ public class CollectionFilter {
     /**
      * For the case we filter on a single relative path.
      */
-    private String filterOnPath = "";
+    private String filterOnEntitiesPath = "";
 
     /**
      * Constraint value from attribute values.
@@ -63,23 +68,6 @@ public class CollectionFilter {
 
     }
 
-    //    /**
-//     * Build a collection filter object.
-//     *
-//     * @param struct2
-//     */
-//    public CollectionFilter(Struct2 struct2) {
-//        if (struct2 != null) {
-//            byte a = struct2.a;
-//            this.operator = a;
-//            this.attributeFilter = struct2.b;
-//            if (struct2.c != null) {
-//                this.value = struct2.c.getValue().toString();
-//            } else {
-//                this.value = null;
-//            }
-//        }
-//    }
     public int getOperator() {
         return operator;
     }
@@ -120,12 +108,12 @@ public class CollectionFilter {
         return Float.valueOf(value);
     }
 
-    public String getFilterOnPath() {
-        return filterOnPath;
+    public String getFilterOnEntitiesPath() {
+        return filterOnEntitiesPath;
     }
 
-    public void setFilterOnPath(String filterOnPath) {
-        this.filterOnPath = filterOnPath;
+    public void setFilterOnEntitiesPath(String filterOnEntitiesPath) {
+        this.filterOnEntitiesPath = filterOnEntitiesPath;
     }
 
     public int getNumberOfItemsPerPage() {
@@ -142,5 +130,13 @@ public class CollectionFilter {
 
     public void setCurrentPage(int currentPage) {
         this.currentPage = currentPage;
+    }
+
+    public String getSubCategoryFilter() {
+        return subCategoryFilter;
+    }
+
+    public void setSubCategoryFilter(String subCategoryFilter) {
+        this.subCategoryFilter = subCategoryFilter;
     }
 }

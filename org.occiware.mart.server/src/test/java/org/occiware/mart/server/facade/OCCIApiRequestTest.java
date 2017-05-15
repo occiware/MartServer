@@ -107,7 +107,7 @@ public class OCCIApiRequestTest {
         occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
         // not find..
         System.out.println("Check with a test path, it must not find a resource.");
-        filter.setFilterOnPath("/test/");
+        filter.setFilterOnEntitiesPath("/test/");
         occiRequest.findEntities("/test/", filter);
         assertNotNull(occiResponse);
         assertNotNull(occiResponse.getResponseMessage());

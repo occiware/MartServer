@@ -107,7 +107,7 @@ public class PostWorker extends ServletEntry {
         }
 
         // Mixin tag association ==> Add entity to a mixin tag collection defined by user. like on /my_stuff/ --> entities location on xOcciLocations values.
-        if (occiRequest.isOnMixinTagLocation()) {
+        if (occiRequest.isOnMixinTagLocation() && !occiRequest.isActionInvocationQuery()) {
 
             // Add mixin tag defined to entities.
             // curl -v -X POST http://localhost:8080/my_stuff/ -H 'X-OCCI-Location: http://localhost:8080/compute/f88486b7-0632-482d-a184-a9195733ddd0'

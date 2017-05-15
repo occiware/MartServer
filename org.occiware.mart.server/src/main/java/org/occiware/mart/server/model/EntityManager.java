@@ -320,7 +320,8 @@ public class EntityManager {
     private static List<Entity> filterEntities(final CollectionFilter filter, List<Entity> sources, final String owner) {
 
         String categoryFilter = filter.getCategoryFilter();
-
+        String subCategoryFilter = filter.getSubCategoryFilter();
+        String filterOnPath = filter.getFilterOnEntitiesPath();
 
         if (categoryFilter != null && !categoryFilter.isEmpty()
                 && !ConfigurationManager.checkIfCategorySchemeTerm(categoryFilter, owner)) {
@@ -331,8 +332,17 @@ public class EntityManager {
                 LOGGER.warn("Category filter : " + categoryFilter + " has not been found on current configuration.");
             }
         }
+        if (subCategoryFilter != null && !subCategoryFilter.isEmpty()
+                && !ConfigurationManager.checkIfCategorySchemeTerm(subCategoryFilter, owner)) {
+            Optional<String> optCategory = ConfigurationManager.findCategorySchemeTermFromTerm(subCategoryFilter, owner);
+            if (optCategory.isPresent()) {
+                subCategoryFilter = optCategory.get();
+            } else {
+                LOGGER.warn("Sub category filter : " + subCategoryFilter + " has not been found on current configuration.");
+            }
+        }
 
-        String filterOnPath = filter.getFilterOnPath();
+        // Remove last char if slash on filter path
         if (filterOnPath != null && !filterOnPath.isEmpty()) {
             if (filterOnPath.endsWith("/")) {
                 filterOnPath = filterOnPath.substring(0, filterOnPath.length() - 1);
@@ -342,10 +352,10 @@ public class EntityManager {
         Iterator<Entity> it = sources.iterator();
         while (it.hasNext()) {
             Entity entity = it.next();
-
             if (checkEntityAttributeFilter(filter, entity)
-                    && checkEntityCategoryFilter(categoryFilter, entity)
-                    && checkEntityFilterOnPath(filterOnPath, entity, owner)) {
+                        && checkEntityCategoryFilter(categoryFilter, entity)
+                        && checkEntityCategoryFilter(subCategoryFilter, entity)
+                        && checkEntityFilterOnPath(filterOnPath, entity, owner)) {
                 continue;
             }
             it.remove();

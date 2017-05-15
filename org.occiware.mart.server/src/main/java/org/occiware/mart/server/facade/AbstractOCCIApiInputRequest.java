@@ -1014,6 +1014,11 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     }
 
     @Override
+    public Optional<String> getCategorySchemeTermFromLocation(String location) {
+        return ConfigurationManager.getCategoryFilterSchemeTerm(location, username);
+    }
+
+    @Override
     public Optional<String> getMixinTagSchemeTermFromLocation(String location) {
         Optional<Mixin> optMixin = MixinManager.getUserMixinFromLocation(location, username);
         Optional<String> optResult;
@@ -1316,7 +1321,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             }
             mixin = optMixin.get();
             filter.setCategoryFilter(mixin.getTerm());
-            filter.setFilterOnPath(null);
+            filter.setFilterOnEntitiesPath(null);
         }
 
         // Determine if this is a collection or an entity location.
@@ -1330,7 +1335,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             }
             filter.setCategoryFilter(cat);
         } else {
-            filter.setFilterOnPath(location);
+            filter.setFilterOnEntitiesPath(location);
         }
 
         return filter;

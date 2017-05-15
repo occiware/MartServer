@@ -1,3 +1,21 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.servlet;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -11,7 +29,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.utils.Constants;
 
 import javax.servlet.http.HttpServletResponse;
@@ -496,237 +513,32 @@ public class MainServletTest {
         }
 
         // Get entities with filter using mixin tag location.
+        // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
         String titleVal = UrlEncoded.encodeString("postcompute2", Charset.forName("UTF-8"));
         response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin1/?attribute=occi.core.title&value=" + titleVal + "&number=-1&page=1", HttpServletResponse.SC_OK,
                 null,
-                "Get entities via mixin tag location : /tags/mixin1/ - GET method ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+                "Get entities via mixin tag location with filter on title attribute value : /tags/mixin1/ - GET method ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Check with category filter where we display only the first one found of the collection (number ==> number of entities to display per page).
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin1/?category=compute", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin1/?category=network", HttpServletResponse.SC_OK,
                 null,
-                "Get entities via mixin tag location : /tags/mixin1/ - GET method ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+                "Get entities via mixin tag location : /tags/mixin1/ , with filter on kind network - GET method ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
+        // Action on mixin tag location:
+        // Action trigger on collection :  start all compute resources kind.
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/tags/mixin2/?action=start", HttpServletResponse.SC_OK,
+                "/testjson/integration/update/action_invocation_test2.json",
+                "Trigger action start on compute entity using tag - POST method, must be triggered on location : /tags/mixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
-
-        // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
-        // String titleVal = UrlEncoded.encodeString("other compute 1 title", Charset.forName("UTF-8"));
-        // response = executeQuery(httpMethod, "http://localhost:9090/?attribute=occi.core.title&value=" + titleVal, HttpServletResponse.SC_OK,
-        //         "/testjson/integration/update/update_attributes_with_title_filter.json",
-        //         "POST Request on collection with filter ?category=network", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-    }
-
-
-
-    public void testGetResourceLink() throws Exception {
-        HttpMethod httpMethod = HttpMethod.GET;
-
-        // Test model interface with no filters.
-        ContentResponse response = executeQuery(httpMethod, "http://localhost:9090/.well-known/org/ogf/occi/-/", HttpServletResponse.SC_OK,
+        // Delete entity sub type instances of the mixin2.
+        response = executeQuery(HttpMethod.DELETE, "http://localhost:9090/tags/mixin2/", HttpServletResponse.SC_OK,
                 null,
-                "GET Request interface /-/ with no filters.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+                "remove entities using tag collection - DELETE method, on location : /tags/mixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
-        // Test model interface.
-        response = executeQuery(httpMethod, "http://localhost:9090/-/?category=network", HttpServletResponse.SC_OK,
+        // Get entity sub type instances for the mixin 2 collection.
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin2/", HttpServletResponse.SC_NOT_FOUND,
                 null,
-                "GET Request interface /-/ with network category collection filtering.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        String result = response.getContentAsString();
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("\"term\" : \"network\","));
-
-
-        // Test on collection compute category with location only.
-        response = executeQuery(httpMethod, "http://localhost:9090/compute", HttpServletResponse.SC_OK,
-                null,
-                "GET Request collection.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        // See file: resource_location.json.
-        response = executeQuery(httpMethod, "http://localhost:9090/testlocation/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request on resource location : /testlocation/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-        result = response.getContentAsString();
-        assertFalse(result.isEmpty());
-
-        // Same test with myresources collection.
-        response = executeQuery(httpMethod, "http://localhost:9090/myresources/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request on resource location : /myresources/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // GET request on resource location /test/
-        response = executeQuery(httpMethod, "http://localhost:9090/test/", HttpServletResponse.SC_NOT_FOUND,
-                null,
-                "GET Request on resource location : /test/, this must be resource not found ==> 404", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-//        result = response.getContentAsString();
-//        assertFalse(result.isEmpty());
-//        assertTrue(result.contains(Constants.URN_UUID_PREFIX));
-
-        // GET request on resource location : /otherlocation/other2/
-        response = executeQuery(httpMethod, "http://localhost:9090/otherlocation/other2/", HttpServletResponse.SC_NOT_FOUND,
-                null,
-                "GET Request on resource location : /otherlocation/other2/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-//        result = response.getContentAsString();
-//        assertNotNull(result);
-//        assertFalse(result.isEmpty());
-//        assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
-
-        // GET Request on resource location : /testlocation/f89486b7-0632-482d-a184-a9195733ddd9
-        response = executeQuery(httpMethod, "http://localhost:9090/testlocation/f89486b7-0632-482d-a184-a9195733ddd9", HttpServletResponse.SC_OK,
-                null,
-                "GET Request on resource location : /testlocation/f89486b7-0632-482d-a184-a9195733ddd9", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains(Constants.URN_UUID_PREFIX));
-        assertTrue(result.contains("f89486b7-0632-482d-a184-a9195733ddd9"));
-
-        // Search on a false relative path but with good keys. This must be not found to avoid path confusion.
-        executeQuery(httpMethod, "http://localhost:9090/otherresources/f89486b7-0632-482d-a184-a9195733ddd9", HttpServletResponse.SC_NOT_FOUND,
-                null,
-                "GET Request on resource location : /otherresources/f89486b7-0632-482d-a184-a9195733ddd9", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Search a collection on compute kind.
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request on kind compute collection : /compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-
-        // Test network kind.
-        response = executeQuery(httpMethod, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request on kind network collection : /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-
-        // Test network interface link.
-        response = executeQuery(httpMethod, "http://localhost:9090/networkinterface/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request on Networkinterface kind... http://localhost:9090/networkinterface/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-
-        // Get entities via mixin tag.
-        response = executeQuery(httpMethod, "http://localhost:9090/my_mixin2/", HttpServletResponse.SC_OK,
-                null,
-                "Get entities via mixin tag (my_mixin2)... http://localhost:9090/my_mixin2/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        result = response.getContentAsString();
-
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("f88486b7-0632-482d-a184-a9195733ddd0"));
-
-        // GET entities Request on mixin tag location ... http://localhost:9090/mixins/my_mixin2/
-        response = executeQuery(httpMethod, "http://localhost:9090/mixins/my_mixin2/", HttpServletResponse.SC_OK,
-                null,
-                "Get entities via mixin tag location: /mixins/my_mixin2 ==> http://localhost:9090/mixins/my_mixin2/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertFalse(result.isEmpty());
-        assertTrue(result.contains("f88486b7-0632-482d-a184-a9195733ddd0"));
-
-    }
-
-
-
-
-    /**
-     *
-     * @throws Exception
-     */
-    private void testDeleteResources() throws Exception {
-        HttpMethod httpMethod = HttpMethod.DELETE;
-        // DELETE Request, dissociate a mixin http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface
-        // on entity link: urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9
-
-        ContentResponse response;
-        response = executeQuery(httpMethod, "http://localhost:9090/", HttpServletResponse.SC_OK,
-                "/testjson/integration/delete/dissociate_mixin.json",
-                "DELETE Request, dissociate a mixin http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface " +
-                        "on entity link: urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/networkinterface/b2fe83ae-a20f-54fc-b436-cec85c94c5e9", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/networkinterface/b2fe83ae-a20f-54fc-b436-cec85c94c5e9", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        String result = response.getContentAsString();
-        assertFalse(result.contains("http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"));
-
-
-        // DELETE Request, dissociate a mixin tag my_mixin2 from a resource compute: urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0
-        response = executeQuery(httpMethod, "http://localhost:9090/mycomputes/", HttpServletResponse.SC_OK,
-                "/testjson/integration/delete/dissociate_mixin_tag.json",
-                "dissociate a mixin tag my_mixin2 from a resource compute: urn:uuid:f88486b7-0632-482d-a184-a9195733ddd0", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        // GET request : http://localhost:9090/f88486b7-0632-482d-a184-a9195733ddd0
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/mycomputes/f88486b7-0632-482d-a184-a9195733ddd0", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        result = response.getContentAsString();
-        assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin2"));
-        System.out.println(result);
-
-        // Delete request : remove a mixin tag definition my_mixin
-        response = executeQuery(httpMethod, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
-                "/testjson/integration/delete/remove_mixin_tag_definition.json",
-                "DELETE Request, remove a mixin tag definition my_mixin.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/-/?category=my_mixin", HttpServletResponse.SC_NO_CONTENT,
-                null,
-                "GET Request http://localhost:9090/-/?category=my_mixin", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        result = response.getContentAsString();
-        assertFalse(result.contains("http://occiware.org/occi/tags#my_mixin"));
-
-        // Delete request : remove entity resource
-        response = executeQuery(httpMethod, "http://localhost:9090/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8", HttpServletResponse.SC_OK,
-                null,
-                "DELETE Request on entity resource location : /a1cf3896-500e-48d8-a3f5-a8b3601bcdd8", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Get entity previously deleted, must not found.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8", HttpServletResponse.SC_NOT_FOUND,
-                null,
-                "GET Request http://localhost:9090/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        // Delete on a collection location (custom)
-        response = executeQuery(httpMethod, "http://localhost:9090/testlocation/", HttpServletResponse.SC_OK,
-                null,
-                "Delete on a collection location (custom), /testlocation/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/testlocation/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/testlocation/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
-
-
-        // DELETE on a collection kind. /compute/
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                null,
-                "DELETE on a collection kind. /compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
-                null,
-                "GET Request http://localhost:9090/compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-
-        result = response.getContentAsString();
-        assertNotNull(result);
-        assertTrue(result.equals(JsonOcciParser.EMPTY_JSON));
-        System.out.println(result);
+                "Get entities using tag collection - GET method, on location : /tags/mixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
     }
 

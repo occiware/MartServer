@@ -253,46 +253,63 @@ public abstract class ServletEntry {
         filter.setAttributeFilter(attributeFilter);
         filter.setValue(attributeValue);
 
-        // Collection on categories. // Like : get on myhost/compute/
-        boolean isCollectionOnCategoryPath = false;
 
-        // Remove starting slash and ending slash from path.
-        String pathTmp = path;
-        if (pathTmp.startsWith("/")) {
-            pathTmp = pathTmp.substring(1);
+        String requestPath = occiRequest.getRequestPath();
+
+        // Collection on partial or complete entity location.
+        boolean onEntitiesLocation = occiRequest.isOnBoundedLocation();
+        boolean onEntityLocation = occiRequest.isOnEntityLocation();
+        if (onEntitiesLocation || onEntityLocation) {
+            filter.setFilterOnEntitiesPath(path);
+            return filter;
         }
-        if (pathTmp.endsWith("/")) {
-            pathTmp = pathTmp.substring(0, pathTmp.length() - 1);
-        }
-        // Split values and get last word.
-        String categoryTermPath;
-        String categorySchemeTermFilter = null;
-        String[] words = pathTmp.split("/");
-        if (words.length >= 1) {
-            categoryTermPath = words[words.length - 1];
-            if (categoryTermPath != null && !categoryTermPath.trim().isEmpty()) {
-                // Check if this is really a category term.
-                Optional<String> optCat = occiRequest.getCategorySchemeTerm(categoryTermPath);
-                isCollectionOnCategoryPath = optCat.isPresent();
-                if (optCat.isPresent()) {
-                    categorySchemeTermFilter = optCat.get();
+
+        // Collection on mixin tag location.
+        boolean onMixinTagLocation = occiRequest.isOnMixinTagLocation();
+        if (onMixinTagLocation) {
+            // Case of the mixin tag entities request.
+            Optional<String> optMixinTag = occiRequest.getMixinTagSchemeTermFromLocation(path);
+            if (optMixinTag.isPresent()) {
+                // Check if we need a subfilter.
+                if (categoryFilter != null) {
+                    filter.setSubCategoryFilter(filter.getCategoryFilter());
+                    filter.setCategoryFilter(optMixinTag.get());
+                    filter.setFilterOnEntitiesPath(null);
+                } else {
+                    filter.setCategoryFilter(optMixinTag.get());
+                    filter.setSubCategoryFilter(null);
+                    filter.setFilterOnEntitiesPath(null);
                 }
+                return filter;
+            } else {
+                LOGGER.warn("Unknown mixin tag location : " + requestPath);
             }
-        }
-        if (isCollectionOnCategoryPath && (categoryFilter == null || categoryFilter.isEmpty())) {
-            filter.setCategoryFilter(categorySchemeTermFilter);
-        } else {
-            filter.setFilterOnPath(path);
         }
 
-        // Case of the mixin tag entities request.
-        Optional<String> optMixinTag = occiRequest.getMixinTagSchemeTermFromLocation(path);
-        if (optMixinTag.isPresent()) {
-            if (categoryFilter == null) {
-                filter.setCategoryFilter(optMixinTag.get());
-                filter.setFilterOnPath(null);
+        // Determine if the collection is on a category path (kind or mixins term location).
+        boolean onExtensionCategoryLocation = occiRequest.isOnCategoryLocation();
+        if (onExtensionCategoryLocation) {
+            String categorySchemeTermFilter = null;
+            Optional<String> optCat = occiRequest.getCategorySchemeTermFromLocation(requestPath);
+
+            if (optCat.isPresent()) {
+                // If a category filter is already there via request parameters we use a subfilter.
+                if (categoryFilter != null) {
+                    filter.setSubCategoryFilter(filter.getCategoryFilter());
+                    filter.setCategoryFilter(optCat.get());
+                    filter.setFilterOnEntitiesPath(null);
+                } else {
+                    filter.setCategoryFilter(optCat.get());
+                    filter.setSubCategoryFilter(null);
+                    filter.setFilterOnEntitiesPath(null);
+                }
+                return filter;
+            } else {
+                LOGGER.warn("Unknown Category kind/mixin location : " + requestPath);
             }
         }
+        // Default to entities location.
+        filter.setFilterOnEntitiesPath(requestPath);
 
         return filter;
     }
