@@ -622,13 +622,10 @@ public class EntityManager {
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
         String location = entitiesOwner.getEntityLocation(entity);
         if (location == null) {
-            location = "/"; // On root path by default.
+            location = "/" + entity.getId(); // On root path by default.
+            LOGGER.warn("Entity : " + entity.getId() + " for title : " + entity.getTitle() + " has no location !!!, setting location on : " + location);
             // To ensure that the path exist on entities path map.
             entitiesOwner.putEntity(location, entity);
-        }
-        // we have maybe no leading slash.
-        if (!location.equals("/") && !location.endsWith("/")) {
-            location += "/";
         }
         return location;
     }
@@ -750,20 +747,15 @@ public class EntityManager {
      */
     public static Optional<Entity> findEntityFromLocation(final String location, final String owner) {
         Entity entity;
-        if (location == null) {
+        if (location == null || location.trim().isEmpty()) {
             return Optional.empty();
-        }
-        // Path must be ended with slash.
-        String pathParam = location;
-        if (!pathParam.endsWith("/")) {
-            pathParam = pathParam + "/";
         }
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
         if (entitiesOwner == null) {
             LOGGER.warn("Empty entities owner map !! for owner: " + owner);
             return Optional.empty();
         }
-        entity = entitiesOwner.getEntityByLocation(pathParam);
+        entity = entitiesOwner.getEntityByLocation(location);
         return Optional.ofNullable(entity);
     }
 
@@ -795,6 +787,7 @@ public class EntityManager {
         // existed, inform by logger but overwrite existing one.
         boolean resourceOverwrite;
         Optional<Resource> optResource = findResource(uuid, owner);
+
         Resource resource;
         if (!optResource.isPresent()) {
 
@@ -1317,15 +1310,6 @@ public class EntityManager {
             return entitiesUUID;
         }
 
-        String pathCompare = path;
-
-        if (!pathCompare.endsWith("/")) {
-            pathCompare = pathCompare + "/";
-        }
-        if (!pathCompare.startsWith("/")) {
-            pathCompare = "/" + pathCompare;
-        }
-
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
 
         Map<String, Entity> entitiesLocationMap = entitiesOwner.getEntitiesByLocation();
@@ -1337,9 +1321,9 @@ public class EntityManager {
             pathTmp = entry.getKey();
             uuid = entry.getValue().getId();
 
-            if (pathCompare.equals(pathTmp)) {
+            if (path.equals(pathTmp)) {
                 entitiesUUID.add(uuid);
-            } else if ((pathCompare.startsWith(pathTmp) || pathTmp.startsWith(pathCompare)) && !pathTmp.isEmpty()) {
+            } else if ((path.startsWith(pathTmp) || pathTmp.startsWith(path)) && !pathTmp.isEmpty()) {
                 entitiesUUID.add(uuid);
             }
         }

@@ -74,7 +74,8 @@ public class EntitiesOwner {
 
     // Helpers methods to manage the entities maps.
     public void putEntity(final String location, final Entity entity) {
-        entitiesByLocation.put(location, entity);
+        String loc = manageSlashes(location);
+        entitiesByLocation.put(loc, entity);
         entitiesByUuid.put(entity.getId(), entity);
     }
 
@@ -83,11 +84,13 @@ public class EntitiesOwner {
     }
 
     public Entity getEntityByLocation(final String location) {
-        return entitiesByLocation.get(location);
+        String loc = manageSlashes(location);
+        return entitiesByLocation.get(loc);
     }
 
     public void removeEntity(final String location, final Entity entity) {
-        entitiesByLocation.remove(location);
+        String loc = manageSlashes(location);
+        entitiesByLocation.remove(loc);
         entitiesByUuid.remove(entity.getId());
     }
 
@@ -119,21 +122,35 @@ public class EntitiesOwner {
      * Get entity location using its uuid only.
      *
      * @param uuid universal identifier of the entity to locate.
-     * @return a location (like /myresources/myentities/ null if no location found).
+     * @return a location (like /myresources/myentities null if no location found).
      */
     public String getEntityLocation(final String uuid) {
-        String location = null;
         if (uuid == null) {
             return null;
         }
-        Entity entity;
-        String locationTmp;
-        entity = getEntityByUuid(uuid);
+        Entity entity = getEntityByUuid(uuid);
         if (entity == null) {
             return null;
         }
         return getEntityLocation(entity);
     }
 
+    /**
+     * Format the location to a location like /mylocation/myentity.
+     * @param location a location to format
+     * @return a formatted location for entity exclusively.
+     */
+    public String manageSlashes(String location) {
+        String loc = location;
+        // Remove leading slash as entities MUST has a format location like : /myentity/entity1
+        if (loc.endsWith("/")) {
+            loc = loc.substring(0, loc.length() - 1);
+        }
+        if (!loc.startsWith("/")) {
+            // Add a leading slash if no leading slash.
+            loc = "/" + loc;
+        }
+        return loc;
+    }
 
 }

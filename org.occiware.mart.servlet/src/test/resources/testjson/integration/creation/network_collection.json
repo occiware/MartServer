@@ -1,0 +1,79 @@
+{
+  "resources": [
+    {
+      "title": "network1",
+      "summary": "first network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 1,
+        "occi.network.label": "private",
+        "occi.network.address": "10.1.0.0/16",
+        "occi.network.gateway": "10.1.255.254"
+      },
+      "location": "/mainnetwork/network1"
+    },
+    {
+      "title": "network2",
+      "summary": "2 network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 12,
+        "occi.network.label": "private",
+        "occi.network.address": "10.2.0.0/16",
+        "occi.network.gateway": "10.2.255.254"
+      },
+      "location": "/mainnetwork/network2"
+    },
+    {
+      "title": "network3",
+      "summary": "My third network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 10,
+        "occi.network.label": "private",
+        "occi.network.address": "10.3.0.0/16",
+        "occi.network.gateway": "10.3.255.254"
+      },
+      "location": "/mainnetwork/network3"
+    },
+    {
+      "title": "network4",
+      "summary": "4 network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 10,
+        "occi.network.label": "private",
+        "occi.network.address": "10.4.0.0/16",
+        "occi.network.gateway": "10.4.255.254"
+      },
+      "location": "/mainnetwork/network4"
+    },
+    {
+      "title": "network5",
+      "summary": "5 network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 9,
+        "occi.network.label": "private",
+        "occi.network.address": "10.5.0.0/16",
+        "occi.network.gateway": "10.5.255.254"
+      },
+      "location": "/mainnetwork/network5"
+    }
+  ]
+}

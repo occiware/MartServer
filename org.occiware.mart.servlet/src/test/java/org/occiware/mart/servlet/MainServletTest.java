@@ -378,15 +378,51 @@ public class MainServletTest {
                 "Trigger action stop on entity - POST method, must be triggered on location : /compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
 
-        // Add a new network.
+        // Add new network resources.
         response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
                 "/testjson/integration/creation/resource6.json",
                 "Create resource network2 - POST method - on location: /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // Create a collection of networks.
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/network_collection.json",
+                "Create a collection of networks (network3-network4-network5) - POST method - on location: /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
 
         // remove all network.
         response = executeQuery(HttpMethod.DELETE, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
                 null,
                 "Remove all network - DELETE method, on location : /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // Check /network/ collection
+        response = executeQuery(httpMethod, "http://localhost:9090/network/", HttpServletResponse.SC_NOT_FOUND,
+                null,
+                "Get resource collection for the network kind , location : /network/ ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_TEXT_URI_LIST);
+
+        fields = response.getHeaders();
+        xlocations = fields.getValuesList(Constants.X_OCCI_LOCATION);
+        assertTrue(xlocations.isEmpty());
+        for (final String location : xlocations) {
+            System.out.println("Location in header X-OCCI-Location: " + location);
+        }
+
+        // Recreate the collection.
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+                "/testjson/integration/creation/network_collection.json",
+                "Create a collection of networks (network3-network4-network5) - POST method - on location: /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // Check /network/ collection
+        response = executeQuery(httpMethod, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+                null,
+                "Get resource collection for the network kind , location : /network/ ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_TEXT_URI_LIST);
+
+        fields = response.getHeaders();
+        xlocations = fields.getValuesList(Constants.X_OCCI_LOCATION);
+        assertFalse(xlocations.isEmpty());
+        for (final String location : xlocations) {
+            System.out.println("Location in header X-OCCI-Location: " + location);
+        }
+
 
         // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
         // String titleVal = UrlEncoded.encodeString("other compute 1 title", Charset.forName("UTF-8"));

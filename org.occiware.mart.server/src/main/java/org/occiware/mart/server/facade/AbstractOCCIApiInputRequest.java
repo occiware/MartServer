@@ -420,6 +420,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
      */
     @Override
     public OCCIApiResponse deleteEntity(final String location) {
+
         Optional<Entity> optEntity = EntityManager.findEntityFromLocation(location, username);
         Entity entity;
         String message;
