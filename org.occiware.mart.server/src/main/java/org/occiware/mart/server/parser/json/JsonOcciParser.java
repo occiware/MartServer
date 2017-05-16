@@ -473,7 +473,20 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
 
             GlobalModelInterfaceJson globalModelInterfaceJson = new GlobalModelInterfaceJson();
             globalModelInterfaceJson.setModel(models);
-            sb.append(globalModelInterfaceJson.toStringJson());
+
+            if (models.size() == 1) {
+                if (kinds.isEmpty() && mixins.size() == 1) {
+                    // Render only mixin output.
+                    sb.append(globalModelInterfaceJson.getModel().get(0).getMixins().get(0).toStringJson());
+                } else if (mixins.isEmpty() && kinds.size() == 1) {
+                    sb.append(globalModelInterfaceJson.getModel().get(0).getKinds().get(0).toStringJson());
+                } else {
+                    sb.append(globalModelInterfaceJson.toStringJson());
+                }
+
+            } else {
+                sb.append(globalModelInterfaceJson.toStringJson());
+            }
 
         } catch (JsonProcessingException | ConfigurationException ex) {
             LOGGER.error("Exception thrown when rendering json interface : " + ex.getClass().getName() + " : " + ex.getMessage());
@@ -974,10 +987,22 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
 
         List<String> actionsStr = new LinkedList<>();
         String actionStr;
+        mixins = res.getMixins();
+
         for (Action action : kind.getActions()) {
             actionStr = action.getScheme() + action.getTerm();
             actionsStr.add(actionStr);
         }
+        for (Mixin mixin : mixins) {
+            // Add actions from associated mixins.
+            for (Action action : mixin.getActions()) {
+                actionStr = action.getScheme() + action.getTerm();
+                actionsStr.add(actionStr);
+            }
+            String mixinStr = mixin.getScheme() + mixin.getTerm();
+            mixinsStr.add(mixinStr);
+        }
+        resJson.setMixins(mixinsStr);
         resJson.setActions(actionsStr);
         Map<String, Object> attributes = new LinkedHashMap<>();
         // Attributes.
@@ -1012,12 +1037,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
 
         resJson.setAttributes(attributes);
 
-        mixins = res.getMixins();
-        for (Mixin mixin : mixins) {
-            String mixinStr = mixin.getScheme() + mixin.getTerm();
-            mixinsStr.add(mixinStr);
-        }
-        resJson.setMixins(mixinsStr);
+
         // resources has links ?
         for (Link link : res.getLinks()) {
             LinkJson linkJson = buildLinkJsonFromEntity(link);
@@ -1047,16 +1067,28 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         String actionStr;
         Map<String, Object> attributes = new LinkedHashMap<>();
         kind = link.getKind();
+
         linkJson.setKind(kind.getScheme() + kind.getTerm());
         linkJson.setId(Constants.URN_UUID_PREFIX + link.getId());
         linkJson.setTitle(link.getTitle());
         linkJson.setLocation(EntityManager.getLocation(entity, getUser()));
         actions = kind.getActions();
+        mixins = link.getMixins();
         for (Action action : actions) {
             actionStr = action.getScheme() + action.getTerm();
             actionsStr.add(actionStr);
         }
+        for (Mixin mixin : mixins) {
+            // Add actions from associated mixins.
+            for (Action action : mixin.getActions()) {
+                actionStr = action.getScheme() + action.getTerm();
+                actionsStr.add(actionStr);
+            }
+            String mixinStr = mixin.getScheme() + mixin.getTerm();
+            mixinsStr.add(mixinStr);
+        }
         linkJson.setActions(actionsStr);
+        linkJson.setMixins(mixinsStr);
 
         // Attributes.
         List<AttributeState> attrsState = link.getAttributes();
@@ -1118,13 +1150,6 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         linkJson.setTarget(target);
 
         linkJson.setAttributes(attributes);
-
-        mixins = link.getMixins();
-        for (Mixin mixin : mixins) {
-            String mixinStr = mixin.getScheme() + mixin.getTerm();
-            mixinsStr.add(mixinStr);
-        }
-        linkJson.setMixins(mixinsStr);
 
         return linkJson;
     }
