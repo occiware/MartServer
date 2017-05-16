@@ -364,9 +364,17 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
 
     @Override
-    public OCCIApiResponse updateEntity(final List<String> mixins, final Map<String, String> attributes, final String location) {
+    public OCCIApiResponse updateEntity(final String title, final String summary, final List<String> mixins, final Map<String, String> attributes, final String location) {
         String message;
         Optional<Entity> optEntity;
+        // Manage title and summary as attributes.
+        if (title != null) {
+            attributes.put(Constants.OCCI_CORE_TITLE, title);
+        }
+        if (summary != null) {
+            attributes.put(Constants.OCCI_CORE_SUMMARY, title);
+        }
+
         if (mixins.isEmpty() && attributes.isEmpty()) {
             message = "No attributes to update or mixins to apply to entities";
             parseConfigurationExceptionMessageOutput(message);
@@ -1161,15 +1169,18 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                         for (Map.Entry<String, Object> entry : attrsToControlOnMixins.entrySet()) {
                             attributes = attributes + entry.getKey() + ";";
                         }
-                        message = "Some attributes were not found on referenced models : " + attributes;
+                        message = "Some attributes were not found on referenced models : " + attributes + ", maybe mixin definition is missing in input query.";
                         parseModelValidatorExceptionMessageOutput(message);
                         return occiApiResponse;
                     }
                 } else {
                     // There are mixins contents....
-                    Mixin mixinModel;
                     // mixins exists ?
                     // Are there applyable to this kind ?
+                    List<Mixin> mixinModels = new LinkedList<>();
+                     // Global mixins attributes.
+                    List<Attribute> mixinAttrs = new LinkedList<>();
+                    // Prepare a list of known mixins if not known ==> error.
                     for (String mixin : mixins) {
                         optMixin = MixinManager.findMixinOnExtension(mixin, username);
                         if (!optMixin.isPresent()) {
@@ -1182,30 +1193,32 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                             parseModelValidatorExceptionMessageOutput(message);
                             return occiApiResponse;
                         } else {
-                            mixinModel = optMixin.get();
+                            mixinModels.add(optMixin.get());
                         }
-                        // Check the attributes if any.
-                        if (!attrsToControlOnMixins.isEmpty()) {
-                            found = false;
-                            message = null;
-                            for (Map.Entry<String, Object> entry : attrsToControlOnMixins.entrySet()) {
-                                attrKey = entry.getKey();
-                                for (Attribute attr : mixinModel.getAttributes()) {
-                                    if (attrKey.equals(attr.getName())) {
-                                        found = true;
-                                        break;
-                                    }
+                    }
+                    if (!attrsToControlOnMixins.isEmpty()) {
+                        // For each mixin model, we add all known attributes to a list.
+                        for (Mixin mixinModel : mixinModels) {
+                            mixinAttrs.addAll(mixinModel.getAttributes());
+                        }
+                        found = false;
+                        message = null;
+                        for (Map.Entry<String, Object> entry : attrsToControlOnMixins.entrySet()) {
+                            attrKey = entry.getKey();
+                            for (Attribute attr : mixinAttrs) {
+                                if (attrKey.equals(attr.getName())) {
+                                    found = true;
+                                    break;
                                 }
-                                if (!found) {
-                                    message = "" + attrKey + ";";
-                                }
-
                             }
-                            if (message != null) {
-                                message = "Some attributes were not found on referenced models : " + message;
-                                parseModelValidatorExceptionMessageOutput(message);
-                                return occiApiResponse;
+                            if (!found) {
+                                message = "" + attrKey + ";";
                             }
+                        }
+                        if (message != null) {
+                            message = "Some attributes were not found on referenced models : " + message;
+                            parseModelValidatorExceptionMessageOutput(message);
+                            return occiApiResponse;
                         }
                     }
                 }

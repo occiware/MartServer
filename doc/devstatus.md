@@ -81,7 +81,7 @@ Development Status values :
     <tr>
          <td align="center">Update user documentation</td>
          <td align="center">Add text/occi + test/plain documentation, update json documentation, <a href="https://github.com/occiware/MartServer/issues/33">feature #12</a></td>
-         <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+         <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     
 </table>

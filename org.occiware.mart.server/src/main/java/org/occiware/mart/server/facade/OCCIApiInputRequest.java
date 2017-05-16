@@ -59,12 +59,14 @@ public interface OCCIApiInputRequest {
     /**
      * Update an entity (partial update). This take new mixins association but doesnt remove association, to make that use removeMixinAssociations() method.
      *
-     * @param mixins     a list of mixins to associate with entity.
+     *
+     * @param title
+     * @param summary
+     *@param mixins     a list of mixins to associate with entity.
      * @param attributes attributes to update.
-     * @param location   an entity location.
-     * @return a response object defined by implementation.
+     * @param location   an entity location.    @return a response object defined by implementation.
      */
-    public OCCIApiResponse updateEntity(final List<String> mixins, final Map<String, String> attributes, final String location);
+    public OCCIApiResponse updateEntity(String title, String summary, final List<String> mixins, final Map<String, String> attributes, final String location);
 
     /**
      * Delete an entity with location provided.

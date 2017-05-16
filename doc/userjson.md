@@ -1,4 +1,4 @@
-# User documentation json parser.
+# User documentation, the json parser
 This give some examples of usage with json input and output.
 
 All theses examples use curl to execute queries on the server.
@@ -9,8 +9,12 @@ Also, you can define Content-Type to application/json and accept-type to text/oc
 
 application/json and application/occi+json will give the same input/output content.
 
+Note that default parser is set to application/json on input and output.
 
-## Get the query interface
+For the following usage, localhost and port 8080 is assumed, the examples use curl as http client tool.
+
+## Get the query interface 
+
 ```curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/ -H "accept: application/json"```
 You can also use the path : "/-/".
 
@@ -19,21 +23,30 @@ You can also use the path : "/-/".
 
 ## Get the query interface for a single category
 
-```curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/?category=compute -H "accept: application/json"```
+```curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/?category=compute -H "accept: application/json"``` 
 
-## Create a resource
+You can use interface query to describe a mixin tag :
+
+```curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/?category=mymixinterm -H "accept: application/json"```
+
+In case that the model to render is not defined, MartServer will render an empty json "{ }".
+
+## Create resources
+
+### Create one compute on location <i>/mycompute/webserver</i> using PUT method
+
+Prepare a json file like this : 
 <pre>
 <code>
 {
-    "id": "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
-    "title": "compute4",
-    "summary": "My only compute for test with single resource",
+    "title": "webserver",
+    "summary": "server webpage for business site",
     "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
     "attributes": {
         "occi.compute.speed": 3.0,
         "occi.compute.memory": 4.0,
-        "occi.compute.cores": 4,
-        "occi.compute.architecture": "x86",
+        "occi.compute.cores": 8,
+        "occi.compute.architecture": "x64",
         "occi.compute.state": "active"
     }
 }
@@ -42,419 +55,592 @@ You can also use the path : "/-/".
 
 Make it as json file and execute the query (this upload the file to the server, adapt it to your needs):
 
-```curl -v -X PUT --data-binary "@/yourabsolutepath/resourcefile.json" http://localhost:8080/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"```
+```curl -v -X PUT --data-binary "@/yourabsolutepath/webserver.json" http://localhost:8080/mycompute/webserver -H "Content-Type: application/json" -H "accept: application/json"```
 
 or you can use curl with -d switch to define directly the resource (so without a file).
 Like this :
 <pre>
 <code>
 curl -v -X PUT -d '{
-  "id": "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
-  "title": "compute4",
-  "summary": "My only compute for test with single resource",
+  "title": "webserver",
+  "summary": "server webpage for business site",
   "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
   "attributes": {
       "occi.compute.speed": 3.0,
       "occi.compute.memory": 4.0,
-      "occi.compute.cores": 4,
-      "occi.compute.architecture": "x86",
+      "occi.compute.cores": 8,
+      "occi.compute.architecture": "x64",
       "occi.compute.state": "active"
   }
-}' http://localhost:8080/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"
+}' http://localhost:8080/mycompute/webserver -H "Content-Type: application/json" -H "accept: application/json"
 </code>
 </pre>
 
-## Create a resource with links
-
+This query will create the compute resource titled <b>webserver</b> on location : <i><b>/mycompute/webserver</b></i> , the <b>result</b> give a json rendering accordingly to accept header value :
 <pre>
 <code>
 {
-    "id": "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-    "title": "compute3",
-    "summary": "My other compute 3",
-    "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
-    "attributes": {
-        "occi.compute.speed": 1.0,
-        "occi.compute.memory": 2.0,
-        "occi.compute.cores": 1,
-        "occi.compute.architecture": "x86",
-        "occi.compute.state": "inactive"
-    },
-    "links": [
-        {
-            "kind": "http://schemas.ogf.org/occi/infrastructure#networkinterface",
-            "mixins": [
-            "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"
-            ],
-            "attributes": {
-                "occi.networkinterface.interface": "eth0",
-                "occi.networkinterface.mac": "00:80:41:ae:fd:7e",
-                "occi.networkinterface.address": "192.168.0.100",
-                "occi.networkinterface.gateway": "192.168.0.1",
-                "occi.networkinterface.allocation": "dynamic"
-            },
-            "actions": [
-                "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up",
-                "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#down"
-            ],
-            "id": "urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
-            "target": {
-            "location": "/network/c7d55bf4-7057-5113-85c8-141871bf7636",
-            "kind": "http://schemas.ogf.org/occi/infrastructure#network"
-            },
-            "source": {
-                "location": "/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8"
-            }
-        }
-    ]
+  <b>"id" : "urn:uuid:49680b9e-0994-4b8c-ba95-6a35c5bff59c",</b>
+  "title" : "webserver",
+  "summary" : "server webpage for business site",
+  "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+  "mixins" : [ ],
+  "attributes" : {
+    "occi.compute.architecture" : "x64",
+    "occi.compute.cores" : 8,
+    "occi.compute.share" : 0,
+    "occi.compute.speed" : 3.0,
+    "occi.compute.memory" : 4.0,
+    "occi.compute.state" : "active"
+  },
+  "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
+  <b>"location" : "/mycompute/webserver"</b>
+}
+</code>
+</pre>
+
+<b>Note</b> that all resources (resource and links) have an id attribute (uuid), if "id" attribute is not set, MartServer will create a new uuid for you.
+
+### Create a resource network using category location <i>/network/</i> and POST method 
+
+You can create one resource using POST method but with category location, be aware that the category must be defined on resource(s) to create :
+<pre>
+<code>
+curl -v -X POST -d '{
+  "title": "The main switch",
+  "summary": "This give a main network resource",
+  "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+  "mixins": [
+    "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+  ],
+  "attributes": {
+    "occi.network.vlan": 10,
+    "occi.network.label": "private",
+    "occi.network.address": "10.1.0.0/16",
+    "occi.network.gateway": "10.1.255.254"
+  }, 
+  <b>"location":"/mainnetwork/network2"</b>
+  }
+}' http://localhost:8080/network/ -H "Content-Type: application/json" -H "accept: application/json"
+</code>
+</pre>
+
+MartServer will control if category location is defined for the entity to create and if ok, will create the entity in two ways:
+- Entity location is set (as made on our example) : create the entity based on location property
+- Entity location is <b>not</b> set : create the entity based on category location added with entity uuid, this will be : <i><b>/network/59680b9e-0994-4b8c-ba95-6a35c5bff59e</b></i>
+
+Result :
+ 
+<pre>
+<code>
+{
+  "id" : "urn:uuid:06934c34-796a-4c01-a82c-d68755952445",
+  "title" : "The main switch",
+  "summary" : "This give a main network resource",
+  "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+  "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+  "attributes" : {
+    "occi.network.vlan" : 10,
+    "occi.network.label" : "private",
+    "occi.network.state" : "inactive",
+    "occi.network.address" : "10.1.0.0/16",
+    "occi.network.gateway" : "10.1.255.254"
+  },
+  "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+  "location" : "/mainnetwork/network2"
+}
+</code>
+</pre>
+
+### Create a network interface link between our "webserver" and "main switch network" on location <i>/eth0/webserver</i> using PUT method
+<pre>
+<code>curl -v -X PUT -d '{
+  "kind": "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+  "mixins": [
+     "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"
+  ],
+  "attributes": {
+     "occi.networkinterface.interface": "eth0",
+     "occi.networkinterface.mac": "00:80:41:ae:fd:7e",
+     "occi.networkinterface.address": "192.168.0.100",
+     "occi.networkinterface.gateway": "192.168.0.1",
+     "occi.networkinterface.allocation": "dynamic"
+  },
+  "target": {
+    <b>"location": "/mainnetwork/network2"</b>
+  },
+  "source": {
+    <b>"location": "/mycompute/webserver"</b>
+  }
+}' http://localhost:8080/eth0/webserver -H "Content-Type: application/json" -H "accept: application/json"
+</code>
+</pre>
+
+Result :
+<pre>
+<code>
+{
+  "id" : "urn:uuid:47c44239-13ee-47e3-8746-4083e62a00bf",
+  "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+  "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
+  "attributes" : {
+    "occi.networkinterface.interface" : "eth0",
+    "occi.networkinterface.mac" : "00:80:41:ae:fd:7e",
+    "occi.networkinterface.address" : "192.168.0.100",
+    "occi.networkinterface.gateway" : "192.168.0.1",
+    "occi.networkinterface.allocation" : "dynamic"
+  },
+  "actions" : [ ],
+  "location" : "/eth0/webserver",
+  "source" : {
+    "location" : "/mycompute/webserver",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
+  },
+  "target" : {
+    "location" : "/mainnetwork/network2",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
+  }
 }
 </code>
 </pre>
 
 
-Execute the query (adapt to your needs) :
-
-```curl -v -X PUT --data-binary "@/yourabsolutepath/resourcefile.json" http://localhost:8080/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"```
-
 Note: If you didn't create the target network before, this query will not work because the network target doesn't exist in your configuration. 
-You must create it before :
+
+If PUT method is used and the resource is already created, this will cause a full entity update (mixins, attributes). 
+
+### Create a collection of networks
+
+You can create a collection of resources related to the category location used with POST method.
+
+To create a collection of computes on location kind <i>/network/</i> :
+
 <pre>
-<code>
-curl -v -X PUT -d '{
-    "id": "urn:uuid:c7d55bf4-7057-5113-85c8-141871bf7636",
-    "title": "network2",
-    "summary": "My second network",
-    "kind": "http://schemas.ogf.org/occi/infrastructure#network",
-    "mixins": [
+<code>curl -v -X POST -d '{
+  "resources": [
+    {
+      "title": "network1",
+      "summary": "first network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
         "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
-    ],
-    "attributes": {
-        "occi.network.vlan": 14,
+      ],
+      "attributes": {
+        "occi.network.vlan": 1,
         "occi.network.label": "private",
         "occi.network.address": "10.1.0.0/16",
         "occi.network.gateway": "10.1.255.254"
-    }
- }' -H 'Content-Type: application/occi+json' -H 'accept: application/occi+json' http://localhost:8080/
-</code>
-</pre>
-
-And after execute the query :
-<pre>
-<code>
-curl -v -X PUT -d '{
-    "id": "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-    "title": "compute3",
-    "summary": "My other compute 3",
-    "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
-    "attributes": {
-        "occi.compute.speed": 1.0,
-        "occi.compute.memory": 2.0,
-        "occi.compute.cores": 1,
-        "occi.compute.architecture": "x86",
-        "occi.compute.state": "inactive"
+      },
+      "location": "/mainnetwork/network1"
     },
-    "links": [
-        {
-            "kind": "http://schemas.ogf.org/occi/infrastructure#networkinterface",
-            "mixins": [
-            "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"
-            ],
-            "attributes": {
-                "occi.networkinterface.interface": "eth0",
-                "occi.networkinterface.mac": "00:80:41:ae:fd:7e",
-                "occi.networkinterface.address": "192.168.0.100",
-                "occi.networkinterface.gateway": "192.168.0.1",
-                "occi.networkinterface.allocation": "dynamic"
-            },
-            "actions": [
-                "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up",
-                "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#down"
-            ],
-            "id": "urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
-            "target": {
-            "location": "/network/c7d55bf4-7057-5113-85c8-141871bf7636",
-            "kind": "http://schemas.ogf.org/occi/infrastructure#network"
-            },
-            "source": {
-                "location": "/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8"
-            }
-        }
-    ]
-}' -H 'Content-Type: application/occi+json' -H 'accept: application/occi+json' http://localhost:8080/
-</code>
-</pre>
-
-
-So, this will create the compute with a network interface linked to a previous created network.
-
-
-## Create a full collection of resources (with association of mixins and mixin tag definitions).
-
-<pre>
-<code>
-{
-    "resources": [
-        {
-            "id": "urn:uuid:c7d55bf4-7057-5113-85c8-141871bf7636",
-            "title": "network2",
-            "summary": "My second network",
-            "kind": "http://schemas.ogf.org/occi/infrastructure#network",
-            "mixins": [
-                "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
-            ],
-            "attributes": {
-                "occi.network.vlan": 14,
-                "occi.network.label": "private",
-                "occi.network.address": "10.1.0.0/16",
-                "occi.network.gateway": "10.1.255.254"
-            }
-        },
-        {
-            "id": "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-            "title": "compute3",
-            "summary": "My other compute 3",
-            "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
-            "attributes": {
-                "occi.compute.speed": 1.0,
-                "occi.compute.memory": 2.0,
-                "occi.compute.cores": 1,
-                "occi.compute.architecture": "x86",
-                "occi.compute.state": "inactive"
-            },
-            "links": [
-                {
-                    "kind": "http://schemas.ogf.org/occi/infrastructure#networkinterface",
-                    "mixins": [
-                        "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"
-                    ],
-                    "attributes": {
-                        "occi.networkinterface.interface": "eth0",
-                        "occi.networkinterface.mac": "00:80:41:ae:fd:7e",
-                        "occi.networkinterface.address": "192.168.0.100",
-                        "occi.networkinterface.gateway": "192.168.0.1",
-                        "occi.networkinterface.allocation": "dynamic"
-                    },
-                    "actions": [
-                        "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up",
-                        "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#down"
-                    ],
-                    "id": "urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
-                    "target": {
-                        "location": "/network/c7d55bf4-7057-5113-85c8-141871bf7636",
-                        "kind": "http://schemas.ogf.org/occi/infrastructure#network"
-                    },
-                    "source": {
-                        "location": "/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8"
-                    }
-                }
-            ]
-        }
-
-    ],
-    "mixins": [
-        {
-            "location": "/mixins/my_mixin/",
-            "scheme": "http://occiware.org/occi/tags#",
-            "term": "my_mixin",
-            "attributes": {},
-            "title": "my mixin tag 1"
-        },
-        {
-            "location": "/mixins/my_mixin2/",
-            "scheme": "http://occiware.org/occi/tags#",
-            "term": "my_mixin2",
-            "attributes": {},
-            "title": "my mixin tag 2"
-        }
-    ]
-}
-</code>
-</pre>
-
-```curl -v -X PUT --data-binary "@/yourabsolutepath/resourcefile.json" http://localhost:8080/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"```
-
-The "mixins" section defines mixin tag on current configuration.
-
-## Update resources attributes
-
-You can define attributes with the same query as you created the resources but with a POST method.
-
-```curl -v -X POST --data-binary "@/yourabsolutepath/resourcefile.json" http://localhost:8080/ -H "Content-Type: application/occi+json" -H "accept: application/occi+json"```
-
-### Use case :
-
-* Redefine an attribute of our network created before : 
-        occi.network.vlan --< 14
-    now it will be :
-        occi.network.vlan --< 50
-<pre>
-<code>
-  curl -v -X POST -d '{ 
-      "id": "urn:uuid:c7d55bf4-7057-5113-85c8-141871bf7636",
+    {
+      "title": "network2",
+      "summary": "2 network",
       "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
       "attributes": {
-          "occi.network.vlan": 50
-      }
-  }' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/
+        "occi.network.vlan": 12,
+        "occi.network.label": "private",
+        "occi.network.address": "10.2.0.0/16",
+        "occi.network.gateway": "10.2.255.254"
+      },
+      "location": "/mainnetwork/network2"
+    },
+    {
+      "title": "network3",
+      "summary": "My third network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 10,
+        "occi.network.label": "private",
+        "occi.network.address": "10.3.0.0/16",
+        "occi.network.gateway": "10.3.255.254"
+      },
+      "location": "/mainnetwork/network3"
+    },
+    {
+      "title": "network4",
+      "summary": "4 network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 10,
+        "occi.network.label": "private",
+        "occi.network.address": "10.4.0.0/16",
+        "occi.network.gateway": "10.4.255.254"
+      },
+      "location": "/mainnetwork/network4"
+    },
+    {
+      "title": "network5",
+      "summary": "5 network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 9,
+        "occi.network.label": "private",
+        "occi.network.address": "10.5.0.0/16",
+        "occi.network.gateway": "10.5.255.254"
+      },
+      "location": "/mainnetwork/network5"
+    }
+  ]
+}' http://localhost:8080/network/ -H "Content-Type: application/json" -H "accept: application/json"
 </code>
-</pre>    
-* Redefine the title of our compute :
+</pre>
+
+Result :
+
 <pre>
 <code>
-  curl -v -X POST -d '{ 
-      "id": "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-      "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
-      "title": "This is our compute"
-  }' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/
-</code>
-</pre> 
-
-Note: Id, title and summary must be set out of attributes values.
-
-
-## Retrieve your resources
-
-Please note that the relative path of your resources to find is important.
-
-You can search directly with the resource location path (including uuid) :
-
-```curl -v -X GET http://localhost:8080/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8 -H "accept: application/json" ```
-
-This must retrieve one resource for this uuid : a1cf3896-500e-48d8-a3f5-a8b3601bcdd8.
-
-If you don't know the path of your resource, you can use its kind for example, for a compute, you can do this :
-```curl -v -X GET http://localhost:8080/compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8 -H "accept: application/json" ```
-
-This will return :
-<pre>
-<code>
-> GET /compute/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8 HTTP/1.1
-> Host: localhost:8080
-> User-Agent: curl/7.43.0
-> accept: application/json
-> 
-< HTTP/1.1 200 OK
-< Date: Tue, 15 Nov 2016 09:01:01 GMT
-< Server: OCCIWare MART Server v1.0 OCCI/1.2
-< Accept: text/occi;application/json;application/occi+json;text/plain
-< Content-Type: application/json
-< Content-Length: 1980
-< 
 {
   "resources" : [ {
-    <b>"id" : "a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",</b>
-    "title" : "compute3",
-    "summary" : "My other compute 3",
-    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
-    "mixins" : [ ],
+    "id" : "urn:uuid:3c76c03a-8c1e-4a5f-8ec5-8ccccd7932dc",
+    "title" : "network1",
+    "summary" : "first network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
     "attributes" : {
-      "occi.core.id" : "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-      "occi.compute.architecture" : "x86",
-      "occi.compute.cores" : 1,
-      "occi.compute.speed" : 1.0,
-      "occi.compute.memory" : 2.0,
-      "occi.compute.state" : "inactive"
+      "occi.network.vlan" : 1,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.1.0.0/16",
+      "occi.network.gateway" : "10.1.255.254"
     },
-    "links" : [ {
-      "id" : "b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
-      "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
-      "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
-      "attributes" : {
-        "occi.core.id" : "urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
-        "occi.networkinterface.interface" : "eth0",
-        "occi.networkinterface.mac" : "00:80:41:ae:fd:7e",
-        "occi.networkinterface.address" : "192.168.0.100",
-        "occi.networkinterface.gateway" : "192.168.0.1",
-        "occi.networkinterface.allocation" : "dynamic"
-      },
-      "actions" : [ ],
-      "location" : "/b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
-      "source" : {
-        "location" : "/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-        "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
-      },
-      "target" : {
-        "location" : "/c7d55bf4-7057-5113-85c8-141871bf7636",
-        "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
-      }
-    } ],
-    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
-    "location" : "/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8"
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network1"
+  }, {
+    "id" : "urn:uuid:06934c34-796a-4c01-a82c-d68755952445",
+    "title" : "network2",
+    "summary" : "2 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 12,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.2.0.0/16",
+      "occi.network.gateway" : "10.2.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network2"
+  }, {
+    "id" : "urn:uuid:97cb2eba-4ca4-4f9b-8666-3340316669ca",
+    "title" : "network3",
+    "summary" : "My third network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 10,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.3.0.0/16",
+      "occi.network.gateway" : "10.3.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network3"
+  }, {
+    "id" : "urn:uuid:4a57153a-1e77-4a94-ae8c-1cccc6458e20",
+    "title" : "network4",
+    "summary" : "4 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 10,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.4.0.0/16",
+      "occi.network.gateway" : "10.4.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network4"
+  }, {
+    "id" : "urn:uuid:a6af7443-a579-4249-b5f3-de2e68a10a24",
+    "title" : "network5",
+    "summary" : "5 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 9,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.5.0.0/16",
+      "occi.network.gateway" : "10.5.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network5"
   } ]
 }
 </code>
 </pre>
+Each network will be created on its location defined, if no location is set, the resource will be created on location /network/ + resource unique identifier (uuid => id field). 
+If you observe the json rendering result, network2 has been updated, therefore network2 resource was already created.
 
-### Retrieve your collection of resources with filter path
-
-- If you have defined your resources on a custom path : http://localhost:8080/myresources/ so to retrieve your resources :
-
-```curl -v -X GET http://localhost:8080/myresources/ -H "accept: application/occi+json"```
-
-- You can't remember where you have defined your resources but you know the category :
-
-```curl -v -X GET http://localhost:8080/mycategory/ -H "accept: application/occi+json"```
-
-This will give you all the resources for the mycategory. 
-
-To have location only :
-
-```curl -v -X GET http://localhost:8080/mycategory/ -H "accept: text/uri-list" ```
-
-For all Compute kind :
-```curl -v -X GET http://localhost:8080/compute/ -H "accept: text/uri-list" ```
-
-So with an infrastructure Compute kind :
-
-```curl -v -X GET http://localhost:8080/compute/ -H "accept: application/occi+json"```
-
-The result must give a collection of computes like this: 
+Same operation with networkinterface links :
 <pre>
 <code>
-< HTTP/1.1 200 OK
-< Date: Mon, 14 Nov 2016 10:31:17 GMT
-< Server: OCCIWare MART Server v1.0 OCCI/1.2
-< Accept: text/occi;application/json;application/occi+json;text/plain
-< Content-Type: application/json
-< Content-Length: 2921
-< 
+curl -v -X POST -d '{
+  "links": [
+    {
+      "title":"neteth1",
+      "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+      "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
+      "attributes" : {
+        "occi.networkinterface.interface" : "eth1",
+        "occi.networkinterface.mac" : "00:81:41:ae:fd:7e",
+        "occi.networkinterface.address" : "192.168.1.100",
+        "occi.networkinterface.gateway" : "192.168.0.1",
+        "occi.networkinterface.allocation" : "static"
+      },
+      "location" : "/eth1/webserver",
+      "source" : {
+        "location" : "/mycompute/webserver",
+        "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
+      },
+      "target" : {
+        "location" : "/mainnetwork/network1",
+        "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
+      }
+    },
+    {
+      "title":"neteth2",
+      "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+      "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
+      "attributes" : {
+            "occi.networkinterface.interface" : "eth1",
+            "occi.networkinterface.mac" : "00:81:41:ae:fd:7e",
+            "occi.networkinterface.address" : "192.168.1.150",
+            "occi.networkinterface.gateway" : "192.168.0.1",
+            "occi.networkinterface.allocation" : "static"
+      },
+      "location" : "/eth2/webserver",
+      "source" : {
+         "location" : "/mycompute/webserver",
+         "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
+      },
+      "target" : {
+          "location" : "/mainnetwork/network3",
+          "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
+      }
+    }
+  ]
+}' http://localhost:8080/networkinterface/ -H "Content-Type: application/json" -H "accept: application/json"
+</code>
+</pre>
+
+Or you can create an entire collection with root location <b>/</b> :
+
+<pre>
+<code>
+curl -v -X POST -d '{
+  "resources": [
+    {
+      "id": "urn:uuid:f7d55bf4-7057-5113-85c8-141871bf7635",
+      "title": "network3",
+      "summary": "My third network",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+      "mixins": [
+        "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork"
+      ],
+      "attributes": {
+        "occi.network.vlan": 10,
+        "occi.network.label": "private",
+        "occi.network.address": "10.1.0.0/16",
+        "occi.network.gateway": "10.1.255.254"
+      },
+      "location": "/mynetwork/third/"
+    },
+    {
+      "id": "urn:uuid:ffcf3896-500e-48d8-a3f5-a8b3601bcdd9",
+      "title": "mycomputefortesting",
+      "summary": "My other compute to test",
+      "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+      "attributes": {
+        "occi.compute.speed": 1,
+        "occi.compute.memory": 2,
+        "occi.compute.cores": 1,
+        "occi.compute.architecture": "x86",
+        "occi.compute.state": "active"
+      },
+      "location": "/compute/ffcf3896-500e-48d8-a3f5-a8b3601bcdd9",
+      "links": [
+        {
+          "kind": "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+          "mixins": [
+            "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface"
+          ],
+          "attributes": {
+            "occi.networkinterface.interface": "eth0",
+            "occi.networkinterface.mac": "00:80:41:ae:fd:7e",
+            "occi.networkinterface.address": "192.168.0.50",
+            "occi.networkinterface.gateway": "192.168.0.1",
+            "occi.networkinterface.allocation": "dynamic"
+          },
+          "actions": [
+            "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#up",
+            "http://schemas.ogf.org/occi/infrastructure/networkinterface/action#down"
+          ],
+          "id": "urn:uuid:24fe83ae-a20f-54fc-b436-cec85c94c5e8",
+          "target": {
+            "location": "/mynetwork/third/",
+            "kind": "http://schemas.ogf.org/occi/infrastructure#network"
+          },
+          "source": {
+            "location": "/compute/ffcf3896-500e-48d8-a3f5-a8b3601bcdd9"
+          }
+        }
+      ]
+    }
+  ]
+}' http://localhost:8080/ -H "Content-Type: application/json" -H "accept: application/json"
+</pre>
+</code>
+
+## Retrieve resources
+To retrieve resources, you must use GET method.
+
+### Retrieve one compute resource
+You can search directly with the resource location <i><b>/mycompute/webserver</b></i> :
+
+```curl -v -X GET http://localhost:8080/mycompute/webserver -H "accept: application/json" ```
+
+Result:
+
+<pre>
+<code>
+{
+  "id" : "urn:uuid:49680b9e-0994-4b8c-ba95-6a35c5bff59c",
+  "title" : "webserver",
+  "summary" : "server webpage for business site",
+  "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+  "mixins" : [ ],
+  "attributes" : {
+    "occi.compute.architecture" : "x64",
+    "occi.compute.cores" : 8,
+    "occi.compute.share" : 0,
+    "occi.compute.speed" : 3.0,
+    "occi.compute.memory" : 4.0,
+    "occi.compute.state" : "active"
+  },
+  "links" : [ {
+    "id" : "urn:uuid:47c44239-13ee-47e3-8746-4083e62a00bf",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
+    "attributes" : {
+      "occi.networkinterface.interface" : "eth0",
+      "occi.networkinterface.mac" : "00:80:41:ae:fd:7e",
+      "occi.networkinterface.address" : "192.168.0.100",
+      "occi.networkinterface.gateway" : "192.168.0.1",
+      "occi.networkinterface.allocation" : "dynamic"
+    },
+    "actions" : [ ],
+    "location" : "/eth0/webserver",
+    "source" : {
+      "location" : "/mycompute/webserver",
+      "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
+    },
+    "target" : {
+      "location" : "/mainnetwork/network2",
+      "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
+    }
+  } ],
+  "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
+  "location" : "/mycompute/webserver"
+}
+</code>
+</pre>
+
+If resource is not found, this will give a json formatted message and HTTP 404 error (not found).
+<pre>
+<code>
+{
+  "message" : "Resource not found on location : /mycompute/webserver"
+}
+</code>
+</pre>
+
+### Retrieve all resources and links :
+To retrieve all collection of resources use the root location "/" :
+
+```curl -v -X GET http://localhost:8080/ -H "accept: application/json" ```
+
+This will result :
+<pre>
+<code>
 {
   "resources" : [ {
-    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
-    "title" : "compute4",
-    "summary" : "My only compute for test with single resource",
+    "id" : "urn:uuid:3c76c03a-8c1e-4a5f-8ec5-8ccccd7932dc",
+    "title" : "network1",
+    "summary" : "first network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 1,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.1.0.0/16",
+      "occi.network.gateway" : "10.1.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network1"
+  }, {
+    "id" : "urn:uuid:4a57153a-1e77-4a94-ae8c-1cccc6458e20",
+    "title" : "network4",
+    "summary" : "4 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 10,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.4.0.0/16",
+      "occi.network.gateway" : "10.4.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network4"
+  }, {
+    "id" : "urn:uuid:06934c34-796a-4c01-a82c-d68755952445",
+    "title" : "network2",
+    "summary" : "2 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 12,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.2.0.0/16",
+      "occi.network.gateway" : "10.2.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network2"
+  }, {
+    "id" : "urn:uuid:49680b9e-0994-4b8c-ba95-6a35c5bff59c",
+    "title" : "webserver",
+    "summary" : "server webpage for business site",
     "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
     "mixins" : [ ],
     "attributes" : {
-      "occi.core.id" : "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
-      "occi.compute.architecture" : "x86",
-      "occi.compute.cores" : 4,
+      "occi.compute.architecture" : "x64",
+      "occi.compute.cores" : 8,
+      "occi.compute.share" : 0,
       "occi.compute.speed" : 3.0,
       "occi.compute.memory" : 4.0,
       "occi.compute.state" : "active"
     },
-    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
-    "location" : "/d99486b7-0632-482d-a184-a9195733ddd3"
-  }, {
-    "id" : "a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-    "title" : "This is our compute",
-    "summary" : "My other compute 3",
-    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
-    "mixins" : [ ],
-    "attributes" : {
-      "occi.core.id" : "urn:uuid:a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
-      "occi.compute.architecture" : "x86",
-      "occi.compute.cores" : 1,
-      "occi.compute.speed" : 1.0,
-      "occi.compute.memory" : 2.0,
-      "occi.compute.state" : "inactive"
-    },
     "links" : [ {
-      "id" : "b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
+      "id" : "urn:uuid:47c44239-13ee-47e3-8746-4083e62a00bf",
       "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
       "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
       "attributes" : {
-        "occi.core.id" : "urn:uuid:b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
         "occi.networkinterface.interface" : "eth0",
         "occi.networkinterface.mac" : "00:80:41:ae:fd:7e",
         "occi.networkinterface.address" : "192.168.0.100",
@@ -462,39 +648,308 @@ The result must give a collection of computes like this:
         "occi.networkinterface.allocation" : "dynamic"
       },
       "actions" : [ ],
-      "location" : "/b2fe83ae-a20f-54fc-b436-cec85c94c5e9",
+      "location" : "/eth0/webserver",
       "source" : {
-        "location" : "/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8",
+        "location" : "/mycompute/webserver",
         "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
       },
       "target" : {
-        "location" : "/c7d55bf4-7057-5113-85c8-141871bf7636",
+        "location" : "/mainnetwork/network2",
         "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
       }
     } ],
     "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
-    "location" : "/a1cf3896-500e-48d8-a3f5-a8b3601bcdd8"
+    "location" : "/mycompute/webserver"
+  }, {
+    "id" : "urn:uuid:97cb2eba-4ca4-4f9b-8666-3340316669ca",
+    "title" : "network3",
+    "summary" : "My third network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 10,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.3.0.0/16",
+      "occi.network.gateway" : "10.3.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network3"
+  }, {
+    "id" : "urn:uuid:a6af7443-a579-4249-b5f3-de2e68a10a24",
+    "title" : "network5",
+    "summary" : "5 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 9,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.5.0.0/16",
+      "occi.network.gateway" : "10.5.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network5"
+  } ],
+  "links" : [ {
+    "id" : "urn:uuid:47c44239-13ee-47e3-8746-4083e62a00bf",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
+    "attributes" : {
+      "occi.networkinterface.interface" : "eth0",
+      "occi.networkinterface.mac" : "00:80:41:ae:fd:7e",
+      "occi.networkinterface.address" : "192.168.0.100",
+      "occi.networkinterface.gateway" : "192.168.0.1",
+      "occi.networkinterface.allocation" : "dynamic"
+    },
+    "actions" : [ ],
+    "location" : "/eth0/webserver",
+    "source" : {
+      "location" : "/mycompute/webserver",
+      "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
+    },
+    "target" : {
+      "location" : "/mainnetwork/network2",
+      "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
+    }
   } ]
 }
 </code>
 </pre>
 
-### Retrieve your resources with filter parameters
+### Retrieve all the networks defined
+You can use a kind location to retrieve a list of resources.
 
-#### Retrieve all computes with attributes occi.compute.state equals to active
+If you need only entities location you can use text/uri-list in accept values.
+
+```curl -v -X GET http://localhost:8080/network/ -H "accept: text/uri-list" ```
+
+In result, you will have on header :
+
+<pre>
+<code>
+X-OCCI-Location: /mainnetwork/network1
+X-OCCI-Location: /mainnetwork/network4
+X-OCCI-Location: /mainnetwork/network2
+X-OCCI-Location: /mainnetwork/network3
+X-OCCI-Location: /mainnetwork/network5
+</code>
+</pre>
+
+### Retrieve network interface instances
+To retrieve the network interface : 
+
+```curl -v -X GET http://localhost:8080/networkinterface/ -H "accept: application/json" ```
+
+Result :
+<pre>
+<code>
+{
+  "id" : "urn:uuid:47c44239-13ee-47e3-8746-4083e62a00bf",
+  "kind" : "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+  "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface" ],
+  "attributes" : {
+    "occi.networkinterface.interface" : "eth0",
+    "occi.networkinterface.mac" : "00:80:41:ae:fd:7e",
+    "occi.networkinterface.address" : "192.168.0.100",
+    "occi.networkinterface.gateway" : "192.168.0.1",
+    "occi.networkinterface.allocation" : "dynamic"
+  },
+  "actions" : [ ],
+  "location" : "/eth0/webserver",
+  "source" : {
+    "location" : "/mycompute/webserver",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute"
+  },
+  "target" : {
+    "location" : "/mainnetwork/network2",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network"
+  }
+}
+</code>
+</pre>
+
+The location /networkinterface/ is a category location, one entity was found, so rendering adapt it for one resource rendering and not collection rendering.
+
+### And mixin ?
+Yes, mixin location can be used as we already done with kind.
+
+So we want to retrieve all resources associated to "ipnetwork" mixin :
+
+```curl -v -X GET http://localhost:8080/ipnetwork/ -H "accept: application/json"```
+
+Result:
+<pre>
+<code>
+{
+  "resources" : [ {
+    "id" : "urn:uuid:3c76c03a-8c1e-4a5f-8ec5-8ccccd7932dc",
+    "title" : "network1",
+    "summary" : "first network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 1,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.1.0.0/16",
+      "occi.network.gateway" : "10.1.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network1"
+  }, {
+    "id" : "urn:uuid:4a57153a-1e77-4a94-ae8c-1cccc6458e20",
+    "title" : "network4",
+    "summary" : "4 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 10,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.4.0.0/16",
+      "occi.network.gateway" : "10.4.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network4"
+  }, {
+    "id" : "urn:uuid:06934c34-796a-4c01-a82c-d68755952445",
+    "title" : "network2",
+    "summary" : "2 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 12,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.2.0.0/16",
+      "occi.network.gateway" : "10.2.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network2"
+  }, {
+    "id" : "urn:uuid:97cb2eba-4ca4-4f9b-8666-3340316669ca",
+    "title" : "network3",
+    "summary" : "My third network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 10,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.3.0.0/16",
+      "occi.network.gateway" : "10.3.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network3"
+  }, {
+    "id" : "urn:uuid:a6af7443-a579-4249-b5f3-de2e68a10a24",
+    "title" : "network5",
+    "summary" : "5 network",
+    "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+    "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+    "attributes" : {
+      "occi.network.vlan" : 9,
+      "occi.network.label" : "private",
+      "occi.network.state" : "inactive",
+      "occi.network.address" : "10.5.0.0/16",
+      "occi.network.gateway" : "10.5.255.254"
+    },
+    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+    "location" : "/mainnetwork/network5"
+  } ]
+}
+</code>
+</pre>
+
+
+### Filter collections to retrieve, and use paging and number of items per page to return
+If you have a lot of resources, it may be interesting to filter the collection.
+
+This example shows how to retrieve all computes with attribute occi.compute.state equals to active
 <pre>
 <code>
 curl -v -X GET 'http://localhost:8080/?category=compute&attribute=occi.compute.state&value=active' -H 'accept: application/json'
 </code>
 </pre>
 
-#### Retrieve all networks with total number of elements per page equals to 5 and current page = 1 and attribute occi.network.label contains "priv"
+This example shows how to retrieve all networks with total number of elements per page equals to 2 and current page = 1 and attribute occi.network.vlan equals to 10
 <pre>
 <code>
-curl -v -X GET 'http://localhost:8080/?category=network&attribute=occi.network.label&value=priv&page=1&number=5&operator=1' -H 'accept: application/json'
+curl -v -X GET 'http://localhost:8080/?category=network&attribute=occi.network.vlan&value=10&page=1&number=2&operator=1' -H 'accept: application/json'
+</code>
+</pre>
+The result must give two network resource with vlan = 10.
+
+This example shows how to retrieve all networks with a mixin user defined mytag :
+<pre>
+<code>
+curl -v -X GET 'http://localhost:8080/network/?category=mytag' -H 'accept: application/json'
+</code>
+</pre>
+The result will be 404 not found has the mixin tag is not defined for now.
+
+
+## Update resources attributes
+
+You can define or redefine attributes with POST method.
+
+### Use case :
+
+* Redefine an attribute of our network "network2" created before : 
+        occi.network.vlan --< 10
+    now it will be :
+        occi.network.vlan --< 50
+<pre>
+<code>
+curl -v -X POST -d '{ 
+   "kind": "http://schemas.ogf.org/occi/infrastructure#network",
+   "attributes": {
+       "occi.network.vlan": 50
+   }
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/mainnetwork/network2
+</code>
+</pre>
+Result :
+<pre>
+<code>
+{
+  "id" : "urn:uuid:06934c34-796a-4c01-a82c-d68755952445",
+  "title" : "network2",
+  "summary" : "2 network",
+  "kind" : "http://schemas.ogf.org/occi/infrastructure#network",
+  "mixins" : [ "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork" ],
+  "attributes" : {
+    <b>"occi.network.vlan" : 50,</b>
+    "occi.network.label" : "private",
+    "occi.network.state" : "inactive",
+    "occi.network.address" : "10.2.0.0/16",
+    "occi.network.gateway" : "10.2.255.254"
+  },
+  "actions" : [ "http://schemas.ogf.org/occi/infrastructure/network/action#up", "http://schemas.ogf.org/occi/infrastructure/network/action#down" ],
+  "location" : "/mainnetwork/network2"
+}
 </code>
 </pre>
 
+
+* Redefine the title of our compute on location <b><i>/mycompute/webserver</i></b> :
+<pre>
+<code>
+curl -v -X POST -d '{ 
+      "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+      "title": "This is our compute"
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/mycompute/webserver
+</code>
+</pre> 
+
+Note: Id, title and summary must be set out of attributes property, the json parser will map :
+
+Id ==> occi.core.id
+
+title ==> occi.core.title
+
+summary ==> occi.core.summary
 
 ## Define mixin tags
 
@@ -531,7 +986,7 @@ To define them and add them to your configuration :
 
 <pre>
 <code>
-curl -v -X PUT -d '{
+curl -v -X POST -d '{
     "mixins": [
         {
             "location": "/mymixins/my_mixin_first/",
@@ -548,7 +1003,7 @@ curl -v -X PUT -d '{
             "title": "my mixin tag two"
         }
     ]
-}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/mymixins/
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/-/
 </code>
 </pre>
 
@@ -563,23 +1018,15 @@ curl -v -X GET http://localhost:8080/-/?category=my_mixin_two -H 'accept: applic
 You can also define one by one like this:
 <pre>
 <code>
-curl -v -X PUT -d '{
+curl -v -X POST -d '{
     "location": "/mymixins/my_mixin3/",
     "scheme": "http://occiware.org/occi/tags#",
     "term": "my_mixin3",
     "attributes": {},
     "title": "my mixin tag 3"
-}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/mymixins/
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/-/
 </code>
 </pre>
-
-To retrieve your mixin definition (other method) : 
-<pre>
-<code>
-curl -v -X GET http://localhost:8080/mymixins/my_mixin3/-/ -H 'accept: application/json'
-</code>
-</pre>
-
 
 ## Associate a mixin tag to an entity
 The mixin tag must be defined before associating it with an entity.
@@ -590,7 +1037,7 @@ You may tag it with my_mixin_first :
 
 <pre>
 <code>
-curl -v -X POST http://localhost:8080/ -d '
+curl -v -X POST http://localhost:8080/mycompute/webserver -d '
 {
     "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
     "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
@@ -601,31 +1048,20 @@ curl -v -X POST http://localhost:8080/ -d '
 </code>
 </pre>
 
-Result:
+### Associate a mixin tag to multiple entities
 
+To associate a collection of entities with a mixin tag, you must use the mixin tag location :
 <pre>
-<code>
-{
-  "resources" : [ {
-    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
-    "title" : "compute4",
-    "summary" : "My only compute for test with single resource",
-    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
-    <b>"mixins" : [ "http://occiware.org/occi/tags#my_mixin_first" ]</b>,
-    "attributes" : {
-      "occi.core.id" : "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
-      "occi.compute.architecture" : "x86",
-      "occi.compute.cores" : 4,
-      "occi.compute.speed" : 3.0,
-      "occi.compute.memory" : 4.0,
-      "occi.compute.state" : "active"
-    },
-    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
-    "location" : "/d99486b7-0632-482d-a184-a9195733ddd3"
-  } ]
-}
+<code>curl -v -X POST http://localhost:8080/mymixins/my_mixin3/ -d '{
+  "locations":[
+    "/mycompute/webserver",
+    "/mainnetwork/network1",
+    "/mainnetwork/network5"
+  ]
+}' -H 'Content-Type: application/json' -H 'accept: application/json'
 </code>
 </pre>
+
 
 ## Get a resource via a mixin category
 
@@ -634,44 +1070,6 @@ You can find your entity via your mixin tag, this is useful if you have a lot of
 <pre>
 <code>
 curl -v -X GET http://localhost:8080/my_mixin_first/ -H 'accept: application/json'
-</code>
-</pre>
-
-This give this result : 
-
-<pre>
-<code>
-> GET /my_mixin_first/ HTTP/1.1
-> Host: localhost:8080
-> User-Agent: curl/7.43.0
-> accept: application/json
-> 
-< HTTP/1.1 200 OK
-< Date: Mon, 14 Nov 2016 16:22:38 GMT
-< Server: OCCIWare MART Server v1.0 OCCI/1.2
-< Accept: text/occi;application/json;application/occi+json;text/plain
-< Content-Type: application/json
-< Content-Length: 1001
-< 
-{
-  "resources" : [ {
-    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
-    "title" : "compute4",
-    "summary" : "My only compute for test with single resource",
-    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
-    "mixins" : [ "http://occiware.org/occi/tags#my_mixin_first" ],
-    "attributes" : {
-      "occi.core.id" : "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
-      "occi.compute.architecture" : "x86",
-      "occi.compute.cores" : 4,
-      "occi.compute.speed" : 3.0,
-      "occi.compute.memory" : 4.0,
-      "occi.compute.state" : "active"
-    },
-    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
-    "location" : "/d99486b7-0632-482d-a184-a9195733ddd3"
-  } ]
-}
 </code>
 </pre>
 
@@ -689,123 +1087,117 @@ curl -v -X GET http://localhost:8080/?category=my_mixin_first -H 'accept: applic
 ## Associate a mixin extension to an entity
 In fact a mixin tag is a mixin, so to associate a mixin extension with a resource it's the same query.
 But we don't have to define the mixin before, this is already done on extension level.
-For example, we associate the mixin ssh_key to the "compute4" resource : 
+For example, we associate the mixin ssh_key to the "webserver" resource : 
 <pre>
 <code>
-curl -v -X POST http://localhost:8080/ -d '
+curl -v -X POST http://localhost:8080/mycompute/webserver -d '
 {
-    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
     "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
     "mixins": [
-                "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key"
+       "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key"
     ]
 }' -H 'Content-Type: application/json' -H 'accept: application/json'
 </code>
 </pre>
 
-You can also set a ssh key like :
+You can also set a ssh key like (dont forget mixins property) :
 <pre>
 <code>
 curl -v -X POST -d '
 { 
-  "id": "d99486b7-0632-482d-a184-a9195733ddd3",
   "kind": "http://schemas.ogf.org/occi/infrastructure#compute",
+  "mixins": [
+    "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key"
+  ],
   "attributes": {
     "occi.credentials.ssh.publickey":"My ssh key to define"
   }      
-}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/mycompute/webserver
 </code>
 </pre>
-
+Note that mixins property will not override the mixins associations made earlier.
 
 In result:
 <pre>
 <code>
-> POST / HTTP/1.1
-> Host: localhost:8080
-> User-Agent: curl/7.43.0
-> Content-Type: application/json
-> accept: application/json
-> Content-Length: 205
-> 
-* upload completely sent off: 205 out of 205 bytes
-< HTTP/1.1 200 OK
-< Date: Mon, 14 Nov 2016 16:48:21 GMT
-< Server: OCCIWare MART Server v1.0 OCCI/1.2
-< Accept: text/occi;application/json;application/occi+json;text/plain
-< Content-Type: application/json
-< Content-Length: 1132
-< 
 {
-  "resources" : [ {
-    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
-    "title" : "compute4",
-    "summary" : "My only compute for test with single resource",
-    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
-    "mixins" : [ "http://occiware.org/occi/tags#my_mixin_first", "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key" ],
-    "attributes" : {
-      "occi.core.id" : "urn:uuid:d99486b7-0632-482d-a184-a9195733ddd3",
-      "occi.compute.architecture" : "x86",
-      "occi.compute.cores" : 4,
-      "occi.compute.speed" : 3.0,
-      "occi.compute.memory" : 4.0,
-      "occi.compute.state" : "active",
-      "occi.credentials.ssh.publickey" : "My ssh key to define"
-    },
-    "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
-    "location" : "/d99486b7-0632-482d-a184-a9195733ddd3"
-  } ]
+  "id" : "urn:uuid:92297781-db80-467e-8520-c356fdebb05e",
+  "title" : "webserver",
+  "summary" : "server webpage for business site",
+  "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+  "mixins" : [ "http://occiware.org/occi/tags#my_mixin_first", "http://occiware.org/occi/tags#my_mixin3", "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key" ],
+  "attributes" : {
+    "occi.compute.architecture" : "x64",
+    "occi.compute.cores" : 8,
+    "occi.compute.speed" : 3.0,
+    "occi.compute.memory" : 4.0,
+    "occi.compute.state" : "active",
+    "occi.compute.share" : 0,
+    "occi.credentials.ssh.publickey" : "My ssh key to define"
+  },
+  "actions" : [ "http://schemas.ogf.org/occi/infrastructure/compute/action#start", "http://schemas.ogf.org/occi/infrastructure/compute/action#stop", "http://schemas.ogf.org/occi/infrastructure/compute/action#restart", "http://schemas.ogf.org/occi/infrastructure/compute/action#suspend", "http://schemas.ogf.org/occi/infrastructure/compute/action#save" ],
+  "location" : "/mycompute/webserver"
 }
 </code>
 </pre>
 
-## Dissociate a mixin tag from an entity
-It's the same query as association but it's with DELETE method.
+## Dissociate a mixin from an entity (include mixin tag)
+To dissociate a mixin from an entity, you must use PUT method.
 
+There is two way to remove a mixin association :
+- With full resource rendering, delete mixin association.
+
+Remove mixin association between "webserver" compute and my_mixin_first
 <pre>
-<code>
-curl -v -X DELETE http://localhost:8080/ -d '
+<code>curl -v -X PUT http://localhost:8080/mycompute/webserver -d '
 {
-    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
-    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
-    "mixins": [
-                "http://occiware.org/occi/tags#my_mixin_first"
-    ]
+  "title" : "webserver",
+  "summary" : "server webpage for business site",
+  "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
+  "mixins" : [ "http://occiware.org/occi/tags#my_mixin3", "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key" ],
+  "attributes" : {
+    "occi.compute.architecture" : "x64",
+    "occi.compute.cores" : 8,
+    "occi.compute.speed" : 3.0,
+    "occi.compute.memory" : 4.0,
+    "occi.compute.state" : "active",
+    "occi.compute.share" : 0,
+    "occi.credentials.ssh.publickey" : "My ssh key to define"
+  }
+}' -H 'Content-Type: application/json' -H 'accept: application/json'
+</code>
+</pre>
+
+- With mixin location and full collection replacement.
+<pre>
+<code>curl -v -X PUT http://localhost:8080/mymixins/my_mixin_first/ -d '{
+  "locations":[
+    "/mainnetwork/network4",
+    "/mainnetwork/network5"
+  ]
 }' -H 'Content-Type: application/json' -H 'accept: application/json'
 </code>
 </pre>
 
 
-## Dissociate a mixin extension from entity
-<pre>
-<code>
-curl -v -X DELETE http://localhost:8080/ -d '
-{
-    "id" : "d99486b7-0632-482d-a184-a9195733ddd3",
-    "kind" : "http://schemas.ogf.org/occi/infrastructure#compute",
-    "mixins": [
-         "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key"
-    ]
-}' -H 'Content-Type: application/json' -H 'accept: application/json'
-</code>
-</pre>
+## Delete a mixin tag
 
-
-## Remove a mixin tag definition
+In this example we remove <b>my_mixin_first</b> from configuration model : 
 <pre>
-<code>
-curl -v -X DELETE -d '{
-  "location": "/mymixins/my_mixin_two/",
+<code>curl -v -X DELETE http://localhost:8080/-/ -d '{
+  "location": "/mymixins/my_mixin_first/",
   "scheme": "http://occiware.org/occi/tags#",
-  "term": "my_mixin_two"
-}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/-/
+  "term": "my_mixin_first"
+}' -H 'Content-Type: application/json' -H 'accept: application/json' 
 </code>
 </pre>
+This will first remove the mixin association and delete definitively the mixin.
 
 
-## execute an action on a resource
+## Trigger action on resources
+
+### Execute an action on single resource instance with entity location
 This example illustrate a stop instance.
-
 <pre>
 <code>
 curl -v -X POST -d '{
@@ -813,12 +1205,12 @@ curl -v -X POST -d '{
   "attributes": {
     "method": "graceful"
   }
-}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/compute/d99486b7-0632-482d-a184-a9195733ddd3?action=stop
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/mycompute/webserver?action=stop
 </code>
 </pre>
 
 
-## execute actions on a collection
+### Execute actions on a category collection
 
 For example stop all the computes : 
 <pre>
@@ -832,8 +1224,7 @@ curl -v -X POST -d '{
 </code>
 </pre>
 
-On custom instance collection path :
-
+### Execute an action on a mixin tag collection
 <pre>
 <code>
 curl -v -X POST -d '{
@@ -841,23 +1232,24 @@ curl -v -X POST -d '{
   "attributes": {
     "method": "graceful"
   }
-}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/vms/foo/bar/?action=stop
+}' -H 'Content-Type: application/json' -H 'accept: application/json' http://localhost:8080/mymixins/my_mixin3/?action=stop
 </code>
 </pre>
+Warning, mixin tags may have other resources kind than compute.
 
 
-## Delete entity
+## Delete Resources
+
+### Delete single resource using entity location
+
 <pre>
 <code>
-curl -v -X DELETE -H 'accept: application/json' http://localhost:8080/compute/d99486b7-0632-482d-a184-a9195733ddd3/
+curl -v -X DELETE -H 'accept: application/json' http://localhost:8080/mainnetwork/network4
 </code>
 </pre>
 
 
-
-## Delete all entities of a collection
-
-### Category
+### Delete all entities of a collection
 
 This example illustrate a delete query on all computes.
 <pre>
@@ -866,12 +1258,10 @@ curl -v -X DELETE -H 'accept: application/json' http://localhost:8080/compute/
 </code>
 </pre>
 
+This works on the same manner for mixin tag :
 
-### On custom path
 <pre>
 <code>
-curl -v -X DELETE -H 'accept: application/json' http://localhost:8080/vms/foo/bar/
+curl -v -X DELETE -H 'accept: application/json' http://localhost:8080/mymixins/my_mixin3/
 </code>
 </pre>
-
-

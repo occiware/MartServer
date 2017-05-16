@@ -75,7 +75,7 @@ public class PostWorker extends ServletEntry {
                 contentData.setLocation(occiRequest.getRequestPath());
             }
             // Update entity.
-            occiRequest.updateEntity(contentData.getMixins(), contentData.getAttrsValStr(), contentData.getLocation());
+            occiRequest.updateEntity(contentData.getEntityTitle(), contentData.getEntitySummary(), contentData.getMixins(), contentData.getAttrsValStr(), contentData.getLocation());
             return resp;
         }
 
