@@ -5,6 +5,8 @@ import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.parser.AbstractRequestParser;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.QueryInterfaceData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -13,12 +15,18 @@ import java.util.List;
  */
 public class TextPlainParser extends AbstractRequestParser implements IRequestParser {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TextPlainParser.class);
+
     public TextPlainParser(String user) {
         super(user);
     }
 
     @Override
     public Object getInterface(QueryInterfaceData interfaceData, String user) throws ParseOCCIException {
+
+
+
+
         return null;
     }
 
