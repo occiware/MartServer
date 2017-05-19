@@ -44,7 +44,7 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         super(user);
     }
 
-//*************************
+    //*************************
     // Read input content part
     //*************************
 
@@ -216,7 +216,7 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
                 throw new ParseOCCIException("Limit size of header oversized : " + msg.getBytes().length + " > 8000 :");
             }
         } else {
-            throw new ParseOCCIException("No interface to render.");
+            throw new ParseOCCIException("No interface to render");
         }
         Map<String, List<String>> headerMap = new LinkedHashMap<>();
         List<String> interfaces = new LinkedList<>();

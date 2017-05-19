@@ -108,6 +108,8 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
             case Constants.MEDIA_TYPE_JSON:
             case Constants.MEDIA_TYPE_JSON_OCCI:
             case Constants.MEDIA_TYPE_TEXT_PLAIN:
+            case Constants.MEDIA_TYPE_TEXT_PLAIN_OCCI:
+
                 InputStream in = null;
                 LOGGER.info("Parsing input uploaded datas...");
                 try {
