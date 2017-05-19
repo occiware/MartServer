@@ -70,10 +70,9 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
             data.setKind(kind.getScheme() + kind.getTerm());
             data.setMixins(mixinsStr);
 
-            List<String> xOcciLocations = new LinkedList<>();
-
             // Parse attributes and x occi location fields.
-            parseInputAttributes(reader, lastLineRead, data);
+            Map<String, Object> attrs = parseInputAttributes(reader, lastLineRead, data);
+            data.setAttrs(attrs);
 
             // put data to data content list.
             super.getInputDatas().add(data);

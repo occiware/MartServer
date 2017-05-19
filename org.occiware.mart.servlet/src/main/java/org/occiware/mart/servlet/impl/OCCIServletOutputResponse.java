@@ -52,7 +52,7 @@ public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implement
     }
 
     private String getAcceptedTypes() {
-        return Constants.MEDIA_TYPE_TEXT_OCCI + ";" + Constants.MEDIA_TYPE_JSON + ";" + Constants.MEDIA_TYPE_JSON_OCCI + ";" + Constants.MEDIA_TYPE_TEXT_PLAIN;
+        return Constants.MEDIA_TYPE_TEXT_OCCI + ";" + Constants.MEDIA_TYPE_JSON + ";" + Constants.MEDIA_TYPE_JSON_OCCI + ";" + Constants.MEDIA_TYPE_TEXT_PLAIN + ";" + Constants.MEDIA_TYPE_TEXT_PLAIN_OCCI;
     }
 
     /**
@@ -74,6 +74,7 @@ public class OCCIServletOutputResponse extends AbstractOCCIApiResponse implement
             case Constants.MEDIA_TYPE_JSON_OCCI:
             case Constants.MEDIA_TYPE_JSON:
             case Constants.MEDIA_TYPE_TEXT_PLAIN:
+            case Constants.MEDIA_TYPE_TEXT_PLAIN_OCCI:
                 // Set the response content.
                 writeContentToResponse((String) response);
 
