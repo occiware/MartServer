@@ -18,14 +18,17 @@
  */
 package org.occiware.mart.server.model;
 
+import org.eclipse.cmf.occi.core.util.Occi2Ecore;
+import org.eclipse.cmf.occi.core.util.OcciHelper;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.occiware.clouddesigner.occi.*;
-import org.occiware.clouddesigner.occi.util.Occi2Ecore;
-import org.occiware.clouddesigner.occi.util.OcciHelper;
+import org.eclipse.cmf.occi.core.*;
+// import org.occiware.clouddesigner.occi.*;
+// import org.occiware.clouddesigner.occi.util.Occi2Ecore;
+// import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.model.container.EntitiesOwner;
 import org.occiware.mart.server.utils.CollectionFilter;

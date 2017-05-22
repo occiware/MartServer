@@ -18,10 +18,10 @@
  */
 package org.occiware.mart.server.model;
 
+import org.eclipse.cmf.occi.core.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.occiware.clouddesigner.occi.Configuration;
 
 import static org.junit.Assert.assertNotNull;
 

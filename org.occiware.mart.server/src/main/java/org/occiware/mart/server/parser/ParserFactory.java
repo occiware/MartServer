@@ -59,6 +59,7 @@ public class ParserFactory {
                 return new JsonOcciParser(user);
 
             case Constants.MEDIA_TYPE_TEXT_PLAIN:
+            case Constants.MEDIA_TYPE_TEXT_PLAIN_OCCI:
                 LOGGER.info("Parser request: TextPlainParser");
                 return new TextPlainParser(user);
 

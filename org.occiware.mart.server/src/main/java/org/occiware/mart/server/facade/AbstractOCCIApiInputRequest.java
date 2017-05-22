@@ -18,7 +18,8 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.clouddesigner.occi.*;
+// import org.occiware.clouddesigner.occi.*;
+import org.eclipse.cmf.occi.core.*;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.exception.ParseOCCIException;

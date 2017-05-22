@@ -16,8 +16,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <jackson.version>2.8.1</jackson.version>
-        <eclipse.ocl.common.version>1.4.0.v20160521-2033</eclipse.ocl.common.version>
-        <eclipse.ocl.pivot.version>1.1.1.v20160808-1416</eclipse.ocl.pivot.version>
+        <eclipse.ocl.common.version>1.4.200.v20160613-1518</eclipse.ocl.common.version>
+        <eclipse.ocl.pivot.version>1.3.0.v20170517-1052</eclipse.ocl.pivot.version>
         <!-- for integration tests -->
         <jetty.version>9.4.3.v20170317</jetty.version>
     </properties>
@@ -52,20 +52,20 @@
         </dependency>
         <dependency>
             <groupId>org.occiware</groupId>
-            <artifactId>org.occiware.clouddesigner.occi</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <artifactId>org.eclipse.cmf.occi.core</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.occiware</groupId>
-            <artifactId>org.occiware.clouddesigner.occi.infrastructure</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <artifactId>org.eclipse.cmf.occi.infrastructure</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
             <scope>runtime</scope>
         </dependency>
         <!-- To replace by infrastructure real connector -->
         <dependency>
             <groupId>org.occiware</groupId>
-            <artifactId>org.occiware.clouddesigner.occi.infrastructure.connector.dummy</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <artifactId>org.eclipse.cmf.occi.infrastructure.connector.dummy</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -171,7 +171,7 @@
                             <artifactId>org.eclipse.ocl.pivot</artifactId>
                             <version>${eclipse.ocl.pivot.version}</version>
                             <packaging>jar</packaging>
-                            <file>${basedir}/lib/org.eclipse.ocl.pivot_1.1.1.v20160808-1416.jar</file>
+                            <file>${basedir}/lib/org.eclipse.ocl.pivot_1.3.0.v20170517-1052.jar</file>
                         </configuration>
                     </execution>
                     <execution>
@@ -185,7 +185,7 @@
                             <artifactId>org.eclipse.ocl.common</artifactId>
                             <version>${eclipse.ocl.common.version}</version>
                             <packaging>jar</packaging>
-                            <file>${basedir}/lib/org.eclipse.ocl.common_1.4.0.v20160521-2033.jar</file>
+                            <file>${basedir}/lib/org.eclipse.ocl.common_1.4.200.v20160613-1518.jar</file>
                         </configuration>
                     </execution>
                 </executions>

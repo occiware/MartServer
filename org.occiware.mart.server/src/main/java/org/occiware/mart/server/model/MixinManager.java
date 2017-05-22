@@ -19,7 +19,9 @@
 package org.occiware.mart.server.model;
 
 import org.eclipse.emf.common.util.EList;
-import org.occiware.clouddesigner.occi.*;
+// import org.occiware.clouddesigner.occi.*;
+import org.eclipse.cmf.occi.core.*;
+
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
@@ -263,7 +265,7 @@ public class MixinManager {
             String term;
             term = mixinId.split("#")[1];
             scheme = mixinId.split("#")[0] + "#";
-            mixin.setTerm(term);
+            mixin.setName(term);
             mixin.setScheme(scheme);
         }
 
