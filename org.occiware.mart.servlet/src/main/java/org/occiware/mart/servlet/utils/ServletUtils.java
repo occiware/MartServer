@@ -19,7 +19,6 @@
 package org.occiware.mart.servlet.utils;
 
 import org.apache.commons.io.IOUtils;
-import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
@@ -365,47 +364,6 @@ public class ServletUtils {
         }
 
         return actionParameters;
-    }
-
-    /**
-     * Print on logger an entity.
-     *
-     * @param entity
-     */
-    public static void printEntity(Entity entity) {
-
-        StringBuilder builder = new StringBuilder("");
-        if (entity instanceof Resource) {
-            builder.append("Entity is a resource. \n");
-        }
-        if (entity instanceof Link) {
-            builder.append("Entity is a link.\n");
-        }
-        builder.append("id : ").append(entity.getId()).append(" \n");
-        builder.append("kind : ").append(entity.getKind().getScheme()).append(entity.getKind().getTerm()).append(" \n ");
-        if (!entity.getMixins().isEmpty()) {
-            builder.append("mixins : ").append(entity.getMixins().toString()).append(" \n ");
-        } else {
-            builder.append("entity has no mixins" + " \n ");
-        }
-        builder.append("Entity attributes : " + " \n ");
-        if (entity.getAttributes().isEmpty()) {
-            builder.append("no attributes found." + " \n ");
-        }
-        for (AttributeState attribute : entity.getAttributes()) {
-            builder.append("--> name : ").append(attribute.getName()).append(" \n ");
-            builder.append("-- value : ").append(attribute.getValue()).append(" \n ");
-        }
-        if (entity.getKind().getActions().isEmpty()) {
-            builder.append("entity has no action \n ");
-        } else {
-            builder.append("entity has actions available : \n ");
-            for (Action action : entity.getKind().getActions()) {
-                builder.append(action.getTitle()).append("--> ").append(action.getScheme()).append(action.getTerm()).append(" \n ");
-            }
-        }
-        LOGGER.info(builder.toString());
-
     }
 
     public static synchronized int getUniqueInt() {
