@@ -26,9 +26,6 @@ import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.cmf.occi.core.*;
-// import org.occiware.clouddesigner.occi.*;
-// import org.occiware.clouddesigner.occi.util.Occi2Ecore;
-// import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.model.container.EntitiesOwner;
 import org.occiware.mart.server.utils.CollectionFilter;
@@ -1373,10 +1370,10 @@ public class EntityManager {
                         } else {
                             // Not a string nor an enum val.
                             try {
-                                Number num = ConfigurationManager.parseNumber(val, eAttrType.getInstanceClassName());
+                                Number num = Utils.parseNumber(val, eAttrType.getInstanceClass());
                                 attributes.put(key, num);
                             } catch (NumberFormatException ex) {
-                                LOGGER.warn("Exception thrown when trying to convert a value : " + val + " to an emf datatype : " + eAttrType.getName());
+                                LOGGER.warn("Cannot convert a value : " + val + " to an emf datatype : " + eAttrType.getName());
                                 attributes.put(key, val);
                             }
                         }

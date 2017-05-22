@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -285,7 +286,63 @@ public class Utils {
         return pathTmp;
     }
 
-    // Helpers for configuration and interfaces with other modules.
+    /**
+     * Parse a string to a number without knowning its type output.
+     *
+     * @param str value to convert.
+     * @param instanceClass can be null, represent the class type of the value to convert (like Integer etc.)
+     * @throws NumberFormatException if the value cannot be converted.
+     * @return a non null number object.
+     *
+     */
+    public static Number parseNumber(String str, Class<?> instanceClass) throws NumberFormatException {
+        Number number;
+        if (instanceClass == null) {
+
+            try {
+                number = Float.parseFloat(str);
+
+            } catch (NumberFormatException e) {
+                try {
+                    number = Double.parseDouble(str);
+                } catch (NumberFormatException e1) {
+                    try {
+                        number = Integer.parseInt(str);
+                    } catch (NumberFormatException e2) {
+                        try {
+                            number = Long.parseLong(str);
+                        } catch (NumberFormatException e3) {
+                            number = new BigDecimal(str);
+                        }
+                    }
+                }
+            }
+        } else {
+            if (instanceClass == Integer.class) {
+                number = Integer.parseInt(str);
+            } else if (instanceClass == Long.class) {
+                number = Long.parseLong(str);
+            } else if (instanceClass == Float.class) {
+                number = Float.parseFloat(str);
+            } else if (instanceClass == Double.class) {
+                number = Double.parseDouble(str);
+            } else if (instanceClass == Short.class) {
+                number = Short.parseShort(str);
+            } else if (instanceClass == Byte.class) {
+                number = Byte.parseByte(str);
+            } else if (instanceClass == BigDecimal.class) {
+                number = new BigDecimal(str);
+            } else {
+                throw new NumberFormatException("Unknown format.");
+            }
+
+        }
+
+        return number;
+    }
+
+
+
 
 
 }

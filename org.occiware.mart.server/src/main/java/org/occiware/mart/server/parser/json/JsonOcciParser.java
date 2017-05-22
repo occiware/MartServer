@@ -40,6 +40,7 @@ import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.occiware.mart.server.parser.json.render.*;
 import org.occiware.mart.server.parser.json.render.queryinterface.*;
 import org.occiware.mart.server.utils.Constants;
+import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -832,18 +833,15 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                 case NumericTypeEnum.SHORT_VALUE:
                     number = Short.valueOf(value);
                     break;
-                // case NumericTypeEnum.BIGDECIMAL_VALUE:
-                //     number = new BigDecimal(value);
-                //    break;
-                // TODO : Wait update of occi core (eclipse cmf) to update with big decimal values.
-
+                case NumericTypeEnum.BIG_DECIMAL_VALUE:
+                    number = new BigDecimal(value);
+                   break;
             }
             return number;
         } catch (NumberFormatException ex) {
             LOGGER.error("Cant convert the string: " + value + " to a valid number.");
             throw ex;
         }
-
     }
 
     @Override
@@ -1108,7 +1106,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                         } else {
                             // Not a string nor an enum val.
                             try {
-                                Number num = ConfigurationManager.parseNumber(val, eAttrType.getInstanceClassName());
+                                Number num = Utils.parseNumber(val, eAttrType.getInstanceClass());
                                 attributes.put(key, num);
                             } catch (NumberFormatException ex) {
                                 attributes.put(key, val);
