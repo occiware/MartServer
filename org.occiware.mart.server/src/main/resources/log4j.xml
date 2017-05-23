@@ -35,13 +35,13 @@
             <appender-ref ref="BLOBSTOREFILE" />
         </appender>-->
     <logger name="org.occiware.mart.server">
-        <level value="INFO"/>
+        <level value="info"/>
     </logger>
-    <logger name="org.occiware.clouddesigner.occi">
-        <level value="DEBUG"/>
+    <logger name="org.eclipse.cmf.*">
+        <level value="debug"/>
     </logger>
     <logger name="org.quartz">
-        <level value="INFO"/>
+        <level value="info"/>
     </logger>
     <!--    <category name="jclouds.blobstore">
         <priority value="TRACE" />
@@ -52,7 +52,7 @@
         <appender-ref ref="console2"/>
     </logger>-->
     <root>
-        <priority value="INFO"/>  <!-- WARN for production -->
+        <priority value="debug"/>  <!-- WARN for production -->
         <appender-ref ref="console"/>
     </root>
 

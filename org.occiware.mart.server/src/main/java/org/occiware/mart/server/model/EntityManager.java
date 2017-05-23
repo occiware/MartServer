@@ -494,26 +494,90 @@ public class EntityManager {
         if (attributeFilter == null || attributeFilter.isEmpty()) {
             return true;
         }
-
-        for (AttributeState attr : attrs) {
-            if (attributeFilter.equalsIgnoreCase(attr.getName())) {
-                // Check the constraint value.
-                if (attributeValue == null) {
-                    // Null: all value is ok for this attribute.
-                    control = true;
-                    break;
-                }
-                // Check the constraint attribute Value filter.
-                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && attributeValue.equals(attr.getValue())) {
-                    control = true;
-                    break;
-                }
-                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && attr.getValue().contains(attributeValue)) {
-                    control = true;
-                    break;
+        if (!attributeFilter.equals(Constants.OCCI_CORE_SUMMARY)
+                && !attributeFilter.equals(Constants.OCCI_CORE_TITLE)
+                && !attributeFilter.equals(Constants.OCCI_CORE_ID)
+                && !attributeFilter.equals(Constants.OCCI_CORE_TARGET)
+                && !attributeFilter.equals(Constants.OCCI_CORE_SOURCE)) {
+            for (AttributeState attr : attrs) {
+                if (attributeFilter.equalsIgnoreCase(attr.getName())) {
+                    // Check the constraint value.
+                    if (attributeValue == null) {
+                        // Null: all value is ok for this attribute.
+                        control = true;
+                        break;
+                    }
+                    // Check the constraint attribute Value filter.
+                    if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && attributeValue.equals(attr.getValue())) {
+                        control = true;
+                        break;
+                    }
+                    if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && attr.getValue().contains(attributeValue)) {
+                        control = true;
+                        break;
+                    }
                 }
             }
         }
+
+        if (!control) {
+            // Check on id.
+            if (attributeFilter.equals(Constants.OCCI_CORE_ID) || attributeFilter.equalsIgnoreCase("id")) {
+                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && entity.getId().equalsIgnoreCase(attributeValue)) {
+                    control = true;
+                }
+                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && entity.getId().contains(attributeValue)) {
+                    control = true;
+                }
+            }
+
+            // Check on title.
+            if (attributeFilter.equals(Constants.OCCI_CORE_TITLE) || attributeFilter.equalsIgnoreCase("title")) {
+                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && entity.getTitle().equalsIgnoreCase(attributeValue)) {
+                    control = true;
+                }
+                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && entity.getTitle().contains(attributeValue)) {
+                    control = true;
+                }
+            }
+
+            // Check on summary.
+            if (attributeFilter.equals(Constants.OCCI_CORE_SUMMARY) || attributeFilter.equalsIgnoreCase("summary") && entity instanceof Resource) {
+                Resource resource = (Resource) entity;
+                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && resource.getSummary().equalsIgnoreCase(attributeValue)) {
+                    control = true;
+                }
+                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && resource.getSummary().contains(attributeValue)) {
+                    control = true;
+                }
+            }
+
+            // Check on occi.core.source and link (only location source supported).
+            if ((attributeFilter.equals(Constants.OCCI_CORE_SOURCE) || attributeFilter.equalsIgnoreCase("source")) && entity instanceof Link) {
+                Link link = (Link) entity;
+                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && link.getSource().getLocation().equalsIgnoreCase(attributeValue)) {
+                    control = true;
+                }
+                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && link.getSource().getLocation().contains(attributeValue)) {
+                    control = true;
+                }
+
+            }
+
+            // Check on occi.core.target and link (only location target supported).
+            if ((attributeFilter.equals(Constants.OCCI_CORE_TARGET)
+                    || attributeFilter.equalsIgnoreCase("target"))
+                    && entity instanceof Link) {
+                Link link = (Link) entity;
+                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && link.getTarget().getLocation().equalsIgnoreCase(attributeValue)) {
+                    control = true;
+                }
+                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && link.getTarget().getLocation().contains(attributeValue)) {
+                    control = true;
+                }
+            }
+        }
+
         return control;
     }
 
@@ -856,7 +920,7 @@ public class EntityManager {
             updateAttributesToEntity(resource, attributes, owner);
 
         }
-
+        resource.setLocation(location);
         // Add resource to configuration.
         if (resourceOverwrite) {
             LOGGER.info("resource updated " + resource.getId() + " on OCCI configuration");
@@ -956,7 +1020,7 @@ public class EntityManager {
 
         link.setSource(resourceSrc);
         link.setTarget(resourceDest);
-
+        link.setLocation(location);
         // Assign link to resource source.
         resourceSrc.getLinks().add(link);
 

@@ -9,11 +9,17 @@
             <param name="ConversionPattern" value="%-5p %c{1} - %m%n"/>
         </layout>
     </appender>
-    <logger name="org.occiware.mart.servlet">
-        <level value="info"/>
-    </logger>
-    <logger name="org.occiware.clouddesigner.occi">
+    <logger name="org.occiware.mart.server">
         <level value="debug"/>
+    </logger>
+    <logger name="org.occiware.mart.servlet">
+        <level value="debug"/>
+    </logger>
+    <logger name="org.eclipse.cmf">
+        <level value="debug"/>
+    </logger>
+    <logger name="org.eclipse.jetty">
+        <level value="info"/>
     </logger>
     <logger name="org.quartz">
         <level value="info"/>
@@ -27,7 +33,7 @@
         <appender-ref ref="console2"/>
     </logger>-->
     <root>
-        <priority value="info"/>  <!-- WARN for production -->
+        <priority value="debug"/>  <!-- WARN for production -->
         <appender-ref ref="console"/>
     </root>
 
