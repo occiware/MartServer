@@ -16,9 +16,13 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.facade;
+package org.occiware.mart.server.integration;
 
 import org.junit.Test;
+import org.occiware.mart.server.facade.DefaultOCCIRequest;
+import org.occiware.mart.server.facade.DefaultOCCIResponse;
+import org.occiware.mart.server.facade.OCCIApiInputRequest;
+import org.occiware.mart.server.facade.OCCIApiResponse;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.DefaultParser;
 import org.occiware.mart.server.parser.IRequestParser;
@@ -36,7 +40,7 @@ import static org.junit.Assert.*;
 /**
  * Created by cgourdin on 25/04/2017.
  */
-public class OCCIApiRequestTest {
+public class OCCIApiRequestIT {
 
     private String username = "christophe";
 

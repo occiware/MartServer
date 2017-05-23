@@ -3,10 +3,17 @@
 ## Build the application
 Go to the application's directory and then:
 <pre>
-<code>
-mvn initialize
-mvn clean install
-</code>
+<code>mvn initialize
+mvn clean install</code>
+</pre>
+
+## Integration tests
+Be aware that this will execute real operations like create compute, start/stop compute etc.
+In MART core module, dependencies must be set on infrastructure and its dummy connector (as described in pom.xml on this repository).
+
+If you want to execute integration tests execute :
+<pre>
+<code>mvn clean verify -Pintegration-test</code>
 </pre>
 
 Some dependencies are in lib/ directory, mvn initialize reference them in your local maven repository.
@@ -25,7 +32,8 @@ mvn exec:java</code>
 
 You can launch the server with an embedded jetty using occinterface integration : 
 <pre>
-<code>mvn jetty:run-war -Pwithoccinterface</code>
+<code>cd org.occiware.mart.war
+mvn jetty:run-war -Pwithoccinterface</code>
 </pre>
 
 Launch the server with an embedded tomcat : 

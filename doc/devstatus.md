@@ -66,21 +66,21 @@ Development Status values :
     <tr>
         <td align="center">Add https support with certificate</td>
         <td align="center">Https SSL support with X509 certificate, <a href="https://github.com/occiware/MartServer/issues/9">feature #9</a></td>
-        <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Add authentication token mechanism (OAUTH 2) support</td>
         <td align="center">Server authentication with tokens (refresh token and usage token), <a href="https://github.com/occiware/MartServer/issues/9">feature #10</a></td>
-        <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/todo.png" alt="TODO" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Add occinterface and swagger ui and rendering support</td>
         <td align="center">occinterface added but there is a problem with sever part, waiting about having a workaround with occinterface developers, swagger ui has not been included for now, <a href="https://github.com/occiware/MartServer/issues/11">feature #11</a></td>
-        <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/problem.png" alt="problem" height="40" width="auto" /></td>
     </tr>
     <tr>
          <td align="center">Update user documentation</td>
-         <td align="center">Add text/occi + test/plain documentation, update json documentation, <a href="https://github.com/occiware/MartServer/issues/33">feature #12</a></td>
+         <td align="center">Add text/occi + text/plain documentation, update json documentation, <a href="https://github.com/occiware/MartServer/issues/33">feature #12</a></td>
          <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
     </tr>
     

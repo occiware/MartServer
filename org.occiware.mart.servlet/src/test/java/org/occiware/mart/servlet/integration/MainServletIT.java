@@ -16,7 +16,7 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.servlet;
+package org.occiware.mart.servlet.integration;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -30,6 +30,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.occiware.mart.server.utils.Constants;
+import org.occiware.mart.servlet.MainServlet;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -42,7 +43,7 @@ import java.util.List;
 /**
  * Created by christophe on 19/04/2017.
  */
-public class MainServletTest {
+public class MainServletIT {
 
     private static Server server = null;
     private static HttpClient httpClient;
