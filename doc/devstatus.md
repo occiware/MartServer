@@ -61,7 +61,7 @@ Development Status values :
     <tr>
         <td align="center">text/plain media type parser (Content-Type and accept)</td>
         <td align="center">Query parser to retrieve attributes etc. and output to client, <a href="https://github.com/occiware/MartServer/issues/7">feature #8</a></td>
-        <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/inprogress.png" alt="In progress" height="40" width="auto" /></td>
+        <td align="center"><img src="https://raw.github.com/occiware/MartServer/master/doc/done.png" alt="Done" height="40" width="auto" /></td>
     </tr>
     <tr>
         <td align="center">Add https support with certificate</td>
