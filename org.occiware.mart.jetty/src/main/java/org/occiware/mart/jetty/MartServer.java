@@ -18,8 +18,9 @@
  */
 package org.occiware.mart.jetty;
 
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.logging.LoggerConfig;
 import org.occiware.mart.server.utils.Utils;
@@ -42,12 +43,14 @@ import java.util.Properties;
 public class MartServer {
 
     private static final String KEY_PORT = "server.port";
+    private static final String KEY_HTTPS_PORT = "server.https.port";
     private static final String KEY_PROTOCOL = "server.protocol";
     private static final String KEY_LOG_DIRECTORY = "server.log.directory";
     private static final String HTTP_PROTOCOL = "http";
     private static final String HTTPS_PROTOCOL = "https";
     private static String configFilePath;
     private static int port;
+    private static int httpsPort;
     private static String logDirectoryPath;
     private static String httpProtocol;
     private static Server server;
@@ -77,31 +80,29 @@ public class MartServer {
         }
         readFileConfig();
 
-        // The ServletHandler is a dead simple way to create a context handler
-        // that is backed by an instance of a Servlet.
-        // This handler then needs to be registered with the Server object.
         ServletHandler handler = new ServletHandler();
-
-
-        // ResourceConfig config = new ResourceConfig();
-        // config.packages("org.occiware.mart.server.servlet");
-        // ServletHolder servlet = new ServletHolder(new ServletContainer(config));
-
         server = new Server(port);
         server.setHandler(handler);
 
-        // ServletContextHandler context = new ServletContextHandler(server, "/*");
-        // context.addServlet(servlet, "/*");
-        // Passing in the class for the Servlet allows jetty to instantiate an
-        // instance of that Servlet and mount it on a given context path.
-
-        // IMPORTANT:
-        // This is a raw Servlet, not a Servlet that has been configured
-        // through a web.xml @WebServlet annotation, or anything similar.
         handler.addServletWithMapping(MainServlet.class, "/*");
 
-        // ConfigurationManager.getConfigurationForOwner(ConfigurationManager.DEFAULT_OWNER);
-        // ConfigurationManager.useAllExtensionForConfigurationInClasspath(ConfigurationManager.DEFAULT_OWNER);
+        if (httpProtocol.equalsIgnoreCase(HTTPS_PROTOCOL)) {
+            // Configure https protocol
+            HttpConfiguration httpsConfig = new HttpConfiguration();
+            httpsConfig.addCustomizer(new SecureRequestCustomizer());
+            SslContextFactory sslContextFactory = new SslContextFactory();
+            sslContextFactory.setKeyStorePath(MartServer.class.getResource(
+                    "/keystore.jks").toExternalForm());
+            sslContextFactory.setKeyStorePassword("martserver");
+            sslContextFactory.setKeyManagerPassword("martserver");
+            ServerConnector sslConnector = new ServerConnector(server,
+                    new SslConnectionFactory(sslContextFactory, "http/1.1"),
+                    new HttpConnectionFactory(httpsConfig));
+            sslConnector.setPort(httpsPort);
+            Connector[] connectors = server.getConnectors();
+            // connector[0] => http connector built via server constructor.
+            server.setConnectors(new Connector[]{connectors[0], sslConnector});
+        }
 
         // Initialize logger appenders.
         LoggerConfig.initAppenders(logDirectoryPath);
@@ -186,6 +187,26 @@ public class MartServer {
                         httpProtocol = protocol;
                     }
                 }
+
+                if (prop.containsKey(KEY_HTTPS_PORT)) {
+                    try {
+                        String portStr = prop.getProperty(KEY_HTTPS_PORT);
+                        if (portStr == null) {
+                            throw new ConfigurationException(KEY_HTTPS_PORT + " must be set !");
+                        }
+                        httpsPort = Integer.valueOf(portStr);
+                        if (httpsPort == 0) {
+                            throw new ConfigurationException(KEY_HTTPS_PORT + "must be set !");
+                        }
+
+                    } catch (Exception e) {
+                        System.out.println(KEY_HTTPS_PORT + " --< key is not set properly : " + e.getMessage());
+                        System.out.println("Back to default port : " + httpsPort);
+                    }
+                } else {
+                    System.out.println(KEY_HTTPS_PORT + " --< key is not set.");
+                    System.out.println("Back to default port : " + httpsPort);
+                }
             } catch (IOException ex) {
                 System.out.println("Cannot find configuration file for Mart server, setting default values.");
             }
@@ -199,6 +220,7 @@ public class MartServer {
      */
     private static void setDefaultServerConfigValues() {
         port = 8080;
+        httpsPort = 8181;
         logDirectoryPath = Paths.get("logs").toAbsolutePath().toString() + FileSystems.getDefault().getSeparator();
         httpProtocol = HTTP_PROTOCOL;
     }
