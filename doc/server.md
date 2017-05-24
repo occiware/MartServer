@@ -88,13 +88,14 @@ This is plan to make it persistent in a near future to allow the defined resourc
 
 The martserver config file is only useable with org.occiware.mart.jetty package submodule.
 
-The server port is by default on 8080. 
+The server port is by default on 8080.
+Https server port is by default on 8181.
 
 By default the server accept configuration file with name martserver.config located in home directory (so you don't have to add a parameter in comand line when launching the server).
 
 /user_home_directory/martserver.config
 
-For now there is 3 parameters :
+For now there is 4 parameters :
  
  - server.port=8080
  Where the port is between 1 and 9999 a good pratice to set the port is to assume that all port before 1000 are not ok. So you can choose a port like 1001.
@@ -103,7 +104,9 @@ For now there is 3 parameters :
  The directory where are located the application logs.
  
  - server.protocol=http
- The protocol, for now, only http works. https support will be plan in a near future.
+ The protocol, <b>http</b> and <b>https</b> support will be plan in a near future.
+ 
+ - server.https.port=8181
 
 
 You can add a property file with the name as you want, and located in a directory of your choice.
@@ -117,12 +120,9 @@ mvn exec:java -Dexec.args="/my_folder_config/server.config"
 
 ## Using the server
 
-
 If you have launch the server in localhost, you can check that the server is started correctly with this curl command:
 <pre>
-<code>
-curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/ -H "accept: application/json"
-</code>
+<code>curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/ -H "accept: application/json"</code>
 </pre>
 
 In content result, you will have a json string with the full interface supported by this server.
