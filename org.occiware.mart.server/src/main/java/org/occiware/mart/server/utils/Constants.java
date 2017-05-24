@@ -47,7 +47,6 @@ public class Constants {
     public static final String MEDIA_TYPE_JSON_OCCI = "application/occi+json";
     public static final String MEDIA_TYPE_TEXT_PLAIN = "text/plain";
     public static final String MEDIA_TYPE_TEXT_PLAIN_OCCI = "text/occi+plain";
-    public static final String MEDIA_TYPE_UNKNOWN = "dummy";
 
     public static final String CATEGORY = "Category";
     public static final String LINK = "Link";
@@ -64,6 +63,7 @@ public class Constants {
     public static final String HEADER_USER_AGENT = "User-Agent";
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
     public static final String HEADER_ACCEPT = "Accept";
+    public static final String HEADER_AUTHORIZATION = "authorization";
     public static final String X_OCCI_ATTRIBUTE = "X-OCCI-Attribute";
     public static final String CLASS_ACTION = "action";
     public static final String CLASS_KIND = "kind";

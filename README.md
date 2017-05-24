@@ -7,6 +7,8 @@
 
 Model@Runtime server application, OCCI HTTP Server with OCCIware model support (Configuration / Extension / Runtime Connector). 
 
+The server implement the Model@Runtime metamodel version 2 and use OCCIware core project as a dependency. 
+
 ## Progress dashboard
 [Progress development dashboard](doc/devstatus.md)
 
