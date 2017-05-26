@@ -31,6 +31,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -123,8 +125,13 @@ public class JsonParserTest {
 
 
     private File getJsonResourceInput(String path) {
-        File inputJsonFile = new File(this.getClass().getResource(path).getFile());
-        System.out.println(inputJsonFile.getAbsolutePath());
+        File inputJsonFile = null;
+        try {
+            inputJsonFile = new File(new URI(this.getClass().getResource(path).toString()));
+            System.out.println(inputJsonFile.getAbsolutePath());
+        } catch (URISyntaxException e) {
+            Logger.getLogger(JsonParserTest.class.getName()).log(Level.SEVERE, null, e);
+        }
         return inputJsonFile;
     }
 }

@@ -36,7 +36,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import static org.junit.Assert.*;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
 
@@ -359,7 +364,7 @@ public class MainServletIT {
         response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
                 null,
                 "Get resource collection for the compute kind , location : /compute/ ", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
-        
+
         // Get request on /compute/ using text/uri-list.
         response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
                 null,
@@ -551,8 +556,13 @@ public class MainServletIT {
      * @return
      */
     private File getResourceInputFile(String path) {
-        File inputJsonFile = new File(this.getClass().getResource(path).getFile());
-        System.out.println(inputJsonFile.getAbsolutePath());
+        File inputJsonFile = null;
+        try {
+            inputJsonFile = new File(new URI(this.getClass().getResource(path).toString()));
+            System.out.println(inputJsonFile.getAbsolutePath());
+        } catch (URISyntaxException e) {
+            Logger.getLogger(MainServletIT.class.getName()).log(Level.SEVERE, null, e);
+        }
         return inputJsonFile;
     }
 

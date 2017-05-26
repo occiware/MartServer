@@ -21,24 +21,20 @@ package org.occiware.mart.jetty.integration;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.occiware.mart.jetty.MartServer;
-import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.utils.Constants;
-import org.occiware.mart.servlet.MainServlet;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.nio.charset.Charset;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static org.junit.Assert.*;
 
@@ -126,8 +122,13 @@ public class ServerTest {
      * @return
      */
     private File getResourceInputFile(String path) {
-        File inputJsonFile = new File(this.getClass().getResource(path).getFile());
-        System.out.println(inputJsonFile.getAbsolutePath());
+        File inputJsonFile = null;
+        try {
+            inputJsonFile = new File(new URI(this.getClass().getResource(path).toString()));
+            System.out.println(inputJsonFile.getAbsolutePath());
+        } catch (URISyntaxException e) {
+        	Logger.getLogger(ServerTest.class.getName()).log(Level.SEVERE, null, e);
+        }
         return inputJsonFile;
     }
 
