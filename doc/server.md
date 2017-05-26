@@ -1,5 +1,9 @@
 # Server documentation
 
+## Quickstart with Docker
+
+If you have Docker installed (if not, you can find how to do so [here](https://docs.docker.com/engine/installation/)), and don't want to mess with your pre-existing dev environment, you may prefer to check [the Docker build and run process](../org.occiware.mart.jetty/README.md).
+
 ## Build the application
 Go to the application's directory and then:
 <pre>
