@@ -36,15 +36,20 @@ mvn exec:java</code>
 
 You can launch the server with an embedded jetty using occinterface integration : 
 <pre>
-<code>cd org.occiware.mart.war
-mvn jetty:run-war -Pwithoccinterface</code>
+<code>mvn clean install -Pwithoccinterface
+cd org.occiware.mart.war
+mvn jetty:run-war</code>
 </pre>
 
 Launch the server with an embedded tomcat : 
 <pre>
-<code>cd org.occiware.mart.war
-mvn tomcat7:run-war -Pwithoccinterface</code>
+<code>mvn clean install -Pwithoccinterface
+cd org.occiware.mart.war
+mvn tomcat7:run-war</code>
 </pre>
+
+The http address to occinterface is by default : <b>http://yourserver:port/occinterface/</b> 
+For example : <b>http://localhost:8080/occinterface/</b>
 
 You may have a result like this one for jetty :
 
