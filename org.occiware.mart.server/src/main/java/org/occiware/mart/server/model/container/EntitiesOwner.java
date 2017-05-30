@@ -18,8 +18,7 @@
  */
 package org.occiware.mart.server.model.container;
 
-// import org.occiware.clouddesigner.occi.Entity;
-import org.eclipse.cmf.occi.core.Entity;
+import org.occiware.clouddesigner.occi.Entity;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

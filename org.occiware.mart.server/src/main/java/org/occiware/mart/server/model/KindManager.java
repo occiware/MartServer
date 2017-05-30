@@ -18,14 +18,11 @@
  */
 package org.occiware.mart.server.model;
 
-import org.eclipse.cmf.occi.core.util.OcciHelper;
-import org.eclipse.cmf.occi.core.util.OcciRegistry;
+import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.eclipse.emf.common.util.EList;
 
-import org.eclipse.cmf.occi.core.*;
+import org.occiware.clouddesigner.occi.*;
 
-// import org.occiware.clouddesigner.occi.*;
-// import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,7 +121,7 @@ public class KindManager {
 
         if (kindToReturn == null) {
 
-            Collection<String> extReg = OcciRegistry.getInstance().getRegisteredExtensions();
+            Collection<String> extReg = OCCIRegistry.getInstance().getRegisteredExtensions();
 
             extReg.removeAll(extUsed);
             Extension ext;

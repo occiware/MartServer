@@ -1,6 +1,6 @@
 package org.occiware.mart.server.parser.text;
 
-import org.eclipse.cmf.occi.core.*;
+import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.model.EntityManager;
