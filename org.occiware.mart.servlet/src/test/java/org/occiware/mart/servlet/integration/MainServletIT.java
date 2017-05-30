@@ -542,7 +542,7 @@ public class MainServletIT {
                 "remove entities using tag collection - DELETE method, on location : /tags/mixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Get entity sub type instances for the mixin 2 collection.
-        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin2/", HttpServletResponse.SC_NOT_FOUND,
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin2/", HttpServletResponse.SC_OK,
                 null,
                 "Get entities using tag collection - GET method, on location : /tags/mixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 

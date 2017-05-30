@@ -115,7 +115,7 @@ public class OCCIApiRequestIT {
         occiRequest.findEntities("/test/", filter);
         assertNotNull(occiResponse);
         assertNotNull(occiResponse.getResponseMessage());
-        assertTrue(occiResponse.hasExceptions());
+        assertFalse(occiResponse.hasExceptions()); // Must be empty collection.
 
         System.out.println("response : ");
         System.out.println(occiResponse.getResponseMessage().toString());
