@@ -19,8 +19,8 @@
 package org.occiware.mart.server.model;
 
 import org.eclipse.emf.common.util.EList;
-import org.occiware.clouddesigner.occi.*;
-
+// import org.occiware.clouddesigner.occi.*;
+import org.eclipse.cmf.occi.core.*;
 
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.Utils;
@@ -265,7 +265,7 @@ public class MixinManager {
             String term;
             term = mixinId.split("#")[1];
             scheme = mixinId.split("#")[0] + "#";
-            mixin.setTerm(term);
+            mixin.setName(term);
             mixin.setScheme(scheme);
         }
 
@@ -288,7 +288,14 @@ public class MixinManager {
         Optional<Mixin> optMixin;
         Mixin mixin;
         if (updateMode) {
-            entity.getMixins().clear();
+            // Remove all mixins from entity.
+
+            List<MixinBase> mixinBases = entity.getParts();
+            for (MixinBase mixinBase : mixinBases) {
+                mixinBase.setMixin(null);
+            }
+            mixinBases.clear();
+            // entity.getMixins().clear();
         }
         if (mixins != null && !mixins.isEmpty()) {
 
@@ -330,7 +337,11 @@ public class MixinManager {
                     LOGGER.warn("No attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
                 }
 
-                entity.getMixins().add(mixin);
+                // Mixin to add.
+                MixinBase mixinBase = OCCIFactory.eINSTANCE.createMixinBase();
+                mixinBase.setMixin(mixin);
+                mixinBase.setEntity(entity);
+                entity.getParts().add(mixinBase);
             }
         }
     }
@@ -404,7 +415,11 @@ public class MixinManager {
 
         for (Entity entity : entities) {
             if (!entity.getMixins().contains(mixin)) {
-                entity.getMixins().add(mixin);
+                MixinBase mixinBase = OCCIFactory.eINSTANCE.createMixinBase();
+                mixinBase.setMixin(mixin);
+                mixinBase.setEntity(entity);
+                entity.getParts().add(mixinBase);
+                // entity.getMixins().add(mixin);
                 EntityManager.updateVersion(owner, entity.getId());
             }
         }
@@ -427,7 +442,17 @@ public class MixinManager {
 
                 if (!found) {
                     // Remove reference mixin of the entity.
-                    entityMixin.getMixins().remove(mixin);
+                    List<MixinBase> bases = entityMixin.getParts();
+                    Iterator<MixinBase> itMixinBase = bases.iterator();
+                    while (itMixinBase.hasNext()) {
+                        MixinBase base = itMixinBase.next();
+                        if (base.getMixin().equals(mixin)) {
+                            itMixinBase.remove();
+                            break;
+                        }
+                    }
+
+                    // entityMixin.getMixins().remove(mixin);
                 }
 
             }
@@ -486,7 +511,20 @@ public class MixinManager {
         }
         List<Entity> entities = EntityManager.findAllEntitiesForMixin(mixin.getScheme() + mixin.getTerm(), owner);
         for (Entity entity : entities) {
-            entity.getMixins().remove(mixin);
+            List<MixinBase> mixinBases = entity.getParts();
+            MixinBase mixinBaseToRemove = null;
+            for (MixinBase mixinBase : mixinBases) {
+                if (mixinBase.getMixin().equals(mixin)) {
+                    mixinBase.setMixin(null);
+                    mixinBaseToRemove = mixinBase;
+                    break;
+                }
+            }
+            if (mixinBaseToRemove != null) {
+                entity.getParts().remove(mixinBaseToRemove);
+            }
+
+            // entity.getMixins().remove(mixin);
             EntityManager.updateVersion(owner, entity.getId());
         }
         entities.clear();
@@ -525,10 +563,21 @@ public class MixinManager {
             if (!attributesToRemove.isEmpty()) {
                 EntityManager.removeEntityAttributes(entity, attributesToRemove);
             }
-            entity.getMixins().remove(myMixin);
+            MixinBase mixinBaseToRemove = null;
+            for (MixinBase mixinBase : entity.getParts()) {
+                if (mixinBase.getMixin().equals(myMixin)) {
+                    mixinBase.setMixin(null);
+                    mixinBaseToRemove = mixinBase;
+                    break;
+                }
+            }
+            if (mixinBaseToRemove != null) {
+                // Remove mixin from entity.
+                entity.getParts().remove(mixinBaseToRemove);
+            }
+            // entity.getMixins().remove(myMixin);
             EntityManager.updateVersion(owner, entity.getId());
         }
-
     }
 
     /**

@@ -25,7 +25,7 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
 
-import org.occiware.clouddesigner.occi.*;
+import org.eclipse.cmf.occi.core.*;
 
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ParseOCCIException;
@@ -724,7 +724,6 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         String description;
         Object defaultObj;
         String defaultStr;
-        String typeName;
         for (Attribute attribute : attributes) {
             mutable = attribute.isMutable();
             required = attribute.isRequired();
@@ -734,35 +733,24 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
             defaultStr = attribute.getDefault();
 
             // pattern value.
-            EDataType dataType = attribute.getType();
-            if (dataType != null) {
-                type = attribute.getType().getInstanceTypeName();
+            DataType dataType = attribute.getType();
 
-                if (type == null) {
-                    type = convertTypeToSchemaType(attribute.getType().getName());
-                    typeName = attribute.getType().getName();
-                } else {
-                    typeName = type;
-                    type = convertTypeToSchemaType(type);
-                }
-            } else {
-                type = convertTypeToSchemaType(null);
-                typeName = type;
-            }
+            type = convertTypeToSchemaType(dataType);
+
             AttributeInterfaceJson attrJson = new AttributeInterfaceJson();
             attrJson.setType(type);
             attrJson.setMutable(mutable);
             attrJson.setRequired(required);
             attrJson.setDescription(description);
-            if (!type.equals("string") && defaultObj != null) {
-                if (type.equals("number")) {
+            if (!type.equals(STRING_TYPE_INTERFACE) && defaultObj != null) {
+                if (type.equals(NUMBER_TYPE_INTERFACE)) {
                     try {
-                        defaultObj = convertStringToNumber(defaultStr, typeName);
+                        defaultObj = convertStringToNumber(defaultStr, dataType);
                     } catch (NumberFormatException ex) {
-                        LOGGER.error("Number conversion error : " + ex.getMessage() + " default value to convert: " + defaultStr + " for type: " + typeName);
+                        LOGGER.error("Number conversion error : " + ex.getMessage() + " default value to convert: " + defaultStr + " for type: " + dataType.getName());
                     }
                 }
-                if (type.equals("boolean")) {
+                if (type.equals(BOOLEAN_TYPE_INTERFACE)) {
                     defaultObj = Boolean.valueOf(defaultStr);
                 }
                 attrJson.setDefaultObj(defaultObj);
@@ -770,7 +758,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                 attrJson.setDefaultObj(defaultObj);
             }
             // Build pattern property.
-            if (!type.equals("string")) {
+            if (!type.equals(STRING_TYPE_INTERFACE)) {
                 attrJson.setPatternType(type);
                 attrJson.setPatternPattern("");
             }
@@ -783,38 +771,30 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
     /**
      * Convert a type to a generic type understood by schema validation.
      *
-     * @param typeName
-     * @return
+     * @param dataType a data type from occi core object.
+     * @return a string, contains the final type for json rendering.
      */
-    private String convertTypeToSchemaType(final String typeName) {
+    private String convertTypeToSchemaType(final DataType dataType) {
         String type;
-        if (typeName == null) {
-            return "string"; // default type.
+        if (dataType == null) {
+            return STRING_TYPE_INTERFACE; // default type.
         }
-        switch (typeName.toLowerCase()) {
-            case "integer":
-            case "float":
-            case "int":
-            case "long":
-            case "double":
-            case "bigdecimal":
-                type = "number";
-                break;
-            case "list":
-            case "set":
-            case "collection":
-            case "map":
-                type = "array";
-                break;
-            case "boolean":
-                type = "boolean";
-                break;
-            case "string":
-            case "":
-                type = "string";
-                break;
-            default:
-                type = "string";
+
+        if (dataType instanceof BooleanType) {
+            type = BOOLEAN_TYPE_INTERFACE;
+        } else if (dataType instanceof NumericType) {
+            type = NUMBER_TYPE_INTERFACE;
+        } else if (dataType instanceof ArrayType) {
+            type = ARRAY_TYPE_INTERFACE;
+        } else if (dataType instanceof RecordType) {
+            type = ARRAY_TYPE_INTERFACE;
+        } else if (dataType instanceof StringType) {
+            type = STRING_TYPE_INTERFACE;
+        } else if (dataType instanceof EnumerationType) {
+            type = STRING_TYPE_INTERFACE; // TODO : Check if enum is object type or a string type ?
+        } else {
+            // For all other its unknown, this is an object type.
+            type = OBJECT_TYPE_INTERFACE;
         }
         return type;
     }
@@ -822,41 +802,47 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
     /**
      * Usage with render json interface, for default value rendering.
      *
-     * @param value
-     * @param typeName
-     * @return
+     * @param value value to be converted to number.
+     * @param dataType DataType instance of the value.
+     * @return a new number converted from value and dataType parameters.
      */
-    private Number convertStringToNumber(final String value, final String typeName) {
-        if (typeName == null) {
+    private Number convertStringToNumber(final String value, final DataType dataType) {
+        if (dataType == null || !(dataType instanceof NumericType)) {
             return null;
         }
         Number number = null;
-        try {
-            switch (typeName.toLowerCase()) {
-                case "integer":
-                case "int":
-                    number = Integer.valueOf(value);
-                    break;
+        NumericTypeEnum numType = ((NumericType) dataType).getType();
 
-                case "float":
-                case "double":
+        try {
+            switch (numType.getValue()) {
+                case NumericTypeEnum.BYTE_VALUE:
+                    number = Byte.valueOf(value);
+                    break;
+                case NumericTypeEnum.DOUBLE_VALUE:
                     number = Double.valueOf(value);
                     break;
-                case "long":
+                case NumericTypeEnum.FLOAT_VALUE:
+                    number = Float.valueOf(value);
+                    break;
+                case NumericTypeEnum.INTEGER_VALUE:
+                    number = Integer.valueOf(value);
+                    break;
+                case NumericTypeEnum.LONG_VALUE:
                     number = Long.valueOf(value);
                     break;
-                case "bigdecimal":
-                    number = new BigDecimal(value);
+                case NumericTypeEnum.SHORT_VALUE:
+                    number = Short.valueOf(value);
                     break;
+                case NumericTypeEnum.BIG_DECIMAL_VALUE:
+                    number = new BigDecimal(value);
+                   break;
             }
             return number;
         } catch (NumberFormatException ex) {
             LOGGER.error("Cant convert the string: " + value + " to a valid number.");
             throw ex;
         }
-
     }
-
 
     @Override
     public String parseMessage(final String message) throws ParseOCCIException {

@@ -18,8 +18,12 @@
  */
 package org.occiware.mart.server.parser;
 
-import org.occiware.clouddesigner.occi.Kind;
-import org.occiware.clouddesigner.occi.Mixin;
+import org.eclipse.cmf.occi.core.Kind;
+import org.eclipse.cmf.occi.core.Mixin;
+
+
+// import org.occiware.clouddesigner.occi.Kind;
+// import org.occiware.clouddesigner.occi.Mixin;
 
 import java.util.ArrayList;
 import java.util.List;

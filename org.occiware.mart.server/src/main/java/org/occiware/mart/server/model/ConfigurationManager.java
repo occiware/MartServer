@@ -22,9 +22,10 @@ package org.occiware.mart.server.model;
 // import org.occiware.clouddesigner.occi.util.OcciHelper;
 // import org.occiware.mart.MART;
 
-import org.occiware.clouddesigner.occi.*;
-import org.occiware.clouddesigner.occi.util.OcciHelper;
-import org.occiware.mart.MART;
+import org.eclipse.cmf.occi.core.*;
+import org.eclipse.cmf.occi.core.util.OcciHelper;
+import org.eclipse.cmf.occi.core.util.OcciRegistry;
+import org.eclipse.cmf.occi.mart.MART;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.slf4j.Logger;
@@ -85,7 +86,7 @@ public class ConfigurationManager {
         Configuration config = getConfigurationForOwner(owner);
         Extension ext;
         List<Extension> extensions = new LinkedList<>();
-        Collection<String> extReg = OCCIRegistry.getInstance().getRegisteredExtensions();
+        Collection<String> extReg = OcciRegistry.getInstance().getRegisteredExtensions();
         LOGGER.info("Collection: " + extReg + " --> owner : " + owner);
         boolean coreAdded = false;
         if (config.getUse().isEmpty()) {
