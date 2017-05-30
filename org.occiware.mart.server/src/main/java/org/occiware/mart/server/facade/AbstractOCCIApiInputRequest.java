@@ -531,8 +531,11 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         } else if (entities.size() == 1) {
             this.renderEntityOutput(entities.get(0));
         } else {
+            // Must render empty collection in this case.
+            this.renderEntitiesOutput(entities);
+
             // Not found answer.
-            parseNotFoundExceptionMessageOutput("Resource not found on location : " + location);
+            // parseNotFoundExceptionMessageOutput("Resource not found on location : " + location);
         }
         return this.occiApiResponse;
     }

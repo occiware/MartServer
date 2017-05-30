@@ -869,6 +869,10 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         List<Entity> entities = new LinkedList<>();
         entities.add(entity);
         response = renderOutputEntities(entities);
+        if (response.equals(EMPTY_JSON)) {
+            // Must not arrive.
+            throw new ParseOCCIException("No entity defined");
+        }
         return response;
     }
 
@@ -883,8 +887,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         if (entities == null || entities.isEmpty()) {
-            // Must never be thrown...
-            throw new ParseOCCIException("There is no entities to render.");
+           return EMPTY_JSON;
         }
         String response;
         OcciMainJson mainJson = new OcciMainJson();
@@ -956,7 +959,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                 throw new ParseOCCIException("Cannot parse the object to application/json representation : " + ex.getMessage(), ex);
             }
         } else {
-            throw new ParseOCCIException("No entities locations were found.");
+            return EMPTY_JSON;
         }
         return response;
     }
