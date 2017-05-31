@@ -501,6 +501,27 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         return occiApiResponse;
     }
 
+    @Override
+    public OCCIApiResponse findEntity(final String location) {
+        String message;
+
+        Optional<Entity> optEntity = EntityManager.findEntityFromLocation(location, username);
+        Entity entity;
+
+        String entityId = null;
+
+        if (optEntity.isPresent()) {
+            entity = optEntity.get();
+            entity.occiRetrieve();
+            this.renderEntityOutput(entity);
+            LOGGER.info("Entity found on location : " + location);
+        } else {
+            LOGGER.info("Entity not found on location: " + location);
+        }
+
+        return occiApiResponse;
+    }
+
     /**
      * Find an entity or a collection of entities, outputparser will render the output to the good type.
      *

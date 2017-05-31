@@ -63,10 +63,19 @@ public class GetWorker extends ServletEntry {
         if (occiRequest.isOnEntityLocation() || occiRequest.isOnCollectionLocation()) {
 
             LOGGER.info("Querying entities on location : " + occiRequest.getRequestPath());
-            if (!getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
-                occiRequest.findEntities(occiRequest.getRequestPath(), buildCollectionFilter());
-            } else {
-                occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), buildCollectionFilter());
+            if (occiRequest.isOnCollectionLocation()) {
+                if (!getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+                    occiRequest.findEntities(occiRequest.getRequestPath(), buildCollectionFilter());
+                } else {
+                    occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), buildCollectionFilter());
+                }
+            }
+            if (occiRequest.isOnEntityLocation()) {
+                if (!getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
+                    occiRequest.findEntity(occiRequest.getRequestPath());
+                } else {
+                    occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), buildCollectionFilter());
+                }
             }
 
             return resp;

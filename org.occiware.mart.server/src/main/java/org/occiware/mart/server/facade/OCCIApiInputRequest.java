@@ -79,6 +79,8 @@ public interface OCCIApiInputRequest {
 
     OCCIApiResponse deleteEntities(String location, CollectionFilter filter);
 
+    OCCIApiResponse findEntity(String location);
+
     /**
      * Location may be /mylocation/myentity or a category collection location like /compute/
      *
