@@ -19,6 +19,7 @@
 package org.occiware.mart.server.facade;
 
 // import org.occiware.clouddesigner.occi.*;
+
 import org.eclipse.cmf.occi.core.*;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ModelValidatorException;
@@ -457,6 +458,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
     /**
      * Delete a collection of entities under the specified location.
+     *
      * @param location
      * @param filter
      */
@@ -501,6 +503,27 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         return occiApiResponse;
     }
 
+    @Override
+    public OCCIApiResponse findEntity(final String location) {
+        String message;
+
+        Optional<Entity> optEntity = EntityManager.findEntityFromLocation(location, username);
+        Entity entity;
+
+        String entityId = null;
+
+        if (optEntity.isPresent()) {
+            entity = optEntity.get();
+            entity.occiRetrieve();
+            this.renderEntityOutput(entity);
+            LOGGER.info("Entity found on location : " + location);
+        } else {
+            LOGGER.info("Entity not found on location: " + location);
+        }
+
+        return occiApiResponse;
+    }
+
     /**
      * Find an entity or a collection of entities, outputparser will render the output to the good type.
      *
@@ -531,8 +554,8 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         } else if (entities.size() == 1) {
             this.renderEntityOutput(entities.get(0));
         } else if (filter.getCategoryFilter() != null && !filter.getCategoryFilter().isEmpty()) {
-                // Must render empty collection in this case.
-                this.renderEntitiesOutput(entities);
+            // Must render empty collection in this case.
+            this.renderEntitiesOutput(entities);
         } else {
             // Not found answer.
             parseNotFoundExceptionMessageOutput("Resource not found on location : " + location);
@@ -1182,7 +1205,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                     // mixins exists ?
                     // Are there applyable to this kind ?
                     List<Mixin> mixinModels = new LinkedList<>();
-                     // Global mixins attributes.
+                    // Global mixins attributes.
                     List<Attribute> mixinAttrs = new LinkedList<>();
                     // Prepare a list of known mixins if not known ==> error.
                     for (String mixin : mixins) {
@@ -1309,6 +1332,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
     /**
      * Build a default collection filter with provided location.
+     *
      * @param location
      * @return
      * @throws ConfigurationException
