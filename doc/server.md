@@ -2,7 +2,14 @@
 
 ## Quickstart with Docker
 
-If you have Docker installed (if not, you can find how to do so [here](https://docs.docker.com/engine/installation/)), and don't want to mess with your pre-existing dev environment, you may prefer to check [the Docker build and run process](../org.occiware.mart.jetty/README.md).
+If you have Docker installed (if not, you can find how to do so [here](https://docs.docker.com/engine/installation/)), you may want to create a docker container. To do so, simply execute the following commands :
+
+``` bash
+sudo docker build -t mart-server .
+sudo docker run -p 8080:8080 mart-server
+```
+
+You may now start to play with your MartServer instance through the OCCInterface : **http://localhost:8080/occinterface/**.
 
 ## Build the application
 Go to the application's directory and then:
@@ -25,7 +32,7 @@ The file pom.xml declare them via the plugin maven-install-plugin, if you need t
 Note that the server use Model@Runtime from Clouddesigner libs, if you have designed your extension model and developped your own connector, you may update the file pom.xml.
 
 ## Start the server
- 
+
 Launch the server with an embedded jetty :
 
 Two options :
@@ -34,21 +41,21 @@ Two options :
 mvn exec:java</code>
 </pre>
 
-You can launch the server with an embedded jetty using occinterface integration : 
+You can launch the server with an embedded jetty using occinterface integration :
 <pre>
 <code>mvn clean install -Pwithoccinterface
 cd org.occiware.mart.war
 mvn jetty:run-war</code>
 </pre>
 
-Launch the server with an embedded tomcat : 
+Launch the server with an embedded tomcat :
 <pre>
 <code>mvn clean install -Pwithoccinterface
 cd org.occiware.mart.war
 mvn tomcat7:run-war</code>
 </pre>
 
-The http address to occinterface is by default : <b>http://yourserver:port/occinterface/</b> 
+The http address to occinterface is by default : <b>http://yourserver:port/occinterface/</b>
 For example : <b>http://localhost:8080/occinterface/</b>
 
 You may have a result like this one for jetty :
@@ -105,16 +112,16 @@ By default the server accept configuration file with name martserver.config loca
 /user_home_directory/martserver.config
 
 For now there is 4 parameters :
- 
+
  - server.port=8080
  Where the port is between 1 and 9999 a good pratice to set the port is to assume that all port before 1000 are not ok. So you can choose a port like 1001.
- 
+
  - server.log.directory=/logging/application/logs
  The directory where are located the application logs.
- 
+
  - server.protocol=http
  The protocol, <b>http</b> and <b>https</b> support will be plan in a near future.
- 
+
  - server.https.port=8181
 
 
@@ -144,14 +151,14 @@ Like this:
 > Host: localhost:8080
 > User-Agent: curl/7.43.0
 > accept: application/json
-> 
+>
 < HTTP/1.1 200 OK
 < Date: Sat, 05 Nov 2016 09:48:55 GMT
 < Server: OCCIWare MART Server v1.0 OCCI/1.2
 < Content-Type: application/occi+json
 < Accept: text/occi;application/json;application/occi+json;text/plain
 < Transfer-Encoding: chunked
-< 
+<
 {
   "actions" : [ {
     "scheme" : "http://schemas.ogf.org/occi/infrastructure/network/action#",
@@ -176,12 +183,12 @@ Like this:
         },
         "type" : "string"
       }
-    }, 
+    },
     "scheme" : "http://schemas.ogf.org/occi/infrastructure/compute/action#",
     "term" : "stop",
     "title" : "Stop the system (graceful, acpioff or poweroff)"
-}, { 
- ... 
+}, {
+ ...
 </code>
 </pre>
 
