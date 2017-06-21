@@ -238,6 +238,7 @@ public class PostWorker extends ServletEntry {
         // Action invocation on a custom path collection.
         if (occiRequest.isOnBoundedLocation() && occiRequest.isActionInvocationQuery()) {
             occiResponse.parseMessage("Triggering actions on custom path collection is not implemented at this time", HttpServletResponse.SC_NOT_IMPLEMENTED);
+            return resp;
         }
 
         if (occiResponse.hasExceptions()) {
