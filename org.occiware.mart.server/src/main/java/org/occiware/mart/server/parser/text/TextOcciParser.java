@@ -321,7 +321,7 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
      * @return An array of Link to set to header.
      */
     private List<String> renderActionLinksHeader(final Entity entity) {
-        String location = EntityManager.getLocation(entity, getUser());
+        String location = EntityManager.getLocation(entity, getUsername());
         List<String> actionLinks = new LinkedList<>();
         LOGGER.info("Entity location : " + location);
         int linkSize = 1;
@@ -549,7 +549,7 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
      * @return
      */
     private String renderXOCCILocationAttr(final Entity entity) {
-        return EntityManager.getLocation(entity, getUser());
+        return EntityManager.getLocation(entity, getUsername());
     }
 
     /**
@@ -566,9 +566,9 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         sb.append(coreId);
         if (entity instanceof Link) {
             Link link = (Link) entity;
-            String source = Constants.OCCI_CORE_SOURCE + "=\"" + EntityManager.getLocation(link.getSource(), getUser()) + "\"" + "," + Constants.CRLF;
+            String source = Constants.OCCI_CORE_SOURCE + "=\"" + EntityManager.getLocation(link.getSource(), getUsername()) + "\"" + "," + Constants.CRLF;
             sb.append(source);
-            String target = Constants.OCCI_CORE_TARGET + "=\"" + EntityManager.getLocation(link.getTarget(), getUser()) + "\"" + "," + Constants.CRLF;
+            String target = Constants.OCCI_CORE_TARGET + "=\"" + EntityManager.getLocation(link.getTarget(), getUsername()) + "\"" + "," + Constants.CRLF;
             sb.append(target);
         }
 

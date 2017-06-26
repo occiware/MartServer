@@ -18,6 +18,10 @@
  */
 package org.occiware.mart.servlet.impl;
 
+import org.apache.commons.io.IOUtils;
+import org.occiware.mart.security.UserManagement;
+import org.occiware.mart.security.constants.SecurityConstants;
+import org.occiware.mart.security.exceptions.AuthenticationException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.parser.DefaultParser;
 import org.occiware.mart.server.parser.HeaderPojo;
@@ -31,7 +35,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -162,16 +169,33 @@ public abstract class ServletEntry {
             acceptType = Constants.MEDIA_TYPE_JSON;
         }
 
-        // TODO : Manage authentication and pass username to MART engine.
+
         String username = "anonymous";
-        // validateAuth().
+
+
+        IRequestParser outputParser = ParserFactory.build(acceptType, username);
+
+        try {
+            occiResponse = new OCCIServletOutputResponse(acceptType, username, httpResponse, outputParser);
+            username = validateAuth();
+
+        } catch (AuthenticationException ex) {
+
+            LOGGER.error(ex.getMessage());
+            if (!occiResponse.hasExceptions()) {
+                parseResponseNotAuthorized();
+                occiResponse.setExceptionThrown(ex);
+            }
+            return occiResponse.getHttpResponse();
+        }
+
 
         // Build inputparser and output parser.
         IRequestParser inputParser = ParserFactory.build(contentType, username);
-        IRequestParser outputParser = ParserFactory.build(acceptType, username);
+        outputParser.setUsername(username);
 
         // Create occiRequest objects.
-        occiResponse = new OCCIServletOutputResponse(acceptType, username, httpResponse, outputParser);
+        occiResponse.setUsername(username);
         occiRequest = new OCCIServletInputRequest(occiResponse, contentType, username, httpRequest, headers, this.getRequestParameters(), inputParser);
 
         if (inputParser instanceof DefaultParser) {
@@ -206,6 +230,132 @@ public abstract class ServletEntry {
 
         return httpResponse;
     }
+
+    /**
+     * Authenticate with http authentication method like basic, digest or oauth2.
+     * @return the current username to use with core model.
+     * @throws AuthenticationException if there is an exception thrown during authentication process.
+     */
+    private String validateAuth() throws AuthenticationException {
+
+        String message;
+        String authenticationMethod = null;
+
+        // Read the authorization header values.
+        String headerAuth = headers.getFirst(Constants.HEADER_AUTHORIZATION);
+        if (headerAuth == null || headerAuth.trim().isEmpty()) {
+            // No header found
+            LOGGER.info("Authorization header not found, assume that the user is anonymous.");
+            return "anonymous";
+            // TODO : when usermanagement will totally finished, replace anonymous return by the following lines.
+            // parseResponseNotAuthorized();
+            // throw (AuthenticationException) occiResponse.getExceptionThrown();
+        }
+
+        // parse the header to determine on which authentication method this is based (Basic, Bearer or Digest?)
+        String valuesSpaceDelimit[] = headerAuth.split("\\s+");
+        if (valuesSpaceDelimit.length <= 0) {
+            parseResponseNotAuthorized();
+            throw (AuthenticationException) occiResponse.getExceptionThrown();
+        }
+
+        if (valuesSpaceDelimit.length > 0) {
+            authenticationMethod = valuesSpaceDelimit[0].trim();
+            LOGGER.info("HTTP Authentication method : " + authenticationMethod);
+        }
+
+        if (authenticationMethod == null || authenticationMethod.trim().isEmpty()) {
+            LOGGER.warn("please set a value for authentication like: Basic, Bearer, Digest ");
+            parseResponseNotAuthorized();
+            throw (AuthenticationException) occiResponse.getExceptionThrown();
+        }
+
+        String username = null;
+        switch (authenticationMethod) {
+            case SecurityConstants.AUTHENTICATION_BASIC:
+            case "basic":
+                username = parseAuthBasicUsernamePassword(valuesSpaceDelimit[1]);
+                break;
+
+            case SecurityConstants.AUTHENTICATION_DIGEST:
+            case "digest":
+            case SecurityConstants.AUTHENTICATION_OAUTH2:
+            case "bearer":
+            // for oauthv1
+            case "OAuth":
+                parseResponseAuthenticationNotImplemented(authenticationMethod);
+                break;
+
+            default:
+                parseResponseAuthenticationUnknown(authenticationMethod);
+                break;
+        }
+
+        return username;
+    }
+
+    /**
+     *
+     * @param values
+     * @return
+     * @throws AuthenticationException
+     */
+    private String parseAuthBasicUsernamePassword(final String values) throws AuthenticationException {
+
+        if (values == null || values.trim().isEmpty()) {
+            parseResponseNotAuthorized();
+            throw (AuthenticationException) occiResponse.getExceptionThrown();
+        }
+
+        // Base 64 decode the value string.
+        byte[] bval = Base64.getDecoder().decode(values);
+        String sval;
+        try {
+            sval = IOUtils.toString(bval, "UTF-8");
+
+            String[] vals = sval.split(":");
+
+            String username;
+            String password;
+            username = vals[0];
+            password = vals[1];
+
+            // Check user authorization.
+            if (UserManagement.checkBasicUserAuthorisation(username, password)) {
+                return username;
+
+            } else {
+                parseResponseNotAuthorized();
+                throw (AuthenticationException)occiResponse.getExceptionThrown();
+            }
+
+        } catch (IOException ex) {
+            parseResponseNotAuthorized();
+            throw (AuthenticationException) occiResponse.getExceptionThrown();
+        }
+    }
+
+    private void parseResponseNotAuthorized() {
+        occiResponse.getHttpResponse().setHeader(Constants.HEADER_WWW_AUTHENTICATE, Constants.HEADER_WWW_AUTHENTICATE_BASIC_PARTIAL + getServerURI() + "\"");
+        String message = "Failed to authenticate, you must provide Authorization header.";
+        occiResponse.parseMessage(message, HttpServletResponse.SC_UNAUTHORIZED);
+        occiResponse.setExceptionThrown(new AuthenticationException(message));
+    }
+
+    private void parseResponseAuthenticationNotImplemented(String authenticationMethod) {
+        occiResponse.getHttpResponse().setHeader(Constants.HEADER_WWW_AUTHENTICATE, authenticationMethod + " realm=\"" + getServerURI() + "\"");
+        String message = "HTTP " + authenticationMethod + " authentication method is not implemented at this time";
+        occiResponse.parseMessage(message, HttpServletResponse.SC_NOT_IMPLEMENTED);
+        occiResponse.setExceptionThrown(new AuthenticationException(message));
+    }
+
+    private void parseResponseAuthenticationUnknown(String authenticationMethod) {
+        occiResponse.getHttpResponse().setHeader(Constants.HEADER_WWW_AUTHENTICATE, authenticationMethod + " realm=\"" + getServerURI() + "\"");
+        String message = "HTTP " + authenticationMethod + " authentication method is unknown";
+        occiResponse.parseMessage(message, HttpServletResponse.SC_UNAUTHORIZED);
+        occiResponse.setExceptionThrown(new AuthenticationException(message));
+    }
+
 
     /**
      * Build a collection filter.

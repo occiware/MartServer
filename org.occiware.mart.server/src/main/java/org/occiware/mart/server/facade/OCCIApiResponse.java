@@ -71,4 +71,9 @@ public interface OCCIApiResponse {
 
     public IRequestParser getOutputParser();
 
+    public String getUsername();
+
+    public void setUsername(final String username);
+
+
 }

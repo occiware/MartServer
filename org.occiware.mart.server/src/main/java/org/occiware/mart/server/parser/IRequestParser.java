@@ -65,13 +65,16 @@ public interface IRequestParser {
 
     List<OCCIRequestData> getInputDatas();
 
-    void setInputDatas(List<OCCIRequestData> inputDatas);
+    public void setInputDatas(List<OCCIRequestData> inputDatas);
 
-    List<OCCIRequestData> getOutputDatas();
+    public List<OCCIRequestData> getOutputDatas();
 
-    void setOutputDatas(List<OCCIRequestData> outputDatas);
+    public void setOutputDatas(List<OCCIRequestData> outputDatas);
 
-    void convertEntitiesToOutputData(List<Entity> entities);
+    public void convertEntitiesToOutputData(List<Entity> entities);
 
-    void convertLocationsToOutputDatas(List<String> locations);
+    public void convertLocationsToOutputDatas(List<String> locations);
+
+    public void setUsername(final String username);
+    public String getUsername();
 }

@@ -981,7 +981,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         resJson.setId(Constants.URN_UUID_PREFIX + res.getId());
         resJson.setTitle(res.getTitle());
         resJson.setSummary(res.getSummary());
-        resJson.setLocation(EntityManager.getLocation(entity, getUser()));
+        resJson.setLocation(EntityManager.getLocation(entity, getUsername()));
 
         List<String> actionsStr = new LinkedList<>();
         String actionStr;
@@ -1069,7 +1069,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         linkJson.setKind(kind.getScheme() + kind.getTerm());
         linkJson.setId(Constants.URN_UUID_PREFIX + link.getId());
         linkJson.setTitle(link.getTitle());
-        linkJson.setLocation(EntityManager.getLocation(entity, getUser()));
+        linkJson.setLocation(EntityManager.getLocation(entity, getUsername()));
         actions = kind.getActions();
         mixins = link.getMixins();
         for (Action action : actions) {
@@ -1132,13 +1132,13 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         Resource resTarget = link.getTarget();
         SourceJson src = new SourceJson();
         TargetJson target = new TargetJson();
-        String relativeLocation = EntityManager.getLocation(resSrc, getUser());
+        String relativeLocation = EntityManager.getLocation(resSrc, getUsername());
         src.setKind(resSrc.getKind().getScheme() + resSrc.getKind().getTerm());
         if (!relativeLocation.startsWith("/")) {
             relativeLocation = "/" + relativeLocation;
         }
         src.setLocation(relativeLocation);
-        relativeLocation = EntityManager.getLocation(resTarget, getUser());
+        relativeLocation = EntityManager.getLocation(resTarget, getUsername());
         target.setKind(resTarget.getKind().getScheme() + resTarget.getKind().getTerm());
         if (!relativeLocation.startsWith("/")) {
             relativeLocation = "/" + relativeLocation;
