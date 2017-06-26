@@ -21,6 +21,8 @@ package org.occiware.mart.jetty;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.occiware.mart.security.AppParameters;
+import org.occiware.mart.security.exceptions.ApplicationConfigurationException;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.logging.LoggerConfig;
 import org.occiware.mart.server.utils.Utils;
@@ -30,6 +32,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,23 +46,17 @@ import java.util.Properties;
  */
 public class MartServer {
 
-    private static final String KEY_PORT = "server.port";
-    private static final String KEY_HTTPS_PORT = "server.https.port";
-    private static final String KEY_PROTOCOL = "server.protocol";
-    private static final String KEY_LOG_DIRECTORY = "server.log.directory";
     private static final String HTTP_PROTOCOL = "http";
     private static final String HTTPS_PROTOCOL = "https";
-    private static String configFilePath;
     private static int port;
     private static int httpsPort;
     private static String logDirectoryPath;
     private static String httpProtocol;
     private static Server server;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws URISyntaxException {
 
-        setDefaultServerConfigValues();
-
+        String configFilePath = null;
         if (args.length > 0) {
             // check if a configuration properties is given on path.
             if (args[0].equalsIgnoreCase("--help")) {
@@ -72,13 +70,19 @@ public class MartServer {
             }
 
             configFilePath = args[0];
-
-        } else {
-
-            // Read the server file configuration in /~/martserver.config
-            configFilePath = System.getProperty("user.home") + File.separator + "martserver.config";
         }
-        readFileConfig();
+
+        // else {
+            // configFilePath = System.getProperty("user.home") + File.separator + "martserver.config";
+        // }
+
+        AppParameters appParameters = AppParameters.getInstance();
+        try {
+            appParameters.loadParametersFromConfigFile(configFilePath);
+        } catch (ApplicationConfigurationException ex) {
+            throw new RuntimeException("Cannot load configuration parameters : " + ex.getMessage());
+        }
+        readConfigParameters(appParameters);
 
         ServletHandler handler = new ServletHandler();
         server = new Server(port);
@@ -126,103 +130,27 @@ public class MartServer {
     }
 
     /**
-     * Read the configuration file.
+     * Read the config parameters and set values to this server.
+     * @param parameters
      */
-    public static void readFileConfig() {
-        setDefaultServerConfigValues();
-        if (configFilePath == null) {
-            System.out.println("No configuration file detected, default configuration is assumed.");
-            return;
+    public static void readConfigParameters(AppParameters parameters) {
+        // setDefaultServerConfigValues();
+        String portStr = parameters.getConfig().get(AppParameters.KEY_PORT);
+        String httpsPortStr = parameters.getConfig().get(AppParameters.KEY_HTTPS_PORT);
+        httpProtocol = parameters.getConfig().get(AppParameters.KEY_HTTPS_PORT);
+        logDirectoryPath = parameters.getConfig().get(AppParameters.KEY_LOG_DIRECTORY);
+        try {
+            port = Integer.valueOf(portStr);
+        } catch (Exception e) {
+            System.out.println(AppParameters.KEY_PORT + " --< key is not set properly : " + e.getMessage());
+            System.out.println("Back to default port : " + port);
         }
-
-        File configFile = new File(configFilePath);
-        Path pathConfig = configFile.toPath();
-
-        if (Files.exists(pathConfig) && Files.isRegularFile(pathConfig)) {
-            // Read the properties...
-            Properties prop = new Properties();
-            try {
-                InputStream in = new FileInputStream(configFilePath);
-                prop.load(in);
-                Utils.closeQuietly(in);
-
-                // Read values.
-                System.out.println("Loading configuration file : " + configFilePath);
-                if (prop.containsKey(KEY_PORT)) {
-                    try {
-                        String portStr = prop.getProperty(KEY_PORT);
-                        if (portStr == null) {
-                            throw new ConfigurationException(KEY_PORT + " must be set !");
-                        }
-                        port = Integer.valueOf(portStr);
-                        if (port == 0) {
-                            throw new ConfigurationException(KEY_PORT + "must be set !");
-                        }
-
-                    } catch (Exception e) {
-                        System.out.println(KEY_PORT + " --< key is not set properly : " + e.getMessage());
-                        System.out.println("Back to default port : " + port);
-                    }
-                } else {
-                    System.out.println(KEY_PORT + " --< key is not set.");
-                    System.out.println("Back to default port : " + port);
-                }
-                if (prop.containsKey(KEY_LOG_DIRECTORY)) {
-                    String logPath = prop.getProperty(KEY_LOG_DIRECTORY);
-                    Path logDir = new File(logPath).toPath();
-                    if (Files.exists(logDir) && Files.isDirectory(logDir)) {
-                        logDirectoryPath = logPath;
-                    } else {
-                        System.out.println("Directory : " + logDirectoryPath + " doesnt exist on your file system.");
-                        System.out.println("Default to log directory : " + logDirectoryPath);
-                    }
-                } else {
-                    System.out.println("Default to log directory : " + logDirectoryPath);
-                }
-                if (prop.containsKey(KEY_PROTOCOL)) {
-                    String protocol = prop.getProperty(KEY_PROTOCOL);
-                    if (protocol == null || (!protocol.equalsIgnoreCase(HTTP_PROTOCOL) && !protocol.equalsIgnoreCase(HTTPS_PROTOCOL))) {
-                        System.out.println(KEY_PROTOCOL + " is not set, assume default protocol : " + httpProtocol);
-                    } else {
-                        httpProtocol = protocol;
-                    }
-                }
-
-                if (prop.containsKey(KEY_HTTPS_PORT)) {
-                    try {
-                        String portStr = prop.getProperty(KEY_HTTPS_PORT);
-                        if (portStr == null) {
-                            throw new ConfigurationException(KEY_HTTPS_PORT + " must be set !");
-                        }
-                        httpsPort = Integer.valueOf(portStr);
-                        if (httpsPort == 0) {
-                            throw new ConfigurationException(KEY_HTTPS_PORT + "must be set !");
-                        }
-
-                    } catch (Exception e) {
-                        System.out.println(KEY_HTTPS_PORT + " --< key is not set properly : " + e.getMessage());
-                        System.out.println("Back to default port : " + httpsPort);
-                    }
-                } else {
-                    System.out.println(KEY_HTTPS_PORT + " --< key is not set.");
-                    System.out.println("Back to default port : " + httpsPort);
-                }
-            } catch (IOException ex) {
-                System.out.println("Cannot find configuration file for Mart server, setting default values.");
-            }
+        try {
+            httpsPort = Integer.valueOf(httpsPortStr);
+        } catch (Exception e) {
+            System.out.println(AppParameters.KEY_HTTPS_PORT + " --< key is not set properly : " + e.getMessage());
+            System.out.println("Back to default port : " + httpsPort);
         }
-
-
-    }
-
-    /**
-     * Default configuration server values.
-     */
-    private static void setDefaultServerConfigValues() {
-        port = 8080;
-        httpsPort = 8181;
-        logDirectoryPath = Paths.get("logs").toAbsolutePath().toString() + FileSystems.getDefault().getSeparator();
-        httpProtocol = HTTP_PROTOCOL;
     }
 
     public static void stopServer() {

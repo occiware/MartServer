@@ -18,6 +18,8 @@
  */
 package org.occiware.mart.servlet;
 
+import org.occiware.mart.security.AppParameters;
+import org.occiware.mart.security.exceptions.ApplicationConfigurationException;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.servlet.impl.DeleteWorker;
 import org.occiware.mart.servlet.impl.GetWorker;
@@ -41,12 +43,25 @@ public class MainServlet extends HttpServlet {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainServlet.class);
 
+
     @Override
     public void init() throws ServletException {
         super.init();
 
         // Create a default configuration object (default user) to initialize it.
         LOGGER.info("Init MART main servlet.");
+
+        LOGGER.info("Checking configuration parameters...");
+        AppParameters appParameters = AppParameters.getInstance();
+        try {
+            if (!appParameters.isConfigLoaded()) {
+                // try to load configuration default.
+                // TODO : For war module check how to get environnement variable to put them on app parameters.
+                appParameters.loadParametersFromConfigFile(null);
+            }
+        } catch (ApplicationConfigurationException ex) {
+            throw new ServletException("Cannot configure the application : " + ex.getMessage());
+        }
     }
 
     /**

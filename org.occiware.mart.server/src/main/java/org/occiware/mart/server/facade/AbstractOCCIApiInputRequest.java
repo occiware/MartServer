@@ -1317,6 +1317,10 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public void LoadModelFromDisk() throws ConfigurationException {
         // TODO : Load all configurations model from disk.
+        // TODO : Add a parameter to set a path on this server where to store configurations files.
+
+
+
     }
 
     /**
@@ -1327,6 +1331,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     @Override
     public void saveModelToDisk() throws ConfigurationException {
         // TODO : Save all configurations model to disk.
+        // TODO : Add a parameter to set a path on this server where to store configurations files.
     }
 
 

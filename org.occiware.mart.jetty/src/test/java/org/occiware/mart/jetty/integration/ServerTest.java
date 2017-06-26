@@ -55,7 +55,11 @@ public class ServerTest {
 
         serverThread = new Thread(() -> {
             String[] tests = new String[0];
-            MartServer.main(tests);
+            try {
+                MartServer.main(tests);
+            } catch (URISyntaxException ex) {
+                throw new RuntimeException(ex);
+            }
         });
 
         serverThread.start();
