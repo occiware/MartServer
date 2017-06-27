@@ -58,6 +58,9 @@ public class OCCIApiRequestIT {
         // Test load configuration.
         loadConfiguration();
 
+        // Test save all config.
+        saveAllConfiguration();
+
     }
 
     private void saveConfiguration() {
@@ -78,6 +81,25 @@ public class OCCIApiRequestIT {
         }
         assertFalse(occiResponse.hasExceptions());
 
+    }
+
+    private void saveAllConfiguration() {
+        AppParameters parameters = AppParameters.getInstance();
+        try {
+            parameters.loadParametersFromConfigFile(null);
+        } catch (ApplicationConfigurationException ex) {
+            System.err.println("Cannot load application parameters...");
+        }
+
+        IRequestParser parser = new DefaultParser(username);
+        OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
+        OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
+        occiRequest.saveAllModelsToDisk();
+
+        if (occiResponse.hasExceptions()) {
+            System.out.println("Exception thrown : " + occiResponse.getExceptionMessage());
+        }
+        assertFalse(occiResponse.hasExceptions());
     }
 
     private void loadConfiguration() {

@@ -1327,7 +1327,6 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             occiApiResponse.parseResponseMessage("ok");
 
         } catch(URISyntaxException | ConfigurationException ex) {
-            LOGGER.error(ex.getMessage());
             parseConfigurationExceptionMessageOutput(ex.getMessage());
         }
         return occiApiResponse;
@@ -1388,7 +1387,6 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             LOGGER.info("All models loaded from disk : " + modelDirectoryUri.toString());
             occiApiResponse.parseResponseMessage("ok");
         } catch(URISyntaxException | ConfigurationException ex) {
-            LOGGER.error(ex.getMessage());
             parseConfigurationExceptionMessageOutput(ex.getMessage());
         }
         return occiApiResponse;

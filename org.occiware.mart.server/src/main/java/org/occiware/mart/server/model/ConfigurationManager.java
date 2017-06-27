@@ -612,7 +612,7 @@ public class ConfigurationManager {
         if (filename.startsWith("/")) {
             filename = filename.substring(1); // remove leading slash.
         }
-
+        LOGGER.info("Saving model to : " + filename);
         ResourceSet resourceSet = new ResourceSetImpl();
 
         // Get the user configuration model, if it doesnt exist this will save with a new configuration.
@@ -626,6 +626,7 @@ public class ConfigurationManager {
 
         try {
             resource.save(Collections.EMPTY_MAP);
+            LOGGER.info("Model for owner : " + owner + " is saved !");
         } catch (IOException ex) {
             message = "Error while saving model : " + ex.getClass().getName() + " --> " + ex.getMessage();
             LOGGER.error(message);
@@ -641,9 +642,10 @@ public class ConfigurationManager {
     public static void loadAllModelsFromDisk(final String modelDirectory) throws ConfigurationException {
 
         String currentOwner;
-        // Reset all configurations if any.
+
+
+        // reset all.
         configurations.clear();
-        // reset all maps.
         EntityManager.clearReferences();
         MixinManager.clearMixinTagsReferences();
         List<String> modelFiles;
@@ -656,13 +658,20 @@ public class ConfigurationManager {
         }
         String tmpExt;
         for (String modelFile : modelFiles) {
-            // Load configurations for each files from modelDirectory and get username from filename.
-            tmpExt = modelFile.replace(".occic", "");
-            currentOwner = tmpExt.split("-")[1];
-            // Update for each configuration references (entities and mixins tags).
-            loadModelFromDisk(modelDirectory, currentOwner);
+            if (!modelFile.endsWith(".occic")) {
+                LOGGER.warn("unknown file: " + modelFile);
+            } else {
+                // Load configurations for each files from modelDirectory and get username from filename.
+                tmpExt = modelFile.replace(".occic", "");
+                currentOwner = tmpExt.split("-")[1];
+                // Update for each configuration references (entities and mixins tags).
+                loadModelFromDisk(modelDirectory, currentOwner);
+            }
         }
 
+        if (configurations.isEmpty()) {
+            createConfiguration(DEFAULT_OWNER);
+        }
     }
 
     /**

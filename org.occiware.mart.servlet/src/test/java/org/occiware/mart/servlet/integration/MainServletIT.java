@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.occiware.mart.server.facade.OCCIApiInputRequest;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.servlet.MainServlet;
 
@@ -121,7 +122,6 @@ public class MainServletIT {
             testsOnMixinTagsAssociation();
 
             // Test operations on custom location /myresources/*...
-
 
 
 

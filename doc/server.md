@@ -151,7 +151,13 @@ For now there are some parameters :
  
  This is used by save and load model api feature.
 
+ - server.save.onterminate=true
 
+This parameter give the ability to save model when stopping the server.
+
+ - server.load.onstart=true
+
+This parameter give the ability to load model when starting the server.
 
 
 ## Using the server

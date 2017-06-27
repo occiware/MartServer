@@ -69,6 +69,8 @@ public class AppParameters {
 
     public static final String KEY_ADMIN_USERNAME = "admin.username";
     public static final String KEY_ADMIN_PASSWORD = "admin.password";
+    public static final String KEY_SAVE_ON_TERMINATE = "server.save.onterminate";
+    public static final String KEY_LOAD_ON_START = "server.load.onstart";
 
     private boolean configLoaded = false;
 
@@ -262,6 +264,29 @@ public class AppParameters {
             }
             LOGGER.info("Model directory is : " + config.get(KEY_MODEL_DIRECTORY));
 
+            if (prop.containsKey(KEY_SAVE_ON_TERMINATE)) {
+                String saveOnTermStr = prop.getProperty(KEY_SAVE_ON_TERMINATE);
+                if (saveOnTermStr == null || saveOnTermStr.trim().isEmpty()) {
+                    saveOnTermStr = "false";
+                }
+
+                boolean saveOnTerm = Boolean.valueOf(saveOnTermStr);
+                config.put(KEY_SAVE_ON_TERMINATE, "" + saveOnTerm);
+            } else {
+                config.put(KEY_SAVE_ON_TERMINATE, "false");
+            }
+            if (prop.containsKey(KEY_LOAD_ON_START)) {
+                String saveOnTermStr = prop.getProperty(KEY_LOAD_ON_START);
+                if (saveOnTermStr == null || saveOnTermStr.trim().isEmpty()) {
+                    saveOnTermStr = "false";
+                }
+
+                boolean saveOnTerm = Boolean.valueOf(saveOnTermStr);
+                config.put(KEY_LOAD_ON_START, "" + saveOnTerm);
+            } else {
+                config.put(KEY_LOAD_ON_START, "false");
+            }
+
         } catch (IOException ex) {
             LOGGER.warn("Cannot find configuration file for Mart server, setting default values.");
             LOGGER.error("Error while reading configuration file :--> Exception : " + ex.getClass().getName() + " --> " + ex.getMessage());
@@ -270,6 +295,8 @@ public class AppParameters {
             config.put(KEY_PROTOCOL, "http");
             config.put(KEY_LOG_DIRECTORY, DEFAULT_LOG_DIRECTORY);
             config.put(KEY_MODEL_DIRECTORY, DEFAULT_MODEL_DIRECTORY);
+            config.put(KEY_LOAD_ON_START, "false");
+            config.put(KEY_SAVE_ON_TERMINATE, "false");
         }
         configLoaded = true;
     }

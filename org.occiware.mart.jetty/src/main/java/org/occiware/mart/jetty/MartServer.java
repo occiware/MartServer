@@ -21,11 +21,16 @@ package org.occiware.mart.jetty;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.occiware.mart.server.facade.AppParameters;
+import org.occiware.mart.server.facade.*;
 import org.occiware.mart.server.exception.ApplicationConfigurationException;
+import org.occiware.mart.server.parser.json.JsonOcciParser;
 import org.occiware.mart.server.utils.logging.LoggerConfig;
 import org.occiware.mart.servlet.MainServlet;
+import org.occiware.mart.servlet.impl.IniteServletContextListener;
 
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import java.net.URISyntaxException;
 
 
@@ -66,13 +71,23 @@ public class MartServer {
         } catch (ApplicationConfigurationException ex) {
             throw new RuntimeException("Cannot load configuration parameters : " + ex.getMessage());
         }
+
         readConfigParameters(appParameters);
+
+        // Initialize logger appenders.
+        LoggerConfig.initAppenders(logDirectoryPath);
 
         ServletHandler handler = new ServletHandler();
         server = new Server(port);
         server.setHandler(handler);
 
+        server.setStopAtShutdown(true);
+        server.setStopTimeout(10000); // 10 seconds to terminate the server when stop method invoquation is done.
+
         handler.addServletWithMapping(MainServlet.class, "/*");
+
+        handler.addLifeCycleListener(new CycleListener());
+
 
         if (httpProtocol.equalsIgnoreCase(HTTPS_PROTOCOL)) {
             // Configure https protocol
@@ -92,8 +107,6 @@ public class MartServer {
             server.setConnectors(new Connector[]{connectors[0], sslConnector});
         }
 
-        // Initialize logger appenders.
-        LoggerConfig.initAppenders(logDirectoryPath);
 
         try {
             System.out.println("Starting OCCI REST MartServer...");
@@ -104,12 +117,7 @@ public class MartServer {
             ex.printStackTrace();
         } finally {
             System.out.println("Destroying server...");
-            try {
-                server.stop();
-            } catch (Exception ex) {
-                System.out.println("Failed to stop the server");
-            }
-            server.destroy();
+            stopServer();
         }
     }
 
@@ -138,6 +146,7 @@ public class MartServer {
     }
 
     public static void stopServer() {
+        System.out.println("Stopping server !");
         if (server != null) {
             try {
                 server.stop();
@@ -147,5 +156,8 @@ public class MartServer {
             server.destroy();
         }
     }
+
+
+
 
 }

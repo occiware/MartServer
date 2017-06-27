@@ -245,7 +245,7 @@ public abstract class ServletEntry {
         String headerAuth = headers.getFirst(Constants.HEADER_AUTHORIZATION);
         if (headerAuth == null || headerAuth.trim().isEmpty()) {
             // No header found
-            LOGGER.info("Authorization header not found, assume that the user is anonymous.");
+            LOGGER.warn("Authorization header not found, assume that the user is anonymous.");
             return "anonymous";
             // TODO : when usermanagement will totally finished, replace anonymous return by the following lines.
             // parseResponseNotAuthorized();
