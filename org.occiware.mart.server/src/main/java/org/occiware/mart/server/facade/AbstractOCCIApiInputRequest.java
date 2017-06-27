@@ -37,6 +37,8 @@ import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -1310,28 +1312,86 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
 
     /**
-     * Load all models from disk for all user's configurations.
+     * Load a model from disk for a user.
      *
+     * @return a response api object.
+     */
+    @Override
+    public OCCIApiResponse loadModelFromDisk() {
+
+        try {
+            URI modelDirectoryUri =  new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
+
+            ConfigurationManager.loadModelFromDisk(modelDirectoryUri.toString(),username);
+            LOGGER.info("Configuration models loaded from disk.");
+            occiApiResponse.parseResponseMessage("ok");
+
+        } catch(URISyntaxException | ConfigurationException ex) {
+            LOGGER.error(ex.getMessage());
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+        return occiApiResponse;
+    }
+
+    /**
+     * Save a model to disk for current user.
+     *
+     * @return a response api object.
+     */
+    @Override
+    public OCCIApiResponse saveModelToDisk() {
+
+        try {
+            URI modelDirectoryUri = new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
+
+            ConfigurationManager.saveModelToDisk(modelDirectoryUri.toString(), username);
+            LOGGER.info("Model saved to disk on : " + modelDirectoryUri.toString());
+            occiApiResponse.parseResponseMessage("ok");
+        } catch(URISyntaxException | ConfigurationException ex) {
+            LOGGER.error(ex.getMessage());
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+        return occiApiResponse;
+    }
+
+    /**
+     * Save for all users their model to disk.
      * @throws ConfigurationException
      */
     @Override
-    public void LoadModelFromDisk() throws ConfigurationException {
-        // TODO : Load all configurations model from disk.
-        // TODO : Add a parameter to set a path on this server where to store configurations files.
+    public OCCIApiResponse saveAllModelsToDisk() {
+        try {
+            URI modelDirectoryUri = new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
 
-
+            ConfigurationManager.saveAllModelsToDisk(modelDirectoryUri.toString());
+            LOGGER.info("All models saved to disk : " + modelDirectoryUri.toString());
+            occiApiResponse.parseResponseMessage("ok");
+        } catch(URISyntaxException | ConfigurationException ex) {
+            LOGGER.error(ex.getMessage());
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+        return occiApiResponse;
 
     }
 
     /**
-     * Save all models to disk for all user's configurations.
-     *
-     * @throws ConfigurationException
+     * Load for all users models from disk.
+     * Mainly used when MartServer frontend stop services.
+     * @return
      */
     @Override
-    public void saveModelToDisk() throws ConfigurationException {
-        // TODO : Save all configurations model to disk.
-        // TODO : Add a parameter to set a path on this server where to store configurations files.
+    public OCCIApiResponse loadAllModelsFromDisk() {
+        try {
+            URI modelDirectoryUri = new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
+
+            ConfigurationManager.loadAllModelsFromDisk(modelDirectoryUri.toString());
+            LOGGER.info("All models loaded from disk : " + modelDirectoryUri.toString());
+            occiApiResponse.parseResponseMessage("ok");
+        } catch(URISyntaxException | ConfigurationException ex) {
+            LOGGER.error(ex.getMessage());
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+        return occiApiResponse;
     }
 
 

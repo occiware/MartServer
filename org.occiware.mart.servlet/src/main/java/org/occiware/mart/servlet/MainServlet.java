@@ -18,8 +18,8 @@
  */
 package org.occiware.mart.servlet;
 
-import org.occiware.mart.security.AppParameters;
-import org.occiware.mart.security.exceptions.ApplicationConfigurationException;
+import org.occiware.mart.server.facade.AppParameters;
+import org.occiware.mart.server.exception.ApplicationConfigurationException;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.servlet.impl.DeleteWorker;
 import org.occiware.mart.servlet.impl.GetWorker;

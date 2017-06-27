@@ -21,24 +21,12 @@ package org.occiware.mart.jetty;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.occiware.mart.security.AppParameters;
-import org.occiware.mart.security.exceptions.ApplicationConfigurationException;
-import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.facade.AppParameters;
+import org.occiware.mart.server.exception.ApplicationConfigurationException;
 import org.occiware.mart.server.utils.logging.LoggerConfig;
-import org.occiware.mart.server.utils.Utils;
 import org.occiware.mart.servlet.MainServlet;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Properties;
 
 
 /**
@@ -71,10 +59,6 @@ public class MartServer {
 
             configFilePath = args[0];
         }
-
-        // else {
-            // configFilePath = System.getProperty("user.home") + File.separator + "martserver.config";
-        // }
 
         AppParameters appParameters = AppParameters.getInstance();
         try {

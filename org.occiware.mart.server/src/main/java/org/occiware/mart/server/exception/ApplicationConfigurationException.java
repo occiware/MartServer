@@ -1,4 +1,4 @@
-package org.occiware.mart.security.exceptions;
+package org.occiware.mart.server.exception;
 
 /**
  * Created by cgourdin on 26/06/2017.

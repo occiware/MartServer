@@ -253,6 +253,60 @@ public class MixinManager {
     }
 
     /**
+     * Used by load configuration only. Update all the mixin location map with mixins tag only.
+     */
+    public static void updateAllMixinTagReferences(final String owner) {
+
+        List<Mixin> mixinsTags = getAllMixinTagsForOwner(owner);
+        String location;
+
+        for (Mixin mixin : mixinsTags) {
+            // TODO : Save mixin location map in a file when saving xmi occic document.
+            location = mixin.getTerm();
+            userMixinLocationMap.put(mixin.getTerm(), location);
+        }
+    }
+
+    /**
+     *
+     * @param owner
+     * @return
+     */
+    public static List<Mixin> getAllMixinTagsForOwner(final String owner) {
+        Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
+        List<Extension> exts = config.getUse();
+        List<Mixin> mixinsConf = config.getMixins();
+        List<Mixin> mixinsTags = new LinkedList<>();
+
+        List<Mixin> allMixinsExts = new LinkedList<>();
+        boolean found;
+        for (Extension ext : exts) {
+            allMixinsExts.addAll(ext.getMixins());
+        }
+
+        for (Mixin mixin : mixinsConf) {
+            found = false;
+            String mixinTerm = mixin.getTerm();
+            String mixinScheme = mixin.getScheme();
+            String mixinId = mixinScheme + mixinTerm;
+            for (Mixin mix : allMixinsExts) {
+                if ((mix.getScheme() + mix.getTerm()).equals(mixinId)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // This is a mixin tag !
+                mixinsTags.add(mixin);
+            }
+        }
+        return mixinsTags;
+
+    }
+
+
+
+    /**
      * Create a new mixin without any association.
      *
      * @param mixinId
@@ -656,5 +710,10 @@ public class MixinManager {
             mixinsStr.add(mixinStr);
         }
         return mixinsStr;
+    }
+
+    public static void clearMixinTagsReferences() {
+        userMixinLocationMap.clear();
+
     }
 }

@@ -16,10 +16,9 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.security;
+package org.occiware.mart.server.facade;
 
-import org.occiware.mart.security.exceptions.ApplicationConfigurationException;
-import org.occiware.mart.security.exceptions.ApplicationSecurityException;
+import org.occiware.mart.server.exception.ApplicationConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,12 +26,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -85,7 +81,7 @@ public class AppParameters {
         InputStream in;
         try {
             if (configFilePath == null || configFilePath.trim().isEmpty()) {
-                LOGGER.warn("No configuration file given on application top, using default packaged configuration file.");
+                LOGGER.warn("No configuration file given on application top, using packaged configuration file.");
                 in = this.getClass().getResourceAsStream("/config.properties");
 
             } else {
