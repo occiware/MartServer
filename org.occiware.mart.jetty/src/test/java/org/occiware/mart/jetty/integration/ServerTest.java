@@ -104,6 +104,8 @@ public class ServerTest {
         String result;
         HttpMethod httpMethod;
         // First query the interface with GET method.
+        // Wait a little to be sure that server thread is started.
+        Thread.sleep(2000);
         response = executeQuery(HttpMethod.GET, "http://localhost:8080/-/", HttpServletResponse.SC_OK,
                 null,
                 "Test query interface with GET method on uri /-/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
