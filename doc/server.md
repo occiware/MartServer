@@ -94,11 +94,14 @@ Mart server will log in path : /Users/myuser/workspace/MartServer/logs/mart_serv
 
 The extensions you have registered in pom.xml must appear in the output log, here i have OCCI core extension and OCCI core infrastructure.
 
+If the option server.load.onstart is set to true, all the models will load on start.
+
 ## Stop server
+
 Simply kill the java main thread (pkill -9 java) or ctrl+c in current server terminal.
 
-Note that there is no persistence for now, if you stop the server, you will loose all your resources configuration.
-This is plan to make it persistent in a near future to allow the defined resources to be loaded in the same state when you have stopped the server.
+If the option server.save.onterminate is set to true, This will save all the models in your home directory. 
+You can configure that in the config properties file.
 
 ## Configuring the server.
 
