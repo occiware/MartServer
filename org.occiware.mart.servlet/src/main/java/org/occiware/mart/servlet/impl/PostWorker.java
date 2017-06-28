@@ -33,6 +33,7 @@ import java.util.Optional;
  * Created by cgourdin on 13/04/2017.
  */
 public class PostWorker extends ServletEntry {
+
     public PostWorker(URI serverURI, HttpServletResponse resp, HeaderPojo headers, HttpServletRequest req, String path) {
         super(serverURI, resp, headers, req, path);
     }
@@ -44,8 +45,25 @@ public class PostWorker extends ServletEntry {
         if (occiResponse.hasExceptions()) {
             return resp;
         }
+
         if (getContentType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
             return occiResponse.parseMessage("You cannot use Content-Type: text/uri-list that way, use a get collection request like http://yourhost:8080/compute/", HttpServletResponse.SC_BAD_REQUEST);
+        }
+
+        // For saving model on demand.
+        if (getPath().equalsIgnoreCase(Constants.RESERVED_URI_SAVE_MODEL)) {
+            occiRequest.saveModelToDisk();
+            return occiResponse.getHttpResponse();
+        }
+        // For loading model on demand.
+        if (getPath().equalsIgnoreCase(Constants.RESERVED_URI_LOAD_MODEL)) {
+            occiRequest.loadModelFromDisk();
+            return occiResponse.getHttpResponse();
+        }
+        // For validating model on demand.
+        if (getPath().equalsIgnoreCase(Constants.RESERVED_URI_VALIDATE_MODEL)) {
+            occiRequest.validateModel();
+            return occiResponse.getHttpResponse();
         }
 
         // There is content so check it.

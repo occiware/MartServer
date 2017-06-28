@@ -26,14 +26,17 @@ import org.eclipse.cmf.occi.core.*;
 import org.eclipse.cmf.occi.core.util.OcciHelper;
 import org.eclipse.cmf.occi.core.util.OcciRegistry;
 import org.eclipse.cmf.occi.mart.MART;
+import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.common.util.WrappedException;
 import org.eclipse.emf.ecore.resource.*;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.resource.impl.URIHandlerImpl;
+import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -702,5 +705,36 @@ public class ConfigurationManager {
         return fileNames;
     }
 
+
+    public static void validateModel(final String owner) throws ModelValidatorException {
+        Configuration conf = getConfigurationForOwner(owner);
+
+        Diagnostic diagnostic = Diagnostician.INSTANCE.validate(conf);
+        if (diagnostic.getSeverity() != 0) {
+            StringBuilder sb = printDiagnostic(diagnostic, "", new StringBuilder());
+            LOGGER.warn(sb.toString());
+            throw new ModelValidatorException();
+        }
+    }
+
+    /**
+     * Print to a StringBuilder object the model validation diagnostic.
+     * @param diagnostic
+     * @param indent
+     * @param sb
+     * @return
+     */
+    private static StringBuilder printDiagnostic(Diagnostic diagnostic, String indent, StringBuilder sb) {
+        sb.append(indent);
+        sb.append(diagnostic.getMessage());
+        sb.append("\n");
+        Iterator diagChild = diagnostic.getChildren().iterator();
+
+        while(diagChild.hasNext()) {
+            Diagnostic child = (Diagnostic) diagChild.next();
+            printDiagnostic(child, indent + "  ", sb);
+        }
+        return sb;
+    }
 
 }

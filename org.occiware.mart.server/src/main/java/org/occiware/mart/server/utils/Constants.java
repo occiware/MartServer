@@ -134,4 +134,8 @@ public class Constants {
     public static final Pattern PATTERN_LINK = Pattern.compile(REGEXP_LINK);
     private static final String JSON_SCHEMA_IDENTIFIER_ELEMENT = "$schema";
 
+    public static final String RESERVED_URI_SAVE_MODEL = "/mart/save/";
+    public static final String RESERVED_URI_LOAD_MODEL = "/mart/load/";
+    public static final String RESERVED_URI_VALIDATE_MODEL = "/mart/validate/";
+
 }

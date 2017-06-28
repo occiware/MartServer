@@ -1392,6 +1392,18 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         return occiApiResponse;
     }
 
+    @Override
+    public OCCIApiResponse validateModel() {
+
+        try {
+            ConfigurationManager.validateModel(username);
+        } catch (ModelValidatorException ex) {
+            parseModelValidatorExceptionMessageOutput(ex.getMessage());
+        }
+
+        return occiApiResponse;
+    }
+
 
     /**
      * Build a default collection filter with provided location.

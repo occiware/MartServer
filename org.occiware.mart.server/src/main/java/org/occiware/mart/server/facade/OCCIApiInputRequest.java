@@ -177,4 +177,6 @@ public interface OCCIApiInputRequest {
     OCCIApiResponse saveAllModelsToDisk();
 
     OCCIApiResponse loadAllModelsFromDisk();
+
+    OCCIApiResponse validateModel();
 }

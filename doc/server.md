@@ -233,5 +233,13 @@ The subdirectory logs/ contains all output logs level (rolling mode with a maxim
 - mart_server_fatal.log (FATAL level)
 
 
+## Special features
+We have added the feature to save or load model for current user (using basic auth).
+
+There is special uri for that : /mart/save/ and /mart/load/
+
+To validate the model : /mart/validate/
+
+
 ## Issues
 Do not hesitate to create new issues if you find a bug or if you have suggestion to make it better.

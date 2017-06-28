@@ -1218,6 +1218,8 @@ public class EntityManager {
         resource.getLinks().clear();
         config.getResources().remove(resource);
         entitiesOwner.removeEntity(resource);
+        LOGGER.info("Resource : " + resource.getLocation() + " removed");
+
     }
 
     /**
@@ -1232,6 +1234,7 @@ public class EntityManager {
         resourceTarget.getLinks().remove(link);
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
         entitiesOwner.removeEntity(link);
+        LOGGER.info("Link : " + link.getLocation() + " removed");
     }
 
     /**
