@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.occiware.mart.server.facade.OCCIApiInputRequest;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.servlet.MainServlet;
 
@@ -121,7 +122,6 @@ public class MainServletIT {
             testsOnMixinTagsAssociation();
 
             // Test operations on custom location /myresources/*...
-
 
 
 
@@ -273,8 +273,8 @@ public class MainServletIT {
 
         // Action invocation stop on this entity.
         response = executeQuery(HttpMethod.POST, "http://localhost:9090/myresources/compute1?action=stop", HttpServletResponse.SC_OK,
-                        "/testjson/integration/update/action_invocation_test.json",
-                        "Trigger action stop on entity - POST method, must be triggered on location : /myresources/compute1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+                "/testjson/integration/update/action_invocation_test.json",
+                "Trigger action stop on entity - POST method, must be triggered on location : /myresources/compute1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Retrieve the entity.
         response = executeQuery(HttpMethod.GET, "http://localhost:9090/myresources/compute1", HttpServletResponse.SC_OK,
@@ -542,6 +542,7 @@ public class MainServletIT {
                 "remove entities using tag collection - DELETE method, on location : /tags/mixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Get entity sub type instances for the mixin 2 collection.
+        // Must return empty collection =+> mixin tag is a category (mixin category).
         response = executeQuery(HttpMethod.GET, "http://localhost:9090/tags/mixin2/", HttpServletResponse.SC_OK,
                 null,
                 "Get entities using tag collection - GET method, on location : /tags/mixin2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);

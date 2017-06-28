@@ -183,10 +183,10 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
                 Mixin mixin = null;
                 switch (categoryClass) {
                     case Constants.CLASS_MIXIN:
-                        Optional<Mixin> mixinOpt = MixinManager.findMixinOnExtension(scheme + term, getUser());
+                        Optional<Mixin> mixinOpt = MixinManager.findMixinOnExtension(scheme + term, getUsername());
                         if (!mixinOpt.isPresent()) {
                             // Search on user mixin tag.
-                            mixinOpt = MixinManager.findUserMixinOnConfiguration(scheme + term, getUser());
+                            mixinOpt = MixinManager.findUserMixinOnConfiguration(scheme + term, getUsername());
                         }
                         if (!mixinOpt.isPresent()) {
                             message = "mixin " + scheme + term + " not found !";
@@ -242,7 +242,7 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         Kind kind;
         switch (categoryClass) {
             case Constants.CLASS_KIND:
-                Optional<Kind> kindOpt = KindManager.findKindFromExtension(scheme + term, getUser());
+                Optional<Kind> kindOpt = KindManager.findKindFromExtension(scheme + term, getUsername());
                 if (!kindOpt.isPresent()) {
                     message = "kind " + scheme + term + " not found!";
                     LOGGER.error(message);
@@ -313,7 +313,7 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         // Render only locations.
         String location;
         for (Entity entity : entities) {
-            location = EntityManager.getLocation(entity, getUser());
+            location = EntityManager.getLocation(entity, getUsername());
             sb.append(Constants.X_OCCI_LOCATION).append(": ").append(location).append(Constants.CRLF);
         }
 
@@ -348,10 +348,10 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
 
             sb.append(Constants.X_OCCI_ATTRIBUTE).append(": ")
                     .append(Constants.OCCI_CORE_SOURCE).append("=\"")
-                    .append(EntityManager.getLocation(link.getSource(), getUser())).append('\"').append(Constants.CRLF);
+                    .append(EntityManager.getLocation(link.getSource(), getUsername())).append('\"').append(Constants.CRLF);
             sb.append(Constants.X_OCCI_ATTRIBUTE).append(": ")
                     .append(Constants.OCCI_CORE_TARGET).append("=\"")
-                    .append(EntityManager.getLocation(link.getTarget(), getUser())).append('\"').append(Constants.CRLF);
+                    .append(EntityManager.getLocation(link.getTarget(), getUsername())).append('\"').append(Constants.CRLF);
         }
 
         for (AttributeState attribute : entity.getAttributes()) {

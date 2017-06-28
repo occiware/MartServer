@@ -63,7 +63,10 @@ public class Constants {
     public static final String HEADER_USER_AGENT = "User-Agent";
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
     public static final String HEADER_ACCEPT = "Accept";
-    public static final String HEADER_AUTHORIZATION = "authorization";
+    public static final String HEADER_AUTHORIZATION = "Authorization";
+    public static final String HEADER_WWW_AUTHENTICATE = "WWW-Authenticate";
+    public static final String HEADER_WWW_AUTHENTICATE_BASIC_PARTIAL = "Basic realm=\"";
+
     public static final String X_OCCI_ATTRIBUTE = "X-OCCI-Attribute";
     public static final String CLASS_ACTION = "action";
     public static final String CLASS_KIND = "kind";
@@ -131,5 +134,8 @@ public class Constants {
             + ";?"; // additional semicolon at the end (not specified, for interoperability)
     public static final Pattern PATTERN_LINK = Pattern.compile(REGEXP_LINK);
     private static final String JSON_SCHEMA_IDENTIFIER_ELEMENT = "$schema";
+    public static final String RESERVED_URI_SAVE_MODEL = "/mart/save/";
+    public static final String RESERVED_URI_LOAD_MODEL = "/mart/load/";
+    public static final String RESERVED_URI_VALIDATE_MODEL = "/mart/validate/";
 
 }

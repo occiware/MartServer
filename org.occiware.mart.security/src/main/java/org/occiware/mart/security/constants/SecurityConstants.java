@@ -16,24 +16,16 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.security.exceptions;
+package org.occiware.mart.security.constants;
 
 /**
- * Created by cgourdin on 24/05/2017.
+ * Created by cgourdin on 22/06/2017.
  */
-public class ApplicationSecurityException extends Exception {
-    public ApplicationSecurityException() {
-    }
+public class SecurityConstants {
 
-    public ApplicationSecurityException(String message) {
-        super(message);
-    }
+    public static final String AUTHENTICATION_BASIC = "Basic";
+    public static final String AUTHENTICATION_DIGEST = "Digest";
+    public static final String AUTHENTICATION_OAUTH2 = "Bearer";
+    public static final String DEFAULT_AUTHENTICATION_METHOD = AUTHENTICATION_BASIC;
 
-    public ApplicationSecurityException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public ApplicationSecurityException(Throwable cause) {
-        super(cause);
-    }
 }

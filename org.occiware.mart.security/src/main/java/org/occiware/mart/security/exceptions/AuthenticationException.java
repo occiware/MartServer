@@ -19,21 +19,24 @@
 package org.occiware.mart.security.exceptions;
 
 /**
- * Created by cgourdin on 24/05/2017.
+ * Created by cgourdin on 22/06/2017.
  */
-public class ApplicationSecurityException extends Exception {
-    public ApplicationSecurityException() {
+public class AuthenticationException extends Exception {
+    public AuthenticationException() {
     }
 
-    public ApplicationSecurityException(String message) {
+    public AuthenticationException(String message) {
         super(message);
     }
 
-    public ApplicationSecurityException(String message, Throwable cause) {
+    public AuthenticationException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public ApplicationSecurityException(Throwable cause) {
+    public AuthenticationException(Throwable cause) {
         super(cause);
     }
+
+
+
 }

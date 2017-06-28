@@ -18,18 +18,26 @@
  */
 package org.occiware.mart.server.model;
 
-// import org.occiware.clouddesigner.occi.*;
-// import org.occiware.clouddesigner.occi.util.OcciHelper;
-// import org.occiware.mart.MART;
-
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.MART;
+import org.eclipse.emf.common.util.Diagnostic;
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.common.util.WrappedException;
+import org.eclipse.emf.ecore.resource.*;
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.util.Diagnostician;
 import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.parser.QueryInterfaceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -531,6 +539,192 @@ public class ConfigurationManager {
 
     public static OCCIFactory getOcciFactory() {
         return occiFactory;
+    }
+
+    public static void loadModelFromDisk(final String modelDirectory, final String owner) throws ConfigurationException {
+        String message;
+        // Replace already saved configuration for this owner.
+        if (owner == null || owner.trim().isEmpty()) {
+            message = "user is not defined to save an existing model.";
+            LOGGER.error(message);
+            throw new ConfigurationException(message);
+        }
+        if (modelDirectory == null || modelDirectory.trim().isEmpty()) {
+            message = "Model directory not set on application parameters, please update config.properties file.";
+            LOGGER.error(message);
+            throw new ConfigurationException(message);
+        }
+
+        String filename = modelDirectory + "model-" + owner + ".occic";
+        if (filename.startsWith("/")) {
+            filename = filename.substring(1); // remove leading slash.
+        }
+        ResourceSet resourceSet = new ResourceSetImpl();
+        URI uri = URI.createURI("file:///" + filename.replace('\\', '/'));
+        try {
+            org.eclipse.emf.ecore.resource.Resource resource = resourceSet.getResource(uri, true);
+
+            // Get the first model element and cast it to a Configuration emf object.
+            Configuration ownerConfig = (Configuration) resource.getContents().get(0);
+            // To ensure that all extensions in configuration are used if the configuration has no extensions referenced.
+            configurations.put(owner, ownerConfig);
+            useAllExtensionForConfigurationInClasspath(owner);
+
+            // build or rebuild the owners entity map.
+            EntityManager.buildEntitiesOwner(owner);
+            // Update the location map on entities mapping.
+            EntityManager.updateAllReferencesOnEntitiesOwner(owner);
+            // Update mixin location.
+            // TODO : When saving model, save a another file with location map reference to mixins tags : mixintag term ==> mixin tag location .
+            MixinManager.updateAllMixinTagReferences(owner);
+
+        } catch (WrappedException ex) {
+            message = "Loading configuration model failed : " + ex.getMessage();
+            LOGGER.error(message);
+            throw new ConfigurationException(message, ex);
+        }
+
+    }
+
+    public static void saveModelToDisk(final String modelDirectory, final String owner) throws ConfigurationException {
+
+        String message;
+
+        if (owner == null || owner.trim().isEmpty()) {
+            message = "user is not defined to save an existing model.";
+            LOGGER.error(message);
+            throw new ConfigurationException(message);
+        }
+
+        if (modelDirectory == null || modelDirectory.trim().isEmpty()) {
+            message = "Model directory not set on application parameters, please update config.properties file.";
+            LOGGER.error(message);
+            throw new ConfigurationException(message);
+        }
+
+        String filename = modelDirectory + "model-" + owner + ".occic";
+        if (filename.startsWith("/")) {
+            filename = filename.substring(1); // remove leading slash.
+        }
+        LOGGER.info("Saving model to : " + filename);
+        ResourceSet resourceSet = new ResourceSetImpl();
+
+        // Get the user configuration model, if it doesnt exist this will save with a new configuration.
+        Configuration configSource = getConfigurationForOwner(owner);
+        // URI uri = URI.createURI(filename);
+        URI uri = URI.createURI("file:///" + filename.replace('\\', '/'));
+
+        org.eclipse.emf.ecore.resource.Resource resource = resourceSet.createResource(uri);
+
+        resource.getContents().add(configSource);
+
+        try {
+            resource.save(Collections.EMPTY_MAP);
+            LOGGER.info("Model for owner : " + owner + " is saved !");
+        } catch (IOException ex) {
+            message = "Error while saving model : " + ex.getClass().getName() + " --> " + ex.getMessage();
+            LOGGER.error(message);
+            throw new ConfigurationException(message, ex);
+        }
+    }
+
+    /**
+     * Load all models from files.
+     * @param modelDirectory
+     * @throws ConfigurationException
+     */
+    public static void loadAllModelsFromDisk(final String modelDirectory) throws ConfigurationException {
+
+        String currentOwner;
+
+
+        // reset all.
+        configurations.clear();
+        EntityManager.clearReferences();
+        MixinManager.clearMixinTagsReferences();
+        List<String> modelFiles;
+        // List all files from the directory model.
+        try {
+            modelFiles = listDir(modelDirectory);
+        } catch (IOException ex) {
+            LOGGER.error("Error while listing directory : " + modelDirectory + " --> " + ex.getMessage());
+            throw new ConfigurationException("Error while listing directory : " + modelDirectory + " --> " + ex.getMessage(), ex);
+        }
+        String tmpExt;
+        for (String modelFile : modelFiles) {
+            if (!modelFile.endsWith(".occic")) {
+                LOGGER.warn("unknown file: " + modelFile);
+            } else {
+                // Load configurations for each files from modelDirectory and get username from filename.
+                tmpExt = modelFile.replace(".occic", "");
+                currentOwner = tmpExt.split("-")[1];
+                // Update for each configuration references (entities and mixins tags).
+                loadModelFromDisk(modelDirectory, currentOwner);
+            }
+        }
+
+        if (configurations.isEmpty()) {
+            createConfiguration(DEFAULT_OWNER);
+        }
+    }
+
+    /**
+     * Save all models to files in a directory provided.
+     * @param modelDirectory
+     * @throws ConfigurationException
+     */
+    public static void saveAllModelsToDisk(final String modelDirectory) throws ConfigurationException {
+        // Get all owner.
+        Set<String> owners = configurations.keySet();
+        for (String currentOwner : owners) {
+            saveModelToDisk(modelDirectory, currentOwner);
+        }
+    }
+
+    /**
+     * Utility method to list a directory filenames.
+     * @param directory
+     * @return
+     * @throws IOException
+     */
+    private static List<String> listDir(final String directory) throws IOException {
+        List<String> fileNames = new LinkedList<>();
+        DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(directory));
+        for (Path path : directoryStream) {
+            fileNames.add(path.toString());
+        }
+        return fileNames;
+    }
+
+    public static void validateModel(final String owner) throws ModelValidatorException {
+        Configuration conf = getConfigurationForOwner(owner);
+
+        Diagnostic diagnostic = Diagnostician.INSTANCE.validate(conf);
+        if (diagnostic.getSeverity() != 0) {
+            StringBuilder sb = printDiagnostic(diagnostic, "", new StringBuilder());
+            LOGGER.warn(sb.toString());
+            throw new ModelValidatorException();
+        }
+    }
+
+    /**
+     * Print to a StringBuilder object the model validation diagnostic.
+     * @param diagnostic
+     * @param indent
+     * @param sb
+     * @return
+     */
+    private static StringBuilder printDiagnostic(Diagnostic diagnostic, String indent, StringBuilder sb) {
+        sb.append(indent);
+        sb.append(diagnostic.getMessage());
+        sb.append("\n");
+        Iterator diagChild = diagnostic.getChildren().iterator();
+
+        while(diagChild.hasNext()) {
+            Diagnostic child = (Diagnostic) diagChild.next();
+            printDiagnostic(child, indent + "  ", sb);
+        }
+        return sb;
     }
 
 }

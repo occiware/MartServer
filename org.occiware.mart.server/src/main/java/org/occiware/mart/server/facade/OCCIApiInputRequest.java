@@ -18,7 +18,6 @@
  */
 package org.occiware.mart.server.facade;
 
-import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.OCCIRequestData;
 import org.occiware.mart.server.utils.CollectionFilter;
@@ -171,7 +170,14 @@ public interface OCCIApiInputRequest {
 
     String createUUID();
 
-    public void LoadModelFromDisk() throws ConfigurationException;
+    public OCCIApiResponse loadModelFromDisk();
 
-    public void saveModelToDisk() throws ConfigurationException;
+    public OCCIApiResponse saveModelToDisk();
+
+    OCCIApiResponse saveAllModelsToDisk();
+
+    OCCIApiResponse loadAllModelsFromDisk();
+
+    OCCIApiResponse validateModel();
+
 }

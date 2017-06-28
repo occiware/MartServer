@@ -1066,7 +1066,7 @@ public class EntityManager {
         String key = owner + id;
         Integer version = versionObjectMap.get(key);
         if (version == null) {
-            version = 1;
+            version = 0;
         }
         version++;
         versionObjectMap.put(key, version);
@@ -1153,7 +1153,9 @@ public class EntityManager {
         }
         resource.getLinks().clear();
         config.getResources().remove(resource);
+        LOGGER.info("Resource on location : " + entitiesOwner.getEntityLocation(resource) + " removed");
         entitiesOwner.removeEntity(resource);
+
     }
 
     /**
@@ -1575,6 +1577,53 @@ public class EntityManager {
             }
         }
         LOGGER.debug(builder.toString());
+    }
+
+    /**
+     * Update all entity in owner's configuration on mapped objects (cross references).
+     * @param owner
+     */
+    public static void updateAllReferencesOnEntitiesOwner(final String owner) {
+        Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
+
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+
+        if (entitiesOwner == null) {
+            buildEntitiesOwner(owner);
+        }
+
+        // List all resources
+        for (Resource resource : config.getResources()) {
+            updateEntityReferences(resource, owner);
+
+            // Do the same for all the linked entities.
+            EList<Link> links = resource.getLinks();
+            for (Link link : links) {
+                updateEntityReferences(link, owner);
+            }
+        }
 
     }
+
+    /**
+     * Update all mapped reference for an entity.
+     * @param entity
+     * @param owner
+     */
+    private static void updateEntityReferences(final Entity entity, final String owner) {
+        String uuid = entity.getId();
+        String term = entity.getKind().getTerm();
+        String location = "/" + term + "/" + uuid; // implemented in v2 : entity.getLocation();
+        EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+        // Update references.
+        entitiesOwner.putEntity(location, entity);
+        updateVersion(owner, uuid);
+    }
+
+
+    public static void clearReferences() {
+        entitiesOwnerMap.clear();
+        versionObjectMap.clear();
+    }
+
 }

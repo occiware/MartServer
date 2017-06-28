@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractOCCIApiResponse.class);
-    private final String username;
+    private String username;
     /**
      * Main response message. Used principally for HTTP to render String output (html, json, text etc.).
      */
@@ -111,4 +111,13 @@ public abstract class AbstractOCCIApiResponse implements OCCIApiResponse {
         return this.outputParser;
     }
 
+    @Override
+    public String getUsername() {
+        return this.username;
+    }
+
+    @Override
+    public void setUsername(final String username) {
+        this.username = username;
+    }
 }

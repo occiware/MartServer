@@ -36,11 +36,11 @@ public abstract class AbstractRequestParser implements IRequestParser {
 
     private List<OCCIRequestData> inputDatas = new LinkedList<>();
     private List<OCCIRequestData> outputDatas = new LinkedList<>();
-    private String user;
+    private String username;
     private QueryInterfaceData interfaceData;
 
-    public AbstractRequestParser(String user) {
-        this.user = user;
+    public AbstractRequestParser(String username) {
+        this.username = username;
     }
 
     @Override
@@ -107,7 +107,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
                 data.setEntitySummary(((Resource) entity).getSummary());
             }
             data.setAttrs(EntityManager.convertEntityAttributesToMap(entity));
-            data.setLocation(EntityManager.getLocation(entity, user));
+            data.setLocation(EntityManager.getLocation(entity, username));
             data.setKind(entity.getKind().getScheme() + entity.getKind().getTerm());
 
             if (!entity.getMixins().isEmpty()) {
@@ -144,7 +144,14 @@ public abstract class AbstractRequestParser implements IRequestParser {
         }
     }
 
-    public String getUser() {
-        return this.user;
+    @Override
+    public String getUsername() {
+        return this.username;
     }
+
+    @Override
+    public void setUsername(final String username) {
+        this.username = username;
+    }
+
 }

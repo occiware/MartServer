@@ -55,7 +55,12 @@ public class ServerTest {
 
         serverThread = new Thread(() -> {
             String[] tests = new String[0];
-            MartServer.main(tests);
+            try {
+                MartServer.main(tests);
+
+            } catch (URISyntaxException ex) {
+                throw new RuntimeException(ex);
+            }
         });
 
         serverThread.start();
@@ -98,8 +103,18 @@ public class ServerTest {
         System.out.println("Testing interface methods on path /-/");
         ContentResponse response;
         String result;
-        HttpMethod httpMethod;
+
         // First query the interface with GET method.
+        // Wait a little to be sure that server thread is started.
+        long waitTime = 0;
+        while (!MartServer.isServerStarted()) {
+            Thread.sleep(2000);
+            waitTime += 2000;
+            if (waitTime > 20000) {
+                break;
+            }
+        }
+
         response = executeQuery(HttpMethod.GET, "http://localhost:8080/-/", HttpServletResponse.SC_OK,
                 null,
                 "Test query interface with GET method on uri /-/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
@@ -127,7 +142,7 @@ public class ServerTest {
             inputJsonFile = new File(new URI(this.getClass().getResource(path).toString()));
             System.out.println(inputJsonFile.getAbsolutePath());
         } catch (URISyntaxException e) {
-        	Logger.getLogger(ServerTest.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(ServerTest.class.getName()).log(Level.SEVERE, null, e);
         }
         return inputJsonFile;
     }

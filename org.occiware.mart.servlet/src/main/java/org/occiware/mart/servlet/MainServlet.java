@@ -18,15 +18,17 @@
  */
 package org.occiware.mart.servlet;
 
+import org.occiware.mart.server.facade.*;
+import org.occiware.mart.server.exception.ApplicationConfigurationException;
+import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.HeaderPojo;
-import org.occiware.mart.servlet.impl.DeleteWorker;
-import org.occiware.mart.servlet.impl.GetWorker;
-import org.occiware.mart.servlet.impl.PostWorker;
-import org.occiware.mart.servlet.impl.PutWorker;
+import org.occiware.mart.server.parser.json.JsonOcciParser;
+import org.occiware.mart.servlet.impl.*;
 import org.occiware.mart.servlet.utils.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -41,12 +43,24 @@ public class MainServlet extends HttpServlet {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainServlet.class);
 
+
     @Override
     public void init() throws ServletException {
         super.init();
 
         // Create a default configuration object (default user) to initialize it.
         LOGGER.info("Init MART main servlet.");
+
+        LOGGER.info("Checking configuration parameters...");
+        AppParameters appParameters = AppParameters.getInstance();
+        try {
+            if (!appParameters.isConfigLoaded()) {
+                // try to load configuration default.
+                appParameters.loadParametersFromConfigFile(null);
+            }
+        } catch (ApplicationConfigurationException ex) {
+            throw new ServletException("Cannot configure the application : " + ex.getMessage());
+        }
     }
 
     /**
@@ -118,6 +132,7 @@ public class MainServlet extends HttpServlet {
         resp = worker.executeQuery();
 
     }
+
 
 
 }

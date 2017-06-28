@@ -19,10 +19,9 @@
 package org.occiware.mart.server.integration;
 
 import org.junit.Test;
-import org.occiware.mart.server.facade.DefaultOCCIRequest;
-import org.occiware.mart.server.facade.DefaultOCCIResponse;
-import org.occiware.mart.server.facade.OCCIApiInputRequest;
-import org.occiware.mart.server.facade.OCCIApiResponse;
+import org.occiware.mart.server.exception.ApplicationConfigurationException;
+import org.occiware.mart.server.exception.ConfigurationException;
+import org.occiware.mart.server.facade.*;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.DefaultParser;
 import org.occiware.mart.server.parser.IRequestParser;
@@ -47,12 +46,87 @@ public class OCCIApiRequestIT {
     @Test
     public void createEntityTest() {
 
-        // First create entity on "/".
+        // First create entity on "/myentity/".
         ConfigurationManager.getConfigurationForOwner(username);
 
-        String location = "/";
+        String location = "/myentity/";
         createEntity(location);
+
+        // Test save config.
+        saveConfiguration();
+
+        // Test load configuration.
+        loadConfiguration();
+
+        // Test save all config.
+        saveAllConfiguration();
+
     }
+
+    private void saveConfiguration() {
+        AppParameters parameters = AppParameters.getInstance();
+        try {
+            parameters.loadParametersFromConfigFile(null);
+        } catch (ApplicationConfigurationException ex) {
+            System.err.println("Cannot load application parameters...");
+        }
+
+        IRequestParser parser = new DefaultParser(username);
+        OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
+        OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
+        occiRequest.saveModelToDisk();
+
+        if (occiResponse.hasExceptions()) {
+            System.out.println("Exception thrown : " + occiResponse.getExceptionMessage());
+        }
+        assertFalse(occiResponse.hasExceptions());
+
+    }
+
+    private void saveAllConfiguration() {
+        AppParameters parameters = AppParameters.getInstance();
+        try {
+            parameters.loadParametersFromConfigFile(null);
+        } catch (ApplicationConfigurationException ex) {
+            System.err.println("Cannot load application parameters...");
+        }
+
+        IRequestParser parser = new DefaultParser(username);
+        OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
+        OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
+        occiRequest.saveAllModelsToDisk();
+
+        if (occiResponse.hasExceptions()) {
+            System.out.println("Exception thrown : " + occiResponse.getExceptionMessage());
+        }
+        assertFalse(occiResponse.hasExceptions());
+    }
+
+    private void loadConfiguration() {
+
+        AppParameters parameters = AppParameters.getInstance();
+        // parameters are already loaded.
+        if (!parameters.isConfigLoaded()) {
+            try {
+                parameters.loadParametersFromConfigFile(null);
+            } catch (ApplicationConfigurationException ex) {
+                System.err.println("Cannot load application parameters...");
+            }
+        }
+
+        IRequestParser parser = new DefaultParser(username);
+        OCCIApiResponse occiResponse = new DefaultOCCIResponse(username, ParserFactory.build(Constants.MEDIA_TYPE_JSON, username));
+        OCCIApiInputRequest occiRequest = new DefaultOCCIRequest(username, occiResponse, parser);
+
+        occiRequest.loadModelFromDisk();
+
+        if (occiResponse.hasExceptions()) {
+            System.out.println("Exception thrown : " + occiResponse.getExceptionMessage());
+        }
+        assertFalse(occiResponse.hasExceptions());
+
+    }
+
 
     private void createEntity(String location) {
         String kind = "http://schemas.ogf.org/occi/infrastructure#compute";

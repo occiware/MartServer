@@ -18,7 +18,6 @@
  */
 package org.occiware.mart.server.facade;
 
-// import org.occiware.clouddesigner.occi.*;
 import org.occiware.clouddesigner.occi.*;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ModelValidatorException;
@@ -36,7 +35,11 @@ import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
+
+
 
 /**
  * This abstract class has generic methods to address OCCI runtime core model managers.
@@ -1308,25 +1311,95 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
 
     /**
-     * Load all models from disk for all user's configurations.
+     * Load a model from disk for a user.
      *
-     * @throws ConfigurationException
+     * @return a response api object.
      */
     @Override
-    public void LoadModelFromDisk() throws ConfigurationException {
-        // TODO : Load all configurations model from disk.
+    public OCCIApiResponse loadModelFromDisk() {
+
+        try {
+            URI modelDirectoryUri =  new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
+
+            ConfigurationManager.loadModelFromDisk(modelDirectoryUri.toString(),username);
+            LOGGER.info("Configuration models loaded from disk.");
+            occiApiResponse.parseResponseMessage("ok");
+
+        } catch(URISyntaxException | ConfigurationException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+        return occiApiResponse;
     }
 
     /**
-     * Save all models to disk for all user's configurations.
+     * Save a model to disk for current user.
      *
+     * @return a response api object.
+     */
+    @Override
+    public OCCIApiResponse saveModelToDisk() {
+
+        try {
+            URI modelDirectoryUri = new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
+
+            ConfigurationManager.saveModelToDisk(modelDirectoryUri.toString(), username);
+            LOGGER.info("Model saved to disk on : " + modelDirectoryUri.toString());
+            occiApiResponse.parseResponseMessage("ok");
+        } catch(URISyntaxException | ConfigurationException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+        return occiApiResponse;
+    }
+
+    /**
+     * Save for all users their model to disk.
      * @throws ConfigurationException
      */
     @Override
-    public void saveModelToDisk() throws ConfigurationException {
-        // TODO : Save all configurations model to disk.
+    public OCCIApiResponse saveAllModelsToDisk() {
+        try {
+            URI modelDirectoryUri = new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
+
+            ConfigurationManager.saveAllModelsToDisk(modelDirectoryUri.toString());
+            LOGGER.info("All models saved to disk : " + modelDirectoryUri.toString());
+            occiApiResponse.parseResponseMessage("ok");
+        } catch(URISyntaxException | ConfigurationException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+        return occiApiResponse;
+
     }
 
+    /**
+     * Load for all users models from disk.
+     * Mainly used when MartServer frontend stop services.
+     * @return
+     */
+    @Override
+    public OCCIApiResponse loadAllModelsFromDisk() {
+        try {
+            URI modelDirectoryUri = new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
+
+            ConfigurationManager.loadAllModelsFromDisk(modelDirectoryUri.toString());
+            LOGGER.info("All models loaded from disk : " + modelDirectoryUri.toString());
+            occiApiResponse.parseResponseMessage("ok");
+        } catch(URISyntaxException | ConfigurationException ex) {
+            parseConfigurationExceptionMessageOutput(ex.getMessage());
+        }
+        return occiApiResponse;
+    }
+
+    @Override
+    public OCCIApiResponse validateModel() {
+
+        try {
+            ConfigurationManager.validateModel(username);
+        } catch (ModelValidatorException ex) {
+            parseModelValidatorExceptionMessageOutput(ex.getMessage());
+        }
+
+        return occiApiResponse;
+    }
 
     /**
      * Build a default collection filter with provided location.
