@@ -46,6 +46,7 @@ public class MartServer {
     private static String logDirectoryPath;
     private static String httpProtocol;
     private static Server server;
+    private static boolean serverStarted = false;
 
     public static void main(String[] args) throws URISyntaxException {
 
@@ -111,6 +112,7 @@ public class MartServer {
         try {
             System.out.println("Starting OCCI REST MartServer...");
             server.start();
+            serverStarted = true;
             server.join();
         } catch (Exception ex) {
             System.err.println("Exception thrown : " + ex.getClass().getSimpleName());
@@ -157,7 +159,7 @@ public class MartServer {
         }
     }
 
-
-
-
+    public static boolean isServerStarted() {
+        return serverStarted;
+    }
 }
