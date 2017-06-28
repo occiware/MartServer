@@ -41,38 +41,36 @@ import java.util.Properties;
 public class AppParameters {
 
 
+    public static final String FILE_SEPARATOR = FileSystems.getDefault().getSeparator();
+    public static final String KEY_PORT = "server.http.port";
+    public static final String KEY_HTTPS_PORT = "server.https.port";
+    public static final String KEY_PROTOCOL = "server.protocol";
+    public static final String KEY_LOG_DIRECTORY = "server.log.directory";
+    // Paths.get("logs").toAbsolutePath().toString() + FileSystems.getDefault().getSeparator();
+    public static final String KEY_MODEL_DIRECTORY = "server.model.directory";
+    //Paths.get("models").toAbsolutePath().toString() + FileSystems.getDefault().getSeparator();
+    public static final String KEY_ADMIN_USERNAME = "admin.username";
+    public static final String KEY_ADMIN_PASSWORD = "admin.password";
+    public static final String KEY_SAVE_ON_TERMINATE = "server.save.onterminate";
+    public static final String KEY_LOAD_ON_START = "server.load.onstart";
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppParameters.class);
+    private static final String DEFAULT_LOG_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "logs" + FILE_SEPARATOR;
+    private static final String DEFAULT_MODEL_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "models" + FILE_SEPARATOR;
+    private HashMap<String, String> config = new HashMap<>();
+    private boolean configLoaded = false;
+
     /**
      * Private constructor as this class is a singleton.
      */
     private AppParameters() {
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AppParameters.class);
-
-    private HashMap<String, String> config = new HashMap<>();
-
-    public static final String FILE_SEPARATOR = FileSystems.getDefault().getSeparator();
-
-    private static final String DEFAULT_LOG_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "logs" + FILE_SEPARATOR;
-    // Paths.get("logs").toAbsolutePath().toString() + FileSystems.getDefault().getSeparator();
-
-    private static final String DEFAULT_MODEL_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "models" + FILE_SEPARATOR;
-    //Paths.get("models").toAbsolutePath().toString() + FileSystems.getDefault().getSeparator();
-
-    public static final String KEY_PORT = "server.http.port";
-    public static final String KEY_HTTPS_PORT = "server.https.port";
-    public static final String KEY_PROTOCOL = "server.protocol";
-
-    public static final String KEY_LOG_DIRECTORY = "server.log.directory";
-
-    public static final String KEY_MODEL_DIRECTORY = "server.model.directory";
-
-    public static final String KEY_ADMIN_USERNAME = "admin.username";
-    public static final String KEY_ADMIN_PASSWORD = "admin.password";
-    public static final String KEY_SAVE_ON_TERMINATE = "server.save.onterminate";
-    public static final String KEY_LOAD_ON_START = "server.load.onstart";
-
-    private boolean configLoaded = false;
+    /**
+     * @return the instance of an AppParameters singleton object.
+     */
+    public static AppParameters getInstance() {
+        return AppParametersHolder.instance;
+    }
 
     /**
      * This method load the properties config file and set config map attributes.
@@ -302,20 +300,6 @@ public class AppParameters {
     }
 
     /**
-     * Singleton holder, this for multi-threaded environmnent (and avoid synchronize method).
-     */
-    private static class AppParametersHolder {
-        private static AppParameters instance = new AppParameters();
-    }
-
-    /**
-     * @return the instance of an AppParameters singleton object.
-     */
-    public static AppParameters getInstance() {
-        return AppParametersHolder.instance;
-    }
-
-    /**
      * @return a config map with attributes (or empty config map).
      */
     public Map<String, String> getConfig() {
@@ -324,5 +308,12 @@ public class AppParameters {
 
     public boolean isConfigLoaded() {
         return configLoaded;
+    }
+
+    /**
+     * Singleton holder, this for multi-threaded environmnent (and avoid synchronize method).
+     */
+    private static class AppParametersHolder {
+        private static AppParameters instance = new AppParameters();
     }
 }

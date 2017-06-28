@@ -21,12 +21,11 @@ package org.occiware.mart.server.parser;
 import org.eclipse.cmf.occi.core.Kind;
 import org.eclipse.cmf.occi.core.Mixin;
 
+import java.util.ArrayList;
+import java.util.List;
 
 // import org.occiware.clouddesigner.occi.Kind;
 // import org.occiware.clouddesigner.occi.Mixin;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by cgourdin on 11/04/2017.

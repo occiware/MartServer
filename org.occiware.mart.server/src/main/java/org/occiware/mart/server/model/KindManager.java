@@ -18,18 +18,15 @@
  */
 package org.occiware.mart.server.model;
 
+import org.eclipse.cmf.occi.core.*;
 import org.eclipse.cmf.occi.core.util.OcciHelper;
 import org.eclipse.cmf.occi.core.util.OcciRegistry;
 import org.eclipse.emf.common.util.EList;
-
-import org.eclipse.cmf.occi.core.*;
-
-// import org.occiware.clouddesigner.occi.*;
-// import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
 
 /**
  * Created by christophe on 22/04/2017.

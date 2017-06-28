@@ -18,17 +18,17 @@
  */
 package org.occiware.mart.servlet;
 
-import org.occiware.mart.server.facade.*;
 import org.occiware.mart.server.exception.ApplicationConfigurationException;
-import org.occiware.mart.server.model.ConfigurationManager;
+import org.occiware.mart.server.facade.AppParameters;
 import org.occiware.mart.server.parser.HeaderPojo;
-import org.occiware.mart.server.parser.json.JsonOcciParser;
-import org.occiware.mart.servlet.impl.*;
+import org.occiware.mart.servlet.impl.DeleteWorker;
+import org.occiware.mart.servlet.impl.GetWorker;
+import org.occiware.mart.servlet.impl.PostWorker;
+import org.occiware.mart.servlet.impl.PutWorker;
 import org.occiware.mart.servlet.utils.ServletUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PreDestroy;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -132,7 +132,6 @@ public class MainServlet extends HttpServlet {
         resp = worker.executeQuery();
 
     }
-
 
 
 }

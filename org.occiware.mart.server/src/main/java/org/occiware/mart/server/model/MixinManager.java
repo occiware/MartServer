@@ -18,10 +18,8 @@
  */
 package org.occiware.mart.server.model;
 
-import org.eclipse.emf.common.util.EList;
-// import org.occiware.clouddesigner.occi.*;
 import org.eclipse.cmf.occi.core.*;
-
+import org.eclipse.emf.common.util.EList;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
@@ -29,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * Created by christophe on 22/04/2017.
@@ -268,7 +267,6 @@ public class MixinManager {
     }
 
     /**
-     *
      * @param owner
      * @return
      */
@@ -303,7 +301,6 @@ public class MixinManager {
         return mixinsTags;
 
     }
-
 
 
     /**

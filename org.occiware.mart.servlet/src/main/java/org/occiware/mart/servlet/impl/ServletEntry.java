@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -233,6 +232,7 @@ public abstract class ServletEntry {
 
     /**
      * Authenticate with http authentication method like basic, digest or oauth2.
+     *
      * @return the current username to use with core model.
      * @throws AuthenticationException if there is an exception thrown during authentication process.
      */
@@ -281,7 +281,7 @@ public abstract class ServletEntry {
             case "digest":
             case SecurityConstants.AUTHENTICATION_OAUTH2:
             case "bearer":
-            // for oauthv1
+                // for oauthv1
             case "OAuth":
                 parseResponseAuthenticationNotImplemented(authenticationMethod);
                 break;
@@ -295,7 +295,6 @@ public abstract class ServletEntry {
     }
 
     /**
-     *
      * @param values
      * @return
      * @throws AuthenticationException
@@ -326,7 +325,7 @@ public abstract class ServletEntry {
 
             } else {
                 parseResponseNotAuthorized();
-                throw (AuthenticationException)occiResponse.getExceptionThrown();
+                throw (AuthenticationException) occiResponse.getExceptionThrown();
             }
 
         } catch (IOException ex) {

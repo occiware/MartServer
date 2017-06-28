@@ -32,11 +32,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Global occi server tests.
@@ -50,7 +50,6 @@ public class ServerTest {
 
     @BeforeClass
     public static void startJetty() throws Exception {
-
 
 
         serverThread = new Thread(() -> {
@@ -142,17 +141,18 @@ public class ServerTest {
             inputJsonFile = new File(new URI(this.getClass().getResource(path).toString()));
             System.out.println(inputJsonFile.getAbsolutePath());
         } catch (URISyntaxException e) {
-        	Logger.getLogger(ServerTest.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(ServerTest.class.getName()).log(Level.SEVERE, null, e);
         }
         return inputJsonFile;
     }
 
     /**
      * Execute an http query and check if status code response is equals to parameter statusCodeToCheck.
-     * @param httpMethod HttpMethod.GET, .PUT etc.
-     * @param uri uri of the request like http://localhost:9090/mycomputetest/
+     *
+     * @param httpMethod        HttpMethod.GET, .PUT etc.
+     * @param uri               uri of the request like http://localhost:9090/mycomputetest/
      * @param statusCodeToCheck http status code to check on response
-     * @param messageBefore message to display before executing this query.
+     * @param messageBefore     message to display before executing this query.
      * @param contentType
      * @param acceptType
      * @return a content response object of this executed query.

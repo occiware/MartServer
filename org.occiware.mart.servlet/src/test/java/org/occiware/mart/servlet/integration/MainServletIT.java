@@ -29,22 +29,20 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.occiware.mart.server.facade.OCCIApiInputRequest;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.servlet.MainServlet;
 
 import javax.servlet.http.HttpServletResponse;
-
-import static org.junit.Assert.*;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by christophe on 19/04/2017.
@@ -122,7 +120,6 @@ public class MainServletIT {
             testsOnMixinTagsAssociation();
 
             // Test operations on custom location /myresources/*...
-
 
 
         } catch (Exception ex) {
@@ -273,8 +270,8 @@ public class MainServletIT {
 
         // Action invocation stop on this entity.
         response = executeQuery(HttpMethod.POST, "http://localhost:9090/myresources/compute1?action=stop", HttpServletResponse.SC_OK,
-                        "/testjson/integration/update/action_invocation_test.json",
-                        "Trigger action stop on entity - POST method, must be triggered on location : /myresources/compute1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+                "/testjson/integration/update/action_invocation_test.json",
+                "Trigger action stop on entity - POST method, must be triggered on location : /myresources/compute1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Retrieve the entity.
         response = executeQuery(HttpMethod.GET, "http://localhost:9090/myresources/compute1", HttpServletResponse.SC_OK,
@@ -477,7 +474,6 @@ public class MainServletIT {
                 "Recreate a mixin tag named usermixin2 - POST method, this for further testing...", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
 
-
         // Add one other resource to a mixin tag using resource rendering, using entity update method.
         response = executeQuery(HttpMethod.POST, "http://localhost:9090/myresources/mypostcomputes/postcompute2", HttpServletResponse.SC_OK,
                 "/testjson/integration/update/mixintag_add_resource.json",
@@ -569,10 +565,11 @@ public class MainServletIT {
 
     /**
      * Execute an http query and check if status code response is equals to parameter statusCodeToCheck.
-     * @param httpMethod HttpMethod.GET, .PUT etc.
-     * @param uri uri of the request like http://localhost:9090/mycomputetest/
+     *
+     * @param httpMethod        HttpMethod.GET, .PUT etc.
+     * @param uri               uri of the request like http://localhost:9090/mycomputetest/
      * @param statusCodeToCheck http status code to check on response
-     * @param messageBefore message to display before executing this query.
+     * @param messageBefore     message to display before executing this query.
      * @param contentType
      * @param acceptType
      * @return a content response object of this executed query.

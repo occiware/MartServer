@@ -18,10 +18,6 @@
  */
 package org.occiware.mart.server.model;
 
-// import org.occiware.clouddesigner.occi.*;
-// import org.occiware.clouddesigner.occi.util.OcciHelper;
-// import org.occiware.mart.MART;
-
 import org.eclipse.cmf.occi.core.*;
 import org.eclipse.cmf.occi.core.util.OcciHelper;
 import org.eclipse.cmf.occi.core.util.OcciRegistry;
@@ -29,12 +25,9 @@ import org.eclipse.cmf.occi.mart.MART;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.common.util.WrappedException;
-import org.eclipse.emf.ecore.resource.*;
+import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
-import org.eclipse.emf.ecore.resource.impl.URIHandlerImpl;
 import org.eclipse.emf.ecore.util.Diagnostician;
-import org.eclipse.emf.ecore.xmi.XMLResource;
-import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.parser.QueryInterfaceData;
@@ -639,6 +632,7 @@ public class ConfigurationManager {
 
     /**
      * Load all models from files.
+     *
      * @param modelDirectory
      * @throws ConfigurationException
      */
@@ -679,6 +673,7 @@ public class ConfigurationManager {
 
     /**
      * Save all models to files in a directory provided.
+     *
      * @param modelDirectory
      * @throws ConfigurationException
      */
@@ -692,6 +687,7 @@ public class ConfigurationManager {
 
     /**
      * Utility method to list a directory filenames.
+     *
      * @param directory
      * @return
      * @throws IOException
@@ -719,6 +715,7 @@ public class ConfigurationManager {
 
     /**
      * Print to a StringBuilder object the model validation diagnostic.
+     *
      * @param diagnostic
      * @param indent
      * @param sb
@@ -730,7 +727,7 @@ public class ConfigurationManager {
         sb.append("\n");
         Iterator diagChild = diagnostic.getChildren().iterator();
 
-        while(diagChild.hasNext()) {
+        while (diagChild.hasNext()) {
             Diagnostic child = (Diagnostic) diagChild.next();
             printDiagnostic(child, indent + "  ", sb);
         }

@@ -1320,13 +1320,13 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     public OCCIApiResponse loadModelFromDisk() {
 
         try {
-            URI modelDirectoryUri =  new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
+            URI modelDirectoryUri = new URI(AppParameters.getInstance().getConfig().get(AppParameters.KEY_MODEL_DIRECTORY));
 
-            ConfigurationManager.loadModelFromDisk(modelDirectoryUri.toString(),username);
+            ConfigurationManager.loadModelFromDisk(modelDirectoryUri.toString(), username);
             LOGGER.info("Configuration models loaded from disk.");
             occiApiResponse.parseResponseMessage("ok");
 
-        } catch(URISyntaxException | ConfigurationException ex) {
+        } catch (URISyntaxException | ConfigurationException ex) {
             parseConfigurationExceptionMessageOutput(ex.getMessage());
         }
         return occiApiResponse;
@@ -1346,7 +1346,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             ConfigurationManager.saveModelToDisk(modelDirectoryUri.toString(), username);
             LOGGER.info("Model saved to disk on : " + modelDirectoryUri.toString());
             occiApiResponse.parseResponseMessage("ok");
-        } catch(URISyntaxException | ConfigurationException ex) {
+        } catch (URISyntaxException | ConfigurationException ex) {
             LOGGER.error(ex.getMessage());
             parseConfigurationExceptionMessageOutput(ex.getMessage());
         }
@@ -1355,6 +1355,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
     /**
      * Save for all users their model to disk.
+     *
      * @throws ConfigurationException
      */
     @Override
@@ -1365,7 +1366,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             ConfigurationManager.saveAllModelsToDisk(modelDirectoryUri.toString());
             LOGGER.info("All models saved to disk : " + modelDirectoryUri.toString());
             occiApiResponse.parseResponseMessage("ok");
-        } catch(URISyntaxException | ConfigurationException ex) {
+        } catch (URISyntaxException | ConfigurationException ex) {
             LOGGER.error(ex.getMessage());
             parseConfigurationExceptionMessageOutput(ex.getMessage());
         }
@@ -1376,6 +1377,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     /**
      * Load for all users models from disk.
      * Mainly used when MartServer frontend stop services.
+     *
      * @return
      */
     @Override
@@ -1386,7 +1388,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             ConfigurationManager.loadAllModelsFromDisk(modelDirectoryUri.toString());
             LOGGER.info("All models loaded from disk : " + modelDirectoryUri.toString());
             occiApiResponse.parseResponseMessage("ok");
-        } catch(URISyntaxException | ConfigurationException ex) {
+        } catch (URISyntaxException | ConfigurationException ex) {
             parseConfigurationExceptionMessageOutput(ex.getMessage());
         }
         return occiApiResponse;

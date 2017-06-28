@@ -19,6 +19,7 @@
 package org.occiware.mart.server.parser;
 
 // import org.occiware.clouddesigner.occi.Entity;
+
 import org.eclipse.cmf.occi.core.Entity;
 import org.occiware.mart.server.exception.ParseOCCIException;
 
@@ -75,6 +76,7 @@ public interface IRequestParser {
 
     public void convertLocationsToOutputDatas(List<String> locations);
 
-    public void setUsername(final String username);
     public String getUsername();
+
+    public void setUsername(final String username);
 }

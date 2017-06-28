@@ -33,7 +33,6 @@ public class UserManagement {
         LOGGER.info("Checking user accreditation");
 
         // 1 - Check if app parameter is set for basic authentication.
-        
 
 
         // Get the user from data store.

@@ -18,8 +18,8 @@
  */
 package org.occiware.mart.server.model.container;
 
-// import org.occiware.clouddesigner.occi.Entity;
 import org.eclipse.cmf.occi.core.Entity;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -137,6 +137,7 @@ public class EntitiesOwner {
 
     /**
      * Format the location to a location like /mylocation/myentity.
+     *
      * @param location a location to format
      * @return a formatted location for entity exclusively.
      */

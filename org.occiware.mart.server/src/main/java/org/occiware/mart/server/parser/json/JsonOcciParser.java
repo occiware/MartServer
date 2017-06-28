@@ -21,12 +21,10 @@ package org.occiware.mart.server.parser.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.cmf.occi.core.*;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
-
-import org.eclipse.cmf.occi.core.*;
-
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.model.ConfigurationManager;
@@ -802,7 +800,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
     /**
      * Usage with render json interface, for default value rendering.
      *
-     * @param value value to be converted to number.
+     * @param value    value to be converted to number.
      * @param dataType DataType instance of the value.
      * @return a new number converted from value and dataType parameters.
      */
@@ -835,7 +833,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
                     break;
                 case NumericTypeEnum.BIG_DECIMAL_VALUE:
                     number = new BigDecimal(value);
-                   break;
+                    break;
             }
             return number;
         } catch (NumberFormatException ex) {
@@ -887,7 +885,7 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         if (entities == null || entities.isEmpty()) {
-           return EMPTY_JSON;
+            return EMPTY_JSON;
         }
         String response;
         OcciMainJson mainJson = new OcciMainJson();
