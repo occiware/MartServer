@@ -40,6 +40,7 @@ public class Constants {
 
     public static final String PATH_SEPARATOR = "/";
     public static final String CRLF = "\r\n";
+    public static final String TAB = "\t";
     public static final String MEDIA_TYPE_TEXT_OCCI = "text/occi";
 
     public static final String MEDIA_TYPE_TEXT_URI_LIST = "text/uri-list";

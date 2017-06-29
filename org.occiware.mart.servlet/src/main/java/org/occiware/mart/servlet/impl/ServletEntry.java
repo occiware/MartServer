@@ -161,7 +161,7 @@ public abstract class ServletEntry {
 
         // Default values.
         if (contentType == null || contentType.isEmpty()) {
-            contentType = Constants.MEDIA_TYPE_JSON;
+            contentType = Constants.MEDIA_TYPE_TEXT_PLAIN;
         }
         if (acceptType == null || acceptType.isEmpty() || acceptType.equals("*/*")) {
             // Default to MEDIA_TYPE_JSON.
@@ -170,8 +170,8 @@ public abstract class ServletEntry {
 
 
         String username = "anonymous";
-
-
+        LOGGER.info("Input parser implement: " + contentType);
+        LOGGER.info("Output parser implement : " + acceptType);
         IRequestParser outputParser = ParserFactory.build(acceptType, username);
 
         try {

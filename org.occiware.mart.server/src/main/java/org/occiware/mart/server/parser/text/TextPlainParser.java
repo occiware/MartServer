@@ -401,15 +401,21 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         StringBuilder sb = new StringBuilder();
         for (Kind kind : kinds) {
             sb.append(Constants.CATEGORY).append(": ").append(asCategory(kind, true));
+
             for (Action action : kind.getActions()) {
-                sb.append(Constants.CATEGORY).append(": ").append(asString(action));
+                sb.append(Constants.CRLF).append("").append(Constants.CATEGORY).append(": ").append(asString(action));
             }
+            sb.append(Constants.CRLF);
         }
         for (Mixin mixin : mixins) {
             sb.append(Constants.CATEGORY).append(": ").append(asCategory(mixin, true));
             for (Action action : mixin.getActions()) {
-                sb.append(Constants.CATEGORY).append(": ").append(asString(action));
+                sb.append(Constants.CRLF).append(Constants.CATEGORY).append(": ").append(asString(action));
             }
+            /*if (!sb.toString().endsWith(";")) {
+                sb.append(";");
+            }*/
+            sb.append(Constants.CRLF);
         }
         return sb;
     }
@@ -425,16 +431,25 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     private StringBuilder asCategory(Kind kind, boolean detailed) {
         StringBuilder sb = new StringBuilder();
         sb.append(kind.getTerm())
-                .append(";scheme=\"").append(kind.getScheme()).append("\";class=\"kind\"");
+                .append(";scheme=\"").append(kind.getScheme()).append("\"");
+        sb.append(";class=\"kind\"");
         if (detailed) {
             sb.append(";title=\"").append(kind.getTitle()).append('\"');
             Kind parent = kind.getParent();
             if (parent != null) {
                 sb.append(";rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"');
             }
-            sb.append(";location=\"").append(ConfigurationManager.getLocation(kind)).append('\"');
+
+/*            if (!kind.getAttributes().isEmpty()) {
+                sb.append(Constants.CRLF).append(Constants.TAB);
+            }*/
             appendAttributes(sb, kind.getAttributes());
+            /*if (!kind.getActions().isEmpty()) {
+                sb.append(Constants.CRLF).append(Constants.TAB);
+            }*/
             appendActions(sb, kind.getActions());
+            sb.append(";location=\"").append(ConfigurationManager.getLocation(kind).get()).append('\"');
+
         }
         return sb;
     }
@@ -449,7 +464,8 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     private StringBuilder asCategory(Mixin mixin, boolean detailed) {
         StringBuilder sb = new StringBuilder();
         sb.append(mixin.getTerm())
-                .append(";scheme=\"").append(mixin.getScheme()).append("\";class=\"mixin\"");
+                .append(";scheme=\"").append(mixin.getScheme()).append("\"");
+        sb.append(";class=\"mixin\"");
         if (detailed) {
             sb.append(";title=\"").append(mixin.getTitle()).append('\"');
             List<Mixin> mixins = mixin.getDepends();
@@ -462,9 +478,15 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
                 }
                 sb.append('\"');
             }
-            sb.append(";location=\"").append(ConfigurationManager.getLocation(mixin)).append('\"');
+           /* if (!mixin.getAttributes().isEmpty()) {
+                sb.append(Constants.CRLF).append(Constants.TAB);
+            }*/
             appendAttributes(sb, mixin.getAttributes());
+            /*if (!mixin.getActions().isEmpty()) {
+                sb.append(Constants.CRLF).append(Constants.TAB);
+            }*/
             appendActions(sb, mixin.getActions());
+            sb.append(";location=\"").append(ConfigurationManager.getLocation(mixin).get()).append('\"');
         }
         return sb;
     }
@@ -472,9 +494,14 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     private String asString(Action action) {
         StringBuilder sb = new StringBuilder();
         sb.append(action.getTerm())
-                .append(";scheme=\"").append(action.getScheme()).append("\";class=\"action\"")
-                .append(";title=\"").append(action.getTitle()).append('\"');
+                .append(";scheme=\"").append(action.getScheme()).append("\"");
+        sb.append(";class=\"action\"");
+        sb.append(";title=\"").append(action.getTitle()).append('\"');
+        /*if (!action.getAttributes().isEmpty()) {
+            sb.append(Constants.CRLF).append(Constants.TAB);
+        }*/
         appendAttributes(sb, action.getAttributes());
+
         return sb.toString();
     }
 
