@@ -146,7 +146,7 @@ public abstract class ServletEntry {
 
     public HttpServletResponse buildInputDatas() {
 
-        String contextRoot = serverURI.getPath();
+        String contextRoot = serverURI.toString();
         LOGGER.debug("Context root : " + contextRoot);
         LOGGER.debug("URI relative path: " + path);
 
@@ -193,6 +193,8 @@ public abstract class ServletEntry {
         IRequestParser inputParser = ParserFactory.build(contentType, username);
         outputParser.setUsername(username);
 
+        inputParser.setServerURI(serverURI);
+        outputParser.setServerURI(serverURI);
         // Create occiRequest objects.
         occiResponse.setUsername(username);
         occiRequest = new OCCIServletInputRequest(occiResponse, contentType, username, httpRequest, headers, this.getRequestParameters(), inputParser);

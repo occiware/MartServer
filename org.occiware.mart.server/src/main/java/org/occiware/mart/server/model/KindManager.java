@@ -189,4 +189,18 @@ public class KindManager {
         }
         return allKinds;
     }
+
+    /**
+     * Return all attributes for an entity kind (main attributes).
+     * @param kind
+     * @return
+     */
+    public static Collection<Attribute> getKindAttributes(final Kind kind) {
+        List<Attribute> attributes = new ArrayList<>();
+        if (kind != null) {
+            ConfigurationManager.addAllAttributes(attributes, kind);
+        }
+        return attributes;
+    }
+
 }

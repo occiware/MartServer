@@ -299,8 +299,12 @@ public class ConfigurationManager {
         List<Kind> kinds = KindManager.getAllConfigurationKind(username);
         List<Mixin> mixins = MixinManager.getAllConfigurationMixins(username);
         if (categoryFilter != null) {
+            boolean fullSchemeTerm = false;
             Iterator it = kinds.iterator();
             Iterator itMix = mixins.iterator();
+            if (categoryFilter.contains("#")) {
+                fullSchemeTerm = true;
+            }
             List<Action> actions;
             boolean hasActionFilter = false;
             while (it.hasNext()) {
@@ -309,20 +313,53 @@ public class ConfigurationManager {
                 // Check the action kind, if action found for this kind, we keep it.
                 actions = kindTmp.getActions();
                 for (Action actionTmp : actions) {
-                    if (actionTmp.getTerm().equalsIgnoreCase(categoryFilter)) {
-                        hasActionFilter = true;
-                        break;
+                    if (!fullSchemeTerm) {
+                        if (actionTmp.getTerm().equalsIgnoreCase(categoryFilter)) {
+                            hasActionFilter = true;
+                            break;
+                        }
+                    } else {
+                        if ((actionTmp.getScheme() + actionTmp.getTerm()).equalsIgnoreCase(categoryFilter)) {
+                            hasActionFilter = true;
+                        }
+                    }
+
+                }
+                if (!fullSchemeTerm) {
+                    if (!kindTmp.getTerm().equalsIgnoreCase(categoryFilter) && !hasActionFilter) {
+                        it.remove();
+                    }
+                } else {
+                    if (!(kindTmp.getScheme() + kindTmp.getTerm()).equalsIgnoreCase(categoryFilter) && !hasActionFilter) {
+                        it.remove();
                     }
                 }
-
-                if (!kindTmp.getTerm().equalsIgnoreCase(categoryFilter) && !hasActionFilter) {
-                    it.remove();
-                }
             }
+
             while (itMix.hasNext()) {
                 Mixin mixinTmp = (Mixin) itMix.next();
-                if (!mixinTmp.getTerm().equalsIgnoreCase(categoryFilter)) {
-                    itMix.remove();
+                actions = mixinTmp.getActions();
+                for (Action actionTmp : actions) {
+                    if (!fullSchemeTerm) {
+                        if (actionTmp.getTerm().equalsIgnoreCase(categoryFilter)) {
+                            hasActionFilter = true;
+                            break;
+                        }
+                    } else {
+                        if ((actionTmp.getScheme() + actionTmp.getTerm()).equalsIgnoreCase(categoryFilter)) {
+                            hasActionFilter = true;
+                        }
+                    }
+
+                }
+                if (!fullSchemeTerm) {
+                    if (!mixinTmp.getTerm().equalsIgnoreCase(categoryFilter) && !hasActionFilter) {
+                        itMix.remove();
+                    }
+                } else {
+                    if (!(mixinTmp.getScheme() + mixinTmp.getTerm()).equalsIgnoreCase(categoryFilter) && !hasActionFilter) {
+                        itMix.remove();
+                    }
                 }
             }
         }

@@ -19,7 +19,12 @@
 package org.occiware.mart.server.model;
 
 import org.eclipse.cmf.occi.core.*;
+import org.eclipse.cmf.occi.core.util.Occi2Ecore;
+import org.eclipse.cmf.occi.core.util.OcciHelper;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EAttribute;
+import org.eclipse.emf.ecore.EDataType;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
@@ -393,6 +398,7 @@ public class MixinManager {
                 mixinBase.setMixin(mixin);
                 mixinBase.setEntity(entity);
                 entity.getParts().add(mixinBase);
+                mixinBase.getAttributes();
             }
         }
     }
@@ -713,4 +719,37 @@ public class MixinManager {
         userMixinLocationMap.clear();
 
     }
+
+    /**
+     * Get The datatype of an attribute from a list of mixins.
+     *
+     * @param mixinBase   a mixin base object.
+     * @param attrName the name of the attribute
+     * @return a dataType or an optional empty ==> NEVER null values.
+     */
+    public static Optional<EDataType> getEAttributeType(final MixinBase mixinBase, final String attrName) {
+        EDataType eDataType = null;
+        mixinBase.getAttributes();
+        String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
+        final EStructuralFeature eStructuralFeature = mixinBase.eClass().getEStructuralFeature(eAttributeName);
+        if (eStructuralFeature != null) {
+            if ((eStructuralFeature instanceof EAttribute)) {
+                // Obtain the attribute type.
+                eDataType = ((EAttribute) eStructuralFeature).getEAttributeType();
+            }
+        }
+        return Optional.ofNullable(eDataType);
+    }
+
+    /**
+     *
+     * @param mixinBase
+     * @return
+     */
+    public static Collection<Attribute> getAllMixinAttribute(MixinBase mixinBase) {
+        List<Attribute> attributes = new ArrayList<>();
+        ConfigurationManager.addAllAttributes(attributes, mixinBase.getMixin());
+        return attributes;
+    }
+
 }

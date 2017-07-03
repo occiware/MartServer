@@ -23,6 +23,7 @@ package org.occiware.mart.server.parser;
 import org.eclipse.cmf.occi.core.Entity;
 import org.occiware.mart.server.exception.ParseOCCIException;
 
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -79,4 +80,8 @@ public interface IRequestParser {
     public String getUsername();
 
     public void setUsername(final String username);
+
+    URI getServerURI();
+
+    void setServerURI(URI serverURI);
 }

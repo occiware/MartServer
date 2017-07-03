@@ -172,6 +172,7 @@ public class PostWorker extends ServletEntry {
                 }
             }
             occiRequest.createEntities(datas);
+            resp.setStatus(HttpServletResponse.SC_CREATED);
             return resp;
         }
 

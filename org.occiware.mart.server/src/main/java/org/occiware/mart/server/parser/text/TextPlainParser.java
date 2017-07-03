@@ -52,9 +52,24 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         try (BufferedReader reader = new BufferedReader(new StringReader(content))) {
             // Read the first line containing a category.
             String line = reader.readLine();
-            LOGGER.debug("Content received : ");
-            LOGGER.debug("line=" + line);
-            Kind kind = parseInputKind(line);
+            LOGGER.info("Content received : " + content);
+            LOGGER.info("line=" + line);
+
+            // For kind and action category.
+            Category category;
+            Kind kind = null;
+            Action action = null;
+            try {
+                category = parseInputCategories(line);
+                if (category instanceof Kind) {
+                    kind = (Kind)category;
+                } else {
+                    action = (Action)category;
+                }
+            } catch (ParseOCCIException ex) {
+                LOGGER.warn("No kind / no action declared on input request data content.");
+            }
+
 
             String lastLineRead = line;
 
@@ -67,7 +82,12 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
             }
 
             OCCIRequestData data = new OCCIRequestData();
-            data.setKind(kind.getScheme() + kind.getTerm());
+            if (kind != null) {
+                data.setKind(kind.getScheme() + kind.getTerm());
+            }
+            if (action != null) {
+                data.setAction(action.getScheme() + action.getTerm());
+            }
             data.setMixins(mixinsStr);
 
             // Parse attributes and x occi location fields.
@@ -98,6 +118,7 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         Map<String, Object> resultMap = new HashMap<>();
         boolean isXocciAttribute;
         boolean isXocciLocation;
+        LOGGER.info("Reading attributes input in text/plain parser: " + line);
         while (line != null) {
             isXocciAttribute = false;
             isXocciLocation = false;
@@ -146,10 +167,12 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
                 if (!location.startsWith("/")) {
                     location = "/" + location;
                 }
+
                 data.getXocciLocations().add(location);
             }
             line = reader.readLine();
             LOGGER.debug("line=" + line);
+            LOGGER.info("Reading next line : " + line);
         }
 
         return resultMap;
@@ -220,7 +243,7 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
      * @return
      * @throws ParseOCCIException
      */
-    private Kind parseInputKind(final String line) throws ParseOCCIException {
+    private Category parseInputCategories(final String line) throws ParseOCCIException {
         String message;
         if (line == null) {
             message = "No category provided !!!";
@@ -239,24 +262,33 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         String scheme = matcher.group(Constants.GROUP_SCHEME);
         String categoryClass = matcher.group(Constants.GROUP_CLASS);
 
-        Kind kind;
+        Category cat;
         switch (categoryClass) {
             case Constants.CLASS_KIND:
                 Optional<Kind> kindOpt = KindManager.findKindFromExtension(scheme + term, getUsername());
                 if (!kindOpt.isPresent()) {
-                    message = "kind " + scheme + term + " not found!";
+                    message = "kind: " + scheme + term + " not found!";
                     LOGGER.error(message);
                     throw new ParseOCCIException(message);
                 }
-                kind = kindOpt.get();
+                cat = kindOpt.get();
+                break;
+            case Constants.CLASS_ACTION:
+                Optional<Action> actionOpt = ConfigurationManager.findActionOnExtensions(scheme + term, getUsername());
+                if (!actionOpt.isPresent()) {
+                    message = "action: " + scheme + term + " not found!";
+                    LOGGER.error(message);
+                    throw new ParseOCCIException(message);
+                }
+                cat = actionOpt.get();
                 break;
             default:
-                message = "The category class : " + categoryClass + " is not a kind";
+                message = "The category class : " + categoryClass + " is not a kind or an action";
                 LOGGER.error(message);
                 throw new ParseOCCIException(message);
         }
 
-        return kind;
+        return cat;
     }
 
 
@@ -289,8 +321,15 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     public String renderOutputEntitiesLocations(List<String> locations) throws ParseOCCIException {
         String render;
         StringBuilder sb = new StringBuilder();
+        String absLocation;
         for (String location : locations) {
-            sb.append(Constants.X_OCCI_LOCATION).append(": ").append(location);
+
+            if (getServerURI() != null) {
+                absLocation = getServerURI().toString() + location;
+            } else {
+                absLocation = location;
+            }
+            sb.append(Constants.X_OCCI_LOCATION).append(": ").append(absLocation);
         }
         render = sb.toString();
 
@@ -313,10 +352,13 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         // Render only locations.
         String location;
         for (Entity entity : entities) {
-            location = EntityManager.getLocation(entity, getUsername());
+            if (getServerURI() != null) {
+                location = getServerURI().toString() + EntityManager.getLocation(entity, getUsername());
+            } else {
+                location = EntityManager.getLocation(entity, getUsername());
+            }
             sb.append(Constants.X_OCCI_LOCATION).append(": ").append(location).append(Constants.CRLF);
         }
-
         render = sb.toString();
 
         super.convertEntitiesToOutputData(entities);

@@ -119,6 +119,9 @@ public class PutWorker extends ServletEntry {
             }
             // This is an entity creation query.
             occiRequest.createEntity(data.getEntityTitle(), data.getEntitySummary(), data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
+            resp.setStatus(HttpServletResponse.SC_CREATED);
+            String locationRender = data.getLocation().substring(0, data.getLocation().length() - 1); // This is an entity remove ending slash.
+            resp.addHeader("Location", getServerURI().toString() + locationRender);
             return resp;
         }
 
