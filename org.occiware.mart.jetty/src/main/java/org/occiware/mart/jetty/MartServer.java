@@ -103,9 +103,18 @@ public class MartServer {
             server.setConnectors(new Connector[]{connectors[0], sslConnector});
         }
 
-
         try {
             System.out.println("Starting OCCI REST MartServer...");
+            // appParameters.addPluginsToClasspath();
+//            AppParameters appParameters = AppParameters.getInstance();
+//            try {
+//                LOGGER.info("plugins loader invoked");
+//                // appParameters.addPluginsUsingOSGI();
+//                appParameters.addPluginsToClasspath();
+//            } catch (Exception ex) {
+//                LOGGER.error("Plugins not installed : " + ex.getClass().getName() + " --> " + ex.getMessage());
+//                ex.printStackTrace();
+//            }
             server.start();
             serverStarted = true;
             server.join();
@@ -158,4 +167,6 @@ public class MartServer {
     public static boolean isServerStarted() {
         return serverStarted;
     }
+
+
 }

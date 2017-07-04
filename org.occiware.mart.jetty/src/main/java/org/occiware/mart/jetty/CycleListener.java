@@ -19,12 +19,17 @@
 package org.occiware.mart.jetty;
 
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.occiware.mart.server.facade.AppParameters;
 import org.occiware.mart.servlet.impl.IniteServletContextListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by cgourdin on 27/06/2017.
  */
 public class CycleListener implements LifeCycle.Listener {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CycleListener.class);
 
     @Override
     public void lifeCycleStarting(LifeCycle event) {
@@ -33,19 +38,19 @@ public class CycleListener implements LifeCycle.Listener {
 
     @Override
     public void lifeCycleStarted(LifeCycle event) {
-        System.out.println("MartServer is started !");
+        LOGGER.info("MartServer is started !");
         loadModels();
 
     }
 
     @Override
     public void lifeCycleFailure(LifeCycle event, Throwable cause) {
-        System.err.println("server failure : " + cause.getMessage());
+        LOGGER.error("server failure : " + cause.getMessage());
     }
 
     @Override
     public void lifeCycleStopping(LifeCycle event) {
-        System.err.println("MartServer is stopping !");
+        LOGGER.info("MartServer is stopping !");
         saveModels();
     }
 

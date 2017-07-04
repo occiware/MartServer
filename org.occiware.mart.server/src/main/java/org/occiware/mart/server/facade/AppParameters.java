@@ -19,6 +19,7 @@
 package org.occiware.mart.server.facade;
 
 import org.occiware.mart.server.exception.ApplicationConfigurationException;
+import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,12 +27,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.*;
+import java.util.*;
 
 /**
  * Created by cgourdin on 26/06/2017.
@@ -53,9 +54,12 @@ public class AppParameters {
     public static final String KEY_ADMIN_PASSWORD = "admin.password";
     public static final String KEY_SAVE_ON_TERMINATE = "server.save.onterminate";
     public static final String KEY_LOAD_ON_START = "server.load.onstart";
+    public static final String KEY_PLUGINS_DIRECTORY = "server.plugins.directory";
     private static final Logger LOGGER = LoggerFactory.getLogger(AppParameters.class);
     private static final String DEFAULT_LOG_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "logs" + FILE_SEPARATOR;
     private static final String DEFAULT_MODEL_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "models" + FILE_SEPARATOR;
+    private static final String DEFAULT_PLUGINS_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "martserver-plugins" + FILE_SEPARATOR;
+
     private HashMap<String, String> config = new HashMap<>();
     private boolean configLoaded = false;
 
@@ -285,6 +289,48 @@ public class AppParameters {
                 config.put(KEY_LOAD_ON_START, "false");
             }
 
+            // Plugins directory for extension models and connector, must be jar file format.
+            if (prop.containsKey(KEY_PLUGINS_DIRECTORY)) {
+                String pluginPath = prop.getProperty(KEY_PLUGINS_DIRECTORY);
+                if (pluginPath == null || pluginPath.trim().isEmpty()) {
+                    pluginPath = DEFAULT_PLUGINS_DIRECTORY;
+                }
+
+                Path pluginDir = new File(pluginPath).toPath();
+                if (Files.exists(pluginDir) && Files.isDirectory(pluginDir)) {
+                    config.put(KEY_PLUGINS_DIRECTORY, pluginPath);
+
+                } else {
+                    LOGGER.warn("Creating directory for plugins : " + pluginPath);
+                    try {
+                        Files.createDirectory(pluginDir);
+                    } catch (IOException ex) {
+                        LOGGER.error("Error while creating plugins directory : " + ex.getMessage());
+                        throw new ApplicationConfigurationException(ex.getMessage());
+                    }
+                    LOGGER.warn("Directory : " + pluginPath + " doesnt exist on your file system or is not a directory.");
+                    config.put(KEY_PLUGINS_DIRECTORY, pluginPath);
+                }
+            } else {
+                LOGGER.warn("Default to plugins directory : " + DEFAULT_PLUGINS_DIRECTORY);
+                config.put(KEY_PLUGINS_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY);
+                Path pluginDir = new File(DEFAULT_PLUGINS_DIRECTORY).toPath();
+                if (Files.exists(pluginDir) && Files.isDirectory(pluginDir)) {
+                    config.put(KEY_PLUGINS_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY);
+
+                } else {
+                    try {
+                        Files.createDirectory(pluginDir);
+                    } catch (IOException ex) {
+                        LOGGER.error("Error while creating models directory : " + ex.getMessage() + " --> " + DEFAULT_PLUGINS_DIRECTORY);
+                        throw new ApplicationConfigurationException(ex.getMessage() + " --> " + DEFAULT_PLUGINS_DIRECTORY);
+                    }
+                    config.put(KEY_PLUGINS_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY);
+                }
+
+            }
+            LOGGER.info("Plugin directory is : " + config.get(KEY_PLUGINS_DIRECTORY));
+
         } catch (IOException ex) {
             LOGGER.warn("Cannot find configuration file for Mart server, setting default values.");
             LOGGER.error("Error while reading configuration file :--> Exception : " + ex.getClass().getName() + " --> " + ex.getMessage());
@@ -293,8 +339,11 @@ public class AppParameters {
             config.put(KEY_PROTOCOL, "http");
             config.put(KEY_LOG_DIRECTORY, DEFAULT_LOG_DIRECTORY);
             config.put(KEY_MODEL_DIRECTORY, DEFAULT_MODEL_DIRECTORY);
+            config.put(KEY_PLUGINS_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY);
             config.put(KEY_LOAD_ON_START, "false");
             config.put(KEY_SAVE_ON_TERMINATE, "false");
+        } finally {
+            Utils.closeQuietly(in);
         }
         configLoaded = true;
     }
@@ -308,6 +357,77 @@ public class AppParameters {
 
     public boolean isConfigLoaded() {
         return configLoaded;
+    }
+
+    /**
+     * Add plugins directory on classpath. This is not using OSGI.
+     * @throws Exception any exception thrown on reading plugins directory and java exception from jars loaded on classpath.
+     */
+    public void addPluginsToClasspath() throws Exception {
+        //need to do add path to Classpath with reflection since the URLClassLoader.addURL(URL url) method is protected:
+        // Detect in plugins directory...
+        String pluginsFolder = getInstance().getConfig().get(KEY_PLUGINS_DIRECTORY);
+        if (pluginsFolder == null) {
+            LOGGER.warn("plugins directory is not set.");
+            return;
+        }
+        List<String> files = fileList(pluginsFolder);
+        for (String filename : files) {
+            LOGGER.info("Plugin jar detected: " + filename);
+            File f = new File(filename);
+            URI u = f.toURI();
+            URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
+            Class<URLClassLoader> urlClass = URLClassLoader.class;
+            Method method = urlClass.getDeclaredMethod("addURL", new Class[]{URL.class});
+            method.setAccessible(true);
+            method.invoke(urlClassLoader, new Object[]{u.toURL()});
+        }
+    }
+
+
+    /**
+     * Add plugins using OSGI bundle.
+     * @throws Exception
+     */
+    public void addPluginsUsingOSGI() throws Exception {
+        String pluginsFolder = config.get(KEY_PLUGINS_DIRECTORY);
+        if (pluginsFolder == null) {
+            LOGGER.warn("plugins directory is not set.");
+            return;
+        }
+        OSGILoader osgiLoader = OSGILoader.getInstance();
+        List<String> filesStr = fileList(pluginsFolder);
+        List<File> files = new ArrayList<>();
+        for (String filename : filesStr) {
+            LOGGER.info("Plugin jar detected: " + filename);
+            File f = new File(filename);
+            if (f.exists()) {
+                // Install and start osgi bundle.
+                files.add(f);
+            }
+        }
+        if (!files.isEmpty()) {
+            osgiLoader.installPlugins(files);
+        }
+    }
+
+    /**
+     * List files on a local directory (use java nio).
+     * @param directory
+     * @return
+     * @throws Exception
+     */
+    public static List<String> fileList(String directory) throws Exception {
+        List<String> fileNames = new ArrayList<>();
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(directory))) {
+            for (Path path : directoryStream) {
+                fileNames.add(path.toString());
+            }
+        } catch (IOException ex) {
+            System.out.println("Exception thrown : " + ex.getClass().getName() + " , message: " + ex.getMessage());
+            throw ex;
+        }
+        return fileNames;
     }
 
     /**
