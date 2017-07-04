@@ -19,9 +19,13 @@
 package org.occiware.mart.server.model;
 
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EAttribute;
+import org.eclipse.emf.ecore.EDataType;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.occiware.clouddesigner.occi.*;
 
 
+import org.occiware.clouddesigner.occi.util.Occi2Ecore;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
@@ -664,6 +668,38 @@ public class MixinManager {
 
     public static void clearMixinTagsReferences() {
         userMixinLocationMap.clear();
+    }
+
+    /**
+     * Get The datatype of an attribute from a list of mixins.
+     *
+     * @param mixin   a mixin base object.
+     * @param attrName the name of the attribute
+     * @return a dataType or an optional empty ==> NEVER null values.
+     */
+    public static Optional<EDataType> getEAttributeType(final Mixin mixin, final String attrName) {
+        EDataType eDataType = null;
+
+        String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
+        final EStructuralFeature eStructuralFeature = mixin.eClass().getEStructuralFeature(eAttributeName);
+        if (eStructuralFeature != null) {
+            if ((eStructuralFeature instanceof EAttribute)) {
+                // Obtain the attribute type.
+                eDataType = ((EAttribute) eStructuralFeature).getEAttributeType();
+            }
+        }
+        return Optional.ofNullable(eDataType);
+    }
+
+    /**
+     *
+     * @param mixin
+     * @return
+     */
+    public static Collection<Attribute> getAllMixinAttribute(Mixin mixin) {
+        List<Attribute> attributes = new ArrayList<>();
+        ConfigurationManager.addAllAttributes(attributes, mixin);
+        return attributes;
     }
 
 }

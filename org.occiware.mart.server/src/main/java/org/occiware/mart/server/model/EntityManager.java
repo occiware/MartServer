@@ -18,14 +18,14 @@
  */
 package org.occiware.mart.server.model;
 
-import org.occiware.clouddesigner.occi.util.Occi2Ecore;
-import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.occiware.clouddesigner.occi.*;
+import org.occiware.clouddesigner.occi.util.Occi2Ecore;
+import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.model.container.EntitiesOwner;
 import org.occiware.mart.server.utils.CollectionFilter;
@@ -238,24 +238,6 @@ public class EntityManager {
     }
 
     /**
-     * Get all the attributes of an Entity instance, this method will add automatically the attributes if none are initialized on Entity instance.
-     *
-     * @param entity the given Entity instance.
-     * @return all the attributes of the given instance.
-     */
-    private static Collection<Attribute> getAllAttributes(final Entity entity) {
-        List<Attribute> attributes = new ArrayList<>();
-        Kind entityKind = entity.getKind();
-        if (entityKind != null) {
-            ConfigurationManager.addAllAttributes(attributes, entityKind);
-        }
-        for (Mixin mixin : entity.getMixins()) {
-            ConfigurationManager.addAllAttributes(attributes, mixin);
-        }
-        return attributes;
-    }
-
-    /**
      * Find a used extension for an action Kind.
      *
      * @param actionId (action : scheme+term)
@@ -353,9 +335,9 @@ public class EntityManager {
         while (it.hasNext()) {
             Entity entity = it.next();
             if (checkEntityAttributeFilter(filter, entity)
-                        && checkEntityCategoryFilter(categoryFilter, entity)
-                        && checkEntityCategoryFilter(subCategoryFilter, entity)
-                        && checkEntityFilterOnPath(filterOnPath, entity, owner)) {
+                    && checkEntityCategoryFilter(categoryFilter, entity)
+                    && checkEntityCategoryFilter(subCategoryFilter, entity)
+                    && checkEntityFilterOnPath(filterOnPath, entity, owner)) {
                 continue;
             }
             it.remove();
@@ -834,7 +816,7 @@ public class EntityManager {
                 MixinManager.addMixinsToEntity(resource, mixins, owner, false);
 
                 // Add the attributes...
-                updateAttributesToEntity(resource, attributes, owner);
+                updateAttributesToEntity(resource, attributes, owner, true); // create all attributes for the new entity.
 
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + uuid);
@@ -853,7 +835,7 @@ public class EntityManager {
             // Add the mixins if any.
             MixinManager.addMixinsToEntity(resource, mixins, owner, true);
 
-            updateAttributesToEntity(resource, attributes, owner);
+            updateAttributesToEntity(resource, attributes, owner, true);
 
         }
 
@@ -934,7 +916,7 @@ public class EntityManager {
 
                 MixinManager.addMixinsToEntity(link, mixins, owner, false);
 
-                updateAttributesToEntity(link, attributes, owner);
+                updateAttributesToEntity(link, attributes, owner, true);
 
             } catch (Throwable ex) {
                 LOGGER.error("Exception thrown while creating an entity. " + id);
@@ -951,7 +933,7 @@ public class EntityManager {
             link.setTitle(title);
             MixinManager.addMixinsToEntity(link, mixins, owner, true);
 
-            updateAttributesToEntity(link, attributes, owner);
+            updateAttributesToEntity(link, attributes, owner, true);
         }
 
         link.setSource(resourceSrc);
@@ -985,24 +967,110 @@ public class EntityManager {
         for (AttributeState attributeState : attributeStates) {
             attributeNames.add(attributeState.getName());
         }
-        Collection<Attribute> attribs = getAllAttributes(entity);
-        // Iterate over all attributes.
-        for (Attribute attribute : attribs) {
+        // Iterate on kind attributes.
+        Collection<Attribute> attribsKind = KindManager.getKindAttributes(entity.getKind());
+        for (Attribute attribute : attribsKind) {
             String attributeName = attribute.getName();
             if (!attributeNames.contains(attributeName)) {
-                // If not already present create it.
                 AttributeState attributeState = OCCIFactory.eINSTANCE.createAttributeState();
                 attributeState.setName(attributeName);
                 String attributeDefault = attribute.getDefault();
+                // Default value assignement.
                 if (attributeDefault != null) {
                     // if default set then set value.
+                    LOGGER.info("Assigning default value to attribute : " + attributeName + " --< value: " + attributeDefault);
                     attributeState.setValue(attributeDefault);
+                } else {
+                    Optional<EDataType> opteAttrType = null;
+                    opteAttrType = getEAttributeType(entity, attributeName);
+                    // Search default value in datatype object.
+                    if (opteAttrType.isPresent()) {
+                        EDataType eAttrType = opteAttrType.get();
+                        setDefaultValueForDataType(attributeState, eAttrType);
+                    }
                 }
                 // Add it to attribute states of this entity.
                 attributeStates.add(attributeState);
             }
+
+        }
+
+        // Iterate on each mixins attributes and update Entity.
+        for (Mixin mixin : entity.getMixins()) {
+
+            // Update attribute name reference.
+            for (Attribute attribute : mixin.getAttributes()) {
+                if (!attributeNames.contains(attribute.getName())) {
+                    attributeNames.add(attribute.getName());
+                }
+            }
+
+            Collection<Attribute> attribsMixin = MixinManager.getAllMixinAttribute(mixin);
+            for (Attribute attribute : attribsMixin) {
+                String attributeName = attribute.getName();
+
+                if (!attributeNames.contains(attributeName)) {
+                    AttributeState attributeState = OCCIFactory.eINSTANCE.createAttributeState();
+                    attributeState.setName(attributeName);
+                    String attributeDefault = attribute.getDefault();
+                    // Default value assignement.
+                    if (attributeDefault != null) {
+                        // if default set then set value.
+                        LOGGER.info("Mixin : " + mixin.getTerm() + " , assigning default value to attribute : " + attributeName + " --< value: " + attributeDefault);
+                        attributeState.setValue(attributeDefault);
+                    } else {
+                        Optional<EDataType> opteAttrType = null;
+                        opteAttrType = MixinManager.getEAttributeType(mixin, attributeName);
+                        // Search default value in datatype object.
+                        if (opteAttrType.isPresent()) {
+                            EDataType eAttrType = opteAttrType.get();
+                            setDefaultValueForDataType(attributeState, eAttrType);
+                        }
+                    }
+
+                    // Add it to attribute states on this entity.
+                    attributeStates.add(attributeState);
+
+                }
+
+            }
+
         }
     }
+
+    /**
+     * Assign default value for an AttributeState object using ecore cmf datatypes.
+     *
+     * @param attributeState
+     * @param eAttrType
+     */
+    private static void setDefaultValueForDataType(AttributeState attributeState, EDataType eAttrType) {
+        Object objDefault = null;
+        if (eAttrType instanceof EEnum || eAttrType.getInstanceClass() == String.class) {
+            // value with quote only for String and EEnum type.
+            objDefault = eAttrType.getDefaultValue();
+
+        } else {
+            objDefault = eAttrType.getDefaultValue();
+            if (objDefault != null) {
+                try {
+                    Number num = (Number) objDefault;
+                    objDefault = num.toString();
+                } catch (NumberFormatException ex) {
+                }
+            } else {
+                // Assign 0.
+                objDefault = 0;
+            }
+        }
+        if (objDefault != null) {
+            String attributeDefault = objDefault.toString();
+            LOGGER.warn("Default for the attribute : " + attributeState.getName() + " found on datatype: " + eAttrType.getName() + " --< value: " + attributeDefault);
+            attributeState.setValue(attributeDefault);
+        }
+
+    }
+
 
     /**
      * Update / add attributes to entity.
@@ -1010,20 +1078,39 @@ public class EntityManager {
      * @param entity     entity to update.
      * @param attributes Attributes to update.
      * @param owner      owner of the entity to update.
+     * @param fullUpdateMode true if this method is called by addResourceToConfiguration when creating a new entity or full update it.
      * @return Updated entity object, never null.
      */
-    public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes, final String owner) {
+    public static Entity updateAttributesToEntity(Entity entity, Map<String, String> attributes, final String owner, final boolean fullUpdateMode) {
 
-        if (attributes == null || attributes.isEmpty()) {
-            // TODO : Check if concrete object attributes are deleted, or update MART with a remove attributes method.
-            entity.getAttributes().clear();
-            return entity;
+        List<AttributeState> entityAttributes = entity.getAttributes();
+
+        if (fullUpdateMode) {
+            LOGGER.info("Create / full update and add all attributes on entity : " + entity.getTitle());
+        } else {
+            LOGGER.info("Partial attributes update.");
         }
+
+        LOGGER.info("Attributes found on entity before updating them : ");
+        for (AttributeState attrState : entityAttributes) {
+            LOGGER.info("Attribute found : " + attrState.getName() + " --> " + attrState.getValue());
+        }
+
+        // Only on full update mode.
+        if (fullUpdateMode && (attributes == null || attributes.isEmpty())) {
+            entity.getAttributes().clear();
+        }
+
         String attrName;
         String attrValue;
 
         // Ensure that all attributes are in the entity AttributeState list object.
         addAllAttributes(entity);
+
+        if (attributes == null) {
+            LOGGER.info("There is no specified attributes to update");
+            return entity;
+        }
 
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
             attrName = entry.getKey();
@@ -1375,7 +1462,7 @@ public class EntityManager {
                                 Number num = Utils.parseNumber(val, eAttrType.getInstanceClass());
                                 attributes.put(key, num);
                             } catch (NumberFormatException ex) {
-                                LOGGER.warn("Cannot convert a value : " + val + " to an emf datatype : " + eAttrType.getName());
+                                LOGGER.debug("Cannot convert a value : " + val + " to an emf datatype : " + eAttrType.getName());
                                 attributes.put(key, val);
                             }
                         }
@@ -1581,6 +1668,7 @@ public class EntityManager {
 
     /**
      * Update all entity in owner's configuration on mapped objects (cross references).
+     *
      * @param owner
      */
     public static void updateAllReferencesOnEntitiesOwner(final String owner) {
@@ -1607,6 +1695,7 @@ public class EntityManager {
 
     /**
      * Update all mapped reference for an entity.
+     *
      * @param entity
      * @param owner
      */

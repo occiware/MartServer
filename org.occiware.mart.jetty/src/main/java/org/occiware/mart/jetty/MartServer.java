@@ -131,7 +131,7 @@ public class MartServer {
         // setDefaultServerConfigValues();
         String portStr = parameters.getConfig().get(AppParameters.KEY_PORT);
         String httpsPortStr = parameters.getConfig().get(AppParameters.KEY_HTTPS_PORT);
-        httpProtocol = parameters.getConfig().get(AppParameters.KEY_HTTPS_PORT);
+        httpProtocol = parameters.getConfig().get(AppParameters.KEY_PROTOCOL);
         logDirectoryPath = parameters.getConfig().get(AppParameters.KEY_LOG_DIRECTORY);
         try {
             port = Integer.valueOf(portStr);

@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -147,7 +146,7 @@ public abstract class ServletEntry {
 
     public HttpServletResponse buildInputDatas() {
 
-        String contextRoot = serverURI.getPath();
+        String contextRoot = serverURI.toString();
         LOGGER.debug("Context root : " + contextRoot);
         LOGGER.debug("URI relative path: " + path);
 
@@ -162,7 +161,7 @@ public abstract class ServletEntry {
 
         // Default values.
         if (contentType == null || contentType.isEmpty()) {
-            contentType = Constants.MEDIA_TYPE_JSON;
+            contentType = Constants.MEDIA_TYPE_TEXT_PLAIN;
         }
         if (acceptType == null || acceptType.isEmpty() || acceptType.equals("*/*")) {
             // Default to MEDIA_TYPE_JSON.
@@ -171,8 +170,8 @@ public abstract class ServletEntry {
 
 
         String username = "anonymous";
-
-
+        LOGGER.info("Input parser implement: " + contentType);
+        LOGGER.info("Output parser implement : " + acceptType);
         IRequestParser outputParser = ParserFactory.build(acceptType, username);
 
         try {
@@ -194,6 +193,8 @@ public abstract class ServletEntry {
         IRequestParser inputParser = ParserFactory.build(contentType, username);
         outputParser.setUsername(username);
 
+        inputParser.setServerURI(serverURI);
+        outputParser.setServerURI(serverURI);
         // Create occiRequest objects.
         occiResponse.setUsername(username);
         occiRequest = new OCCIServletInputRequest(occiResponse, contentType, username, httpRequest, headers, this.getRequestParameters(), inputParser);
@@ -233,6 +234,7 @@ public abstract class ServletEntry {
 
     /**
      * Authenticate with http authentication method like basic, digest or oauth2.
+     *
      * @return the current username to use with core model.
      * @throws AuthenticationException if there is an exception thrown during authentication process.
      */
@@ -295,7 +297,6 @@ public abstract class ServletEntry {
     }
 
     /**
-     *
      * @param values
      * @return
      * @throws AuthenticationException
@@ -326,7 +327,7 @@ public abstract class ServletEntry {
 
             } else {
                 parseResponseNotAuthorized();
-                throw (AuthenticationException)occiResponse.getExceptionThrown();
+                throw (AuthenticationException) occiResponse.getExceptionThrown();
             }
 
         } catch (IOException ex) {

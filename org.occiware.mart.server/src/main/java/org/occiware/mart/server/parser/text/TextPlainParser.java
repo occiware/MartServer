@@ -52,9 +52,24 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         try (BufferedReader reader = new BufferedReader(new StringReader(content))) {
             // Read the first line containing a category.
             String line = reader.readLine();
-            LOGGER.debug("Content received : ");
-            LOGGER.debug("line=" + line);
-            Kind kind = parseInputKind(line);
+            LOGGER.info("Content received : " + content);
+            LOGGER.info("line=" + line);
+
+            // For kind and action category.
+            Category category;
+            Kind kind = null;
+            Action action = null;
+            try {
+                category = parseInputCategories(line);
+                if (category instanceof Kind) {
+                    kind = (Kind)category;
+                } else {
+                    action = (Action)category;
+                }
+            } catch (ParseOCCIException ex) {
+                LOGGER.warn("No kind / no action declared on input request data content.");
+            }
+
 
             String lastLineRead = line;
 
@@ -67,7 +82,12 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
             }
 
             OCCIRequestData data = new OCCIRequestData();
-            data.setKind(kind.getScheme() + kind.getTerm());
+            if (kind != null) {
+                data.setKind(kind.getScheme() + kind.getTerm());
+            }
+            if (action != null) {
+                data.setAction(action.getScheme() + action.getTerm());
+            }
             data.setMixins(mixinsStr);
 
             // Parse attributes and x occi location fields.
@@ -98,6 +118,7 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         Map<String, Object> resultMap = new HashMap<>();
         boolean isXocciAttribute;
         boolean isXocciLocation;
+        LOGGER.info("Reading attributes input in text/plain parser: " + line);
         while (line != null) {
             isXocciAttribute = false;
             isXocciLocation = false;
@@ -146,10 +167,12 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
                 if (!location.startsWith("/")) {
                     location = "/" + location;
                 }
+
                 data.getXocciLocations().add(location);
             }
             line = reader.readLine();
             LOGGER.debug("line=" + line);
+            LOGGER.info("Reading next line : " + line);
         }
 
         return resultMap;
@@ -220,7 +243,7 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
      * @return
      * @throws ParseOCCIException
      */
-    private Kind parseInputKind(final String line) throws ParseOCCIException {
+    private Category parseInputCategories(final String line) throws ParseOCCIException {
         String message;
         if (line == null) {
             message = "No category provided !!!";
@@ -239,24 +262,33 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         String scheme = matcher.group(Constants.GROUP_SCHEME);
         String categoryClass = matcher.group(Constants.GROUP_CLASS);
 
-        Kind kind;
+        Category cat;
         switch (categoryClass) {
             case Constants.CLASS_KIND:
                 Optional<Kind> kindOpt = KindManager.findKindFromExtension(scheme + term, getUsername());
                 if (!kindOpt.isPresent()) {
-                    message = "kind " + scheme + term + " not found!";
+                    message = "kind: " + scheme + term + " not found!";
                     LOGGER.error(message);
                     throw new ParseOCCIException(message);
                 }
-                kind = kindOpt.get();
+                cat = kindOpt.get();
+                break;
+            case Constants.CLASS_ACTION:
+                Optional<Action> actionOpt = ConfigurationManager.findActionOnExtensions(scheme + term, getUsername());
+                if (!actionOpt.isPresent()) {
+                    message = "action: " + scheme + term + " not found!";
+                    LOGGER.error(message);
+                    throw new ParseOCCIException(message);
+                }
+                cat = actionOpt.get();
                 break;
             default:
-                message = "The category class : " + categoryClass + " is not a kind";
+                message = "The category class : " + categoryClass + " is not a kind or an action";
                 LOGGER.error(message);
                 throw new ParseOCCIException(message);
         }
 
-        return kind;
+        return cat;
     }
 
 
@@ -289,8 +321,15 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     public String renderOutputEntitiesLocations(List<String> locations) throws ParseOCCIException {
         String render;
         StringBuilder sb = new StringBuilder();
+        String absLocation;
         for (String location : locations) {
-            sb.append(Constants.X_OCCI_LOCATION).append(": ").append(location);
+
+            if (getServerURI() != null) {
+                absLocation = getServerURI().toString() + location;
+            } else {
+                absLocation = location;
+            }
+            sb.append(Constants.X_OCCI_LOCATION).append(": ").append(absLocation);
         }
         render = sb.toString();
 
@@ -313,10 +352,13 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         // Render only locations.
         String location;
         for (Entity entity : entities) {
-            location = EntityManager.getLocation(entity, getUsername());
+            if (getServerURI() != null) {
+                location = getServerURI().toString() + EntityManager.getLocation(entity, getUsername());
+            } else {
+                location = EntityManager.getLocation(entity, getUsername());
+            }
             sb.append(Constants.X_OCCI_LOCATION).append(": ").append(location).append(Constants.CRLF);
         }
-
         render = sb.toString();
 
         super.convertEntitiesToOutputData(entities);
@@ -401,15 +443,21 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
         StringBuilder sb = new StringBuilder();
         for (Kind kind : kinds) {
             sb.append(Constants.CATEGORY).append(": ").append(asCategory(kind, true));
+
             for (Action action : kind.getActions()) {
-                sb.append(Constants.CATEGORY).append(": ").append(asString(action));
+                sb.append(Constants.CRLF).append("").append(Constants.CATEGORY).append(": ").append(asString(action));
             }
+            sb.append(Constants.CRLF);
         }
         for (Mixin mixin : mixins) {
             sb.append(Constants.CATEGORY).append(": ").append(asCategory(mixin, true));
             for (Action action : mixin.getActions()) {
-                sb.append(Constants.CATEGORY).append(": ").append(asString(action));
+                sb.append(Constants.CRLF).append(Constants.CATEGORY).append(": ").append(asString(action));
             }
+            /*if (!sb.toString().endsWith(";")) {
+                sb.append(";");
+            }*/
+            sb.append(Constants.CRLF);
         }
         return sb;
     }
@@ -425,16 +473,25 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     private StringBuilder asCategory(Kind kind, boolean detailed) {
         StringBuilder sb = new StringBuilder();
         sb.append(kind.getTerm())
-                .append(";scheme=\"").append(kind.getScheme()).append("\";class=\"kind\"");
+                .append(";scheme=\"").append(kind.getScheme()).append("\"");
+        sb.append(";class=\"kind\"");
         if (detailed) {
             sb.append(";title=\"").append(kind.getTitle()).append('\"');
             Kind parent = kind.getParent();
             if (parent != null) {
                 sb.append(";rel=\"").append(parent.getScheme()).append(parent.getTerm()).append('\"');
             }
-            sb.append(";location=\"").append(ConfigurationManager.getLocation(kind)).append('\"');
+
+/*            if (!kind.getAttributes().isEmpty()) {
+                sb.append(Constants.CRLF).append(Constants.TAB);
+            }*/
             appendAttributes(sb, kind.getAttributes());
+            /*if (!kind.getActions().isEmpty()) {
+                sb.append(Constants.CRLF).append(Constants.TAB);
+            }*/
             appendActions(sb, kind.getActions());
+            sb.append(";location=\"").append(ConfigurationManager.getLocation(kind).get()).append('\"');
+
         }
         return sb;
     }
@@ -449,7 +506,8 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     private StringBuilder asCategory(Mixin mixin, boolean detailed) {
         StringBuilder sb = new StringBuilder();
         sb.append(mixin.getTerm())
-                .append(";scheme=\"").append(mixin.getScheme()).append("\";class=\"mixin\"");
+                .append(";scheme=\"").append(mixin.getScheme()).append("\"");
+        sb.append(";class=\"mixin\"");
         if (detailed) {
             sb.append(";title=\"").append(mixin.getTitle()).append('\"');
             List<Mixin> mixins = mixin.getDepends();
@@ -462,9 +520,15 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
                 }
                 sb.append('\"');
             }
-            sb.append(";location=\"").append(ConfigurationManager.getLocation(mixin)).append('\"');
+           /* if (!mixin.getAttributes().isEmpty()) {
+                sb.append(Constants.CRLF).append(Constants.TAB);
+            }*/
             appendAttributes(sb, mixin.getAttributes());
+            /*if (!mixin.getActions().isEmpty()) {
+                sb.append(Constants.CRLF).append(Constants.TAB);
+            }*/
             appendActions(sb, mixin.getActions());
+            sb.append(";location=\"").append(ConfigurationManager.getLocation(mixin).get()).append('\"');
         }
         return sb;
     }
@@ -472,9 +536,14 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
     private String asString(Action action) {
         StringBuilder sb = new StringBuilder();
         sb.append(action.getTerm())
-                .append(";scheme=\"").append(action.getScheme()).append("\";class=\"action\"")
-                .append(";title=\"").append(action.getTitle()).append('\"');
+                .append(";scheme=\"").append(action.getScheme()).append("\"");
+        sb.append(";class=\"action\"");
+        sb.append(";title=\"").append(action.getTitle()).append('\"');
+        /*if (!action.getAttributes().isEmpty()) {
+            sb.append(Constants.CRLF).append(Constants.TAB);
+        }*/
         appendAttributes(sb, action.getAttributes());
+
         return sb.toString();
     }
 

@@ -366,7 +366,15 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         }
     }
 
-
+    /**
+     * Partial update of an entity. if will add mixins, update specified attributes and ensure that entity has all its attributes set.
+     * @param title
+     * @param summary
+     * @param mixins     a list of mixins to associate with entity.
+     * @param attributes attributes to update.
+     * @param location   an entity location.
+     * @return a response object defined by implementation.
+     */
     @Override
     public OCCIApiResponse updateEntity(final String title, final String summary, final List<String> mixins, final Map<String, String> attributes, final String location) {
         String message;
@@ -416,7 +424,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             }
         }
         // update attributes .
-        entity = EntityManager.updateAttributesToEntity(entity, attributes, username);
+        entity = EntityManager.updateAttributesToEntity(entity, attributes, username, false);
         // Launch crud update operation on this entity.
         entity.occiUpdate();
 

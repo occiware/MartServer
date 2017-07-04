@@ -300,9 +300,17 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
         HeaderPojo header;
         Map<String, List<String>> headerMap = new LinkedHashMap<>();
         if (!locations.isEmpty()) {
-            // String absLocation = getServerURI().toString() + location;
-            // responseBuilder.header(Constants.X_OCCI_LOCATION, absLocation);
-            headerMap.put(Constants.X_OCCI_LOCATION, locations);
+            String absLocation;
+            List<String> locationsToRender = new LinkedList<>();
+            for (String location : locations) {
+                if (getServerURI() != null) {
+                    absLocation = getServerURI().toString() + location;
+                } else {
+                    absLocation = location;
+                }
+                locationsToRender.add(absLocation);
+            }
+            headerMap.put(Constants.X_OCCI_LOCATION, locationsToRender);
             header = new HeaderPojo(headerMap);
             return header;
         } else {
@@ -546,10 +554,16 @@ public class TextOcciParser extends AbstractRequestParser implements IRequestPar
      * will added to header with X-OCCI-Location name field.
      *
      * @param entity
-     * @return
+     * @return a global location like http://localhost:8080/myabsolutelocationofmyentity
      */
     private String renderXOCCILocationAttr(final Entity entity) {
-        return EntityManager.getLocation(entity, getUsername());
+        String globalLocation;
+        if (getServerURI() != null) {
+            globalLocation = getServerURI().toString() + EntityManager.getLocation(entity, getUsername());
+        } else {
+            globalLocation = EntityManager.getLocation(entity, getUsername());
+        }
+        return globalLocation;
     }
 
     /**

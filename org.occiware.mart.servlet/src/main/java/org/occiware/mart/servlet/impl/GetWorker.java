@@ -19,6 +19,8 @@
 package org.occiware.mart.servlet.impl;
 
 import org.occiware.mart.server.parser.HeaderPojo;
+import org.occiware.mart.server.parser.OCCIRequestData;
+import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URI;
+import java.util.List;
 
 /**
  * Created by cgourdin on 13/04/2017.
@@ -45,9 +48,9 @@ public class GetWorker extends ServletEntry {
             return resp;
         }
 
-        if (!occiRequest.getContentDatas().isEmpty()) {
-            return occiResponse.parseMessage("Input content are not accepted with GET method", HttpServletResponse.SC_BAD_REQUEST);
-        }
+        // if (!occiRequest.getContentDatas().isEmpty() && !occiRequest.isInterfQuery()) {
+        //      return occiResponse.parseMessage("Input content are not accepted with GET method if the query is not an interface query /-/ ", HttpServletResponse.SC_BAD_REQUEST);
+        // }
 
         if (occiRequest.isActionInvocationQuery()) {
             LOGGER.warn("Querying action invocation on GET method.");
@@ -56,18 +59,64 @@ public class GetWorker extends ServletEntry {
 
         if (occiRequest.isInterfQuery()) {
             LOGGER.info("Querying the interface on path : " + occiRequest.getRequestPath());
-            occiRequest.getModelsInterface(getRequestParameters().get(Constants.CATEGORY_KEY), getRequestParameters().get(Constants.EXTENSION_NAME_KEY));
+            String categoryFilter = getRequestParameters().get(Constants.CATEGORY_KEY);
+            // Check if we have a category in content data.
+            if (!occiRequest.getContentDatas().isEmpty()) {
+                String cat = null;
+                List<OCCIRequestData> requestDatas = occiRequest.getContentDatas();
+                // take only the first
+                OCCIRequestData data = requestDatas.get(0);
+                // add a category filter
+                cat = data.getKind();
+                if (cat == null) {
+                    cat = data.getAction();
+                }
+                // Check if mixins filter.
+                if (cat == null && !requestDatas.get(0).getMixins().isEmpty()) {
+                    cat = data.getMixins().get(0);
+                }
+                if (categoryFilter == null && cat != null) {
+                    categoryFilter = cat;
+                }
+            }
+            occiRequest.getModelsInterface(categoryFilter, getRequestParameters().get(Constants.EXTENSION_NAME_KEY));
             return resp;
         }
 
         if (occiRequest.isOnEntityLocation() || occiRequest.isOnCollectionLocation()) {
 
             LOGGER.info("Querying entities on location : " + occiRequest.getRequestPath());
+
             if (occiRequest.isOnCollectionLocation()) {
+                CollectionFilter filter = buildCollectionFilter();
+                String categoryFilter = getRequestParameters().get(Constants.CATEGORY_KEY);
+                // Check if we have a category in content data.
+                if (!occiRequest.getContentDatas().isEmpty()) {
+                    String cat = null;
+                    List<OCCIRequestData> requestDatas = occiRequest.getContentDatas();
+                    // take only the first
+                    OCCIRequestData data = requestDatas.get(0);
+                    // add a category filter
+                    cat = data.getKind();
+                    if (cat == null) {
+                        cat = data.getAction();
+                    }
+                    // Check if mixins filter.
+                    if (cat == null && !requestDatas.get(0).getMixins().isEmpty()) {
+                        cat = data.getMixins().get(0);
+                    }
+                    if (categoryFilter == null && cat != null) {
+                        categoryFilter = cat;
+                    }
+                }
+                if (categoryFilter != null) {
+                    // Override default or parameters.
+                    filter.setCategoryFilter(categoryFilter);
+                }
                 if (!getAcceptType().equals(Constants.MEDIA_TYPE_TEXT_URI_LIST)) {
-                    occiRequest.findEntities(occiRequest.getRequestPath(), buildCollectionFilter());
+                    occiRequest.findEntities(occiRequest.getRequestPath(), filter);
                 } else {
-                    occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), buildCollectionFilter());
+                    occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), filter);
                 }
             }
             if (occiRequest.isOnEntityLocation()) {
@@ -77,7 +126,6 @@ public class GetWorker extends ServletEntry {
                     occiRequest.findEntitiesLocations(occiRequest.getRequestPath(), buildCollectionFilter());
                 }
             }
-
             return resp;
         }
         occiResponse.parseMessage("The request is malformed", HttpServletResponse.SC_BAD_REQUEST);

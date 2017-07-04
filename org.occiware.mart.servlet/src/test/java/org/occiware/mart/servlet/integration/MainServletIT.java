@@ -29,22 +29,20 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.occiware.mart.server.facade.OCCIApiInputRequest;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.servlet.MainServlet;
 
 import javax.servlet.http.HttpServletResponse;
-
-import static org.junit.Assert.*;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by christophe on 19/04/2017.
@@ -122,7 +120,6 @@ public class MainServletIT {
             testsOnMixinTagsAssociation();
 
             // Test operations on custom location /myresources/*...
-
 
 
         } catch (Exception ex) {
@@ -261,7 +258,7 @@ public class MainServletIT {
         HttpMethod httpMethod;
 
         // Create a resource entity on path /myresources/compute1.
-        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/myresources/compute1", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/myresources/compute1", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource1.json",
                 "create a resource with PUT, must be created on path : /myresources/compute1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
@@ -293,7 +290,7 @@ public class MainServletIT {
 
 
         // Check with path /compute/1 as in OCCI spec.
-        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/compute/1", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/compute/1", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource1.json",
                 "create a resource with PUT, must be created on path : /compute/1", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
@@ -309,11 +306,11 @@ public class MainServletIT {
                 "Check Create a bad resource (with a kind definition does not exist on extension / configuration).", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Create the second resource with mixins and no uuid defined.
-        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/mynetworks/mainnetwork/", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/mynetworks/mainnetwork/", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource1bis.json",
                 "Create the second resource with mixin on location : /mynetworks/mainnetwork.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
-        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/myresources/compute2", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/myresources/compute2", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resourceonly.json",
                 "Other test create resource without ending slash on location : /myresources/compute2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
@@ -323,12 +320,12 @@ public class MainServletIT {
                 "Create a resource with integrated location value but conflict with request path.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Create a resource with integrated location value.
-        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/testlocation/f89486b7-0632-482d-a184-a9195733ddd9", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/testlocation/f89486b7-0632-482d-a184-a9195733ddd9", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource_location.json",
                 "Create a resource with integrated location value.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Create a resource without uuid set.
-        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/myresources/compute3/", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/myresources/compute3/", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource_without_uuid.json",
                 "Create a resource without uuid", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
     }
@@ -347,11 +344,11 @@ public class MainServletIT {
                 "Create a collection of resources with PUT method.", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         httpMethod = HttpMethod.POST;
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource4_no_location.json",
                 "Create resource postcompute1 with POST using json and collection category path, but no locations set on resource, on location: /compute/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
-        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_OK,
+        response = executeQuery(httpMethod, "http://localhost:9090/compute/", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource5_with_location.json",
                 "Create resource postcompute2 with POST using location, and id set on id value, on location: /myresources/mypostcomputes/postcompute2", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
@@ -401,12 +398,12 @@ public class MainServletIT {
 
 
         // Add new network resources.
-        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource6.json",
                 "Create resource network2 - POST method - on location: /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
         // Create a collection of networks.
-        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/network_collection.json",
                 "Create a collection of networks (network3-network4-network5) - POST method - on location: /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
@@ -429,7 +426,7 @@ public class MainServletIT {
         }
 
         // Recreate the collection.
-        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_OK,
+        response = executeQuery(HttpMethod.POST, "http://localhost:9090/network/", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/network_collection.json",
                 "Create a collection of networks (network3-network4-network5) - POST method - on location: /network/", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
@@ -477,7 +474,6 @@ public class MainServletIT {
                 "Recreate a mixin tag named usermixin2 - POST method, this for further testing...", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
 
 
-
         // Add one other resource to a mixin tag using resource rendering, using entity update method.
         response = executeQuery(HttpMethod.POST, "http://localhost:9090/myresources/mypostcomputes/postcompute2", HttpServletResponse.SC_OK,
                 "/testjson/integration/update/mixintag_add_resource.json",
@@ -511,12 +507,17 @@ public class MainServletIT {
         // Search response on headers.
         fields = response.getHeaders();
         xlocations = fields.getValuesList("X-OCCI-Location");
-        assertFalse(xlocations.isEmpty());
-        assertFalse(xlocations.contains("/mainnetwork/network1"));
-        assertTrue(xlocations.contains("/mainnetwork/network4"));
-        for (final String location : xlocations) {
-            System.out.println("Location in header X-OCCI-Location: " + location);
+        boolean foundnetwork4 = false;
+        for (final String xlocation : xlocations) {
+            assertFalse(xlocation.contains("/mainnetwork/network1"));
+            if (xlocation.contains("/mainnetwork/network4")) {
+                foundnetwork4 = true;
+            }
+            System.out.println("Location in header X-OCCI-Location: " + xlocation);
         }
+        assertTrue(foundnetwork4);
+
+        assertFalse(xlocations.isEmpty());
 
         // Get entities with filter using mixin tag location.
         // with curl this give : curl -v -X POST --data-binary @thepathtojsonfile.json "http://localhost:9090/?attribute=occi.core.title&" --data-urlencode "value=other compute 1 title"
@@ -569,10 +570,11 @@ public class MainServletIT {
 
     /**
      * Execute an http query and check if status code response is equals to parameter statusCodeToCheck.
-     * @param httpMethod HttpMethod.GET, .PUT etc.
-     * @param uri uri of the request like http://localhost:9090/mycomputetest/
+     *
+     * @param httpMethod        HttpMethod.GET, .PUT etc.
+     * @param uri               uri of the request like http://localhost:9090/mycomputetest/
      * @param statusCodeToCheck http status code to check on response
-     * @param messageBefore message to display before executing this query.
+     * @param messageBefore     message to display before executing this query.
      * @param contentType
      * @param acceptType
      * @return a content response object of this executed query.
@@ -587,6 +589,7 @@ public class MainServletIT {
             response = httpClient.newRequest(uri)
                     .method(httpMethod)
                     .file(myFile.toPath(), contentType)
+                    .header("Content-Type", contentType)
                     .accept(acceptType)
                     .agent("martclient")
                     .send();
@@ -594,6 +597,7 @@ public class MainServletIT {
             response = httpClient.newRequest(uri)
                     .method(httpMethod)
                     .accept(acceptType)
+                    .header("Content-Type", contentType)
                     .agent("martclient")
                     .send();
         }

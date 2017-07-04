@@ -21,6 +21,7 @@ package org.occiware.mart.server.parser;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.mart.server.exception.ParseOCCIException;
 
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -76,4 +77,6 @@ public interface IRequestParser {
 
     public void setUsername(final String username);
     public String getUsername();
+    URI getServerURI();
+    void setServerURI(URI serverURI);
 }
