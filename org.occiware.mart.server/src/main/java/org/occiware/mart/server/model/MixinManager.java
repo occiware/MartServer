@@ -267,7 +267,7 @@ public class MixinManager {
         for (Mixin mixin : mixinsTags) {
             // TODO : Save mixin location map in a file when saving xmi occic document.
             location = mixin.getTerm();
-            userMixinLocationMap.put(mixin.getTerm(), location);
+            userMixinLocationMap.put(mixin.getScheme() + mixin.getTerm(), location);
         }
     }
 
@@ -715,9 +715,14 @@ public class MixinManager {
         return mixinsStr;
     }
 
-    public static void clearMixinTagsReferences() {
-        userMixinLocationMap.clear();
+    public static void clearMixinTagsReferences(final String owner) {
+        if (!userMixinLocationMap.isEmpty()) {
+            List<Mixin> mixins = getAllMixinTagsForOwner(owner);
 
+            for (Mixin mixin : mixins) {
+                userMixinLocationMap.remove(mixin.getScheme() + mixin.getTerm());
+            }
+        }
     }
 
     /**

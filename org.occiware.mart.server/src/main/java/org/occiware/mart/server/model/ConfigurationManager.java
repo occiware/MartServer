@@ -676,12 +676,10 @@ public class ConfigurationManager {
     public static void loadAllModelsFromDisk(final String modelDirectory) throws ConfigurationException {
 
         String currentOwner;
-
-
-        // reset all.
-        configurations.clear();
-        EntityManager.clearReferences();
-        MixinManager.clearMixinTagsReferences();
+        if (modelDirectory == null || modelDirectory.trim().isEmpty()) {
+            return;
+        }
+        // if there is file to load, reset all.
         List<String> modelFiles;
         // List all files from the directory model.
         try {
@@ -690,7 +688,17 @@ public class ConfigurationManager {
             LOGGER.error("Error while listing directory : " + modelDirectory + " --> " + ex.getMessage());
             throw new ConfigurationException("Error while listing directory : " + modelDirectory + " --> " + ex.getMessage(), ex);
         }
+        if (modelFiles.isEmpty()) {
+            LOGGER.info("No models to load.");
+            return;
+        }
+        // Determine if one valid models are in the directory.
+        // reset all.
+
+
+
         String tmpExt;
+
         for (String modelFile : modelFiles) {
             if (!modelFile.endsWith(".occic")) {
                 LOGGER.warn("unknown file: " + modelFile);
@@ -698,6 +706,9 @@ public class ConfigurationManager {
                 // Load configurations for each files from modelDirectory and get username from filename.
                 tmpExt = modelFile.replace(".occic", "");
                 currentOwner = tmpExt.split("-")[1];
+                configurations.remove(currentOwner);
+                EntityManager.clearReferences(currentOwner);
+                MixinManager.clearMixinTagsReferences(currentOwner);
                 // Update for each configuration references (entities and mixins tags).
                 loadModelFromDisk(modelDirectory, currentOwner);
             }
@@ -715,6 +726,9 @@ public class ConfigurationManager {
      * @throws ConfigurationException
      */
     public static void saveAllModelsToDisk(final String modelDirectory) throws ConfigurationException {
+        if (modelDirectory == null || modelDirectory.trim().isEmpty()) {
+            return;
+        }
         // Get all owner.
         Set<String> owners = configurations.keySet();
         for (String currentOwner : owners) {

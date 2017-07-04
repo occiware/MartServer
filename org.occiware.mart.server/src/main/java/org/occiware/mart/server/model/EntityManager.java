@@ -1780,8 +1780,8 @@ public class EntityManager {
     }
 
 
-    public static void clearReferences() {
-        entitiesOwnerMap.clear();
-        versionObjectMap.clear();
+    public static void clearReferences(final String owner) {
+        entitiesOwnerMap.remove(owner);
+        versionObjectMap.remove(owner);
     }
 }
