@@ -39,6 +39,16 @@ public class CycleListener implements LifeCycle.Listener {
     @Override
     public void lifeCycleStarted(LifeCycle event) {
         LOGGER.info("MartServer is started !");
+
+        AppParameters appParameters = AppParameters.getInstance();
+        try {
+            LOGGER.info("plugins loader invoked");
+            // appParameters.addPluginsUsingOSGI();
+            appParameters.addPluginsToClasspath();
+        } catch (Exception ex) {
+            LOGGER.error("Plugins not installed : " + ex.getClass().getName() + " --> " + ex.getMessage());
+            ex.printStackTrace();
+        }
         loadModels();
 
     }

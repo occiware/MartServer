@@ -35,10 +35,10 @@ Note that the server use Model@Runtime from Clouddesigner libs, if you have desi
 
 Launch the server with an embedded jetty :
 
-Two options :
+Three options :
 <pre>
 <code>cd org.occiware.mart.jetty
-mvn exec:java</code>
+mvn compile exec:exec</code>
 </pre>
 
 You can launch the server with an embedded jetty using occinterface integration :
@@ -119,7 +119,7 @@ You could create for example a file server.config and set it to my_folder_config
 You can also launch the server with this command line :
 <pre>
 <code>
-mvn exec:java -Dexec.args="/my_folder_config/server.config"
+mvn compile exec:exec -Dexec.args="/my_folder_config/server.config"
 </code>
 </pre>
 This feature is only available for standalone mode (using jetty module).
@@ -128,7 +128,7 @@ For now there are some parameters :
 
  - server.http.port=8080
  
- Where the port is between 1 and 9999 a good pratice to set the port is to assume that all port before 1000 are not ok. So you can choose a port like 1001.
+ Where the port is between 1 and 9999 a good practice to set the port is to assume that all port before 1000 are not ok. So you can choose a port like 1001.
 
  - server.log.directory=/logging/application/logs
  
@@ -148,20 +148,25 @@ For now there are some parameters :
  
  Temporary password for default administrator.
 
- - server.model.directory=/yourmodelfolder/
+ - <b>server.model.directory</b>=/yourmodelfolder/
  
  Path of your model directory. By default, if not set, the application will use: <b>/homedir/models/</b>
  
  This is used by save and load model api feature.
 
- - server.save.onterminate=true
+ - <b>server.save.onterminate</b>=true
 
 This parameter give the ability to save model when stopping the server.
 
- - server.load.onstart=true
+ - <b>server.load.onstart</b>=true
 
 This parameter give the ability to load model when starting the server.
 
+ - <b>server.plugins.directory</b>=/your_extension/and/connector/plugins/folder/
+
+This parameter give the extension model jar and connector jar plugins to use with the server,
+  those libraries will be loaded at runtime (only tested with jetty module).
+  By default the server will use the directory : <b>/homedir/martserver-plugins</b>
 
 ## Using the server
 
