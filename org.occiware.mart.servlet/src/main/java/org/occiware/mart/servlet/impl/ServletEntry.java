@@ -368,7 +368,7 @@ public abstract class ServletEntry {
         String itemsNumber = getRequestParameters().get(Constants.NUMBER_ITEMS_PER_PAGE_KEY);
         int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
         int page = Constants.DEFAULT_CURRENT_PAGE;
-        if (pageTmp != null && !pageTmp.isEmpty()) {
+        if (itemsNumber != null && !itemsNumber.trim().isEmpty()) {
             // Set the value from request only if this is a number.
             try {
                 items = Integer.valueOf(itemsNumber);
@@ -377,6 +377,8 @@ public abstract class ServletEntry {
                 LOGGER.error("The parameter \"number\" is not set correctly, please check the parameter, this must be a number.");
                 LOGGER.error("Default to " + items);
             }
+        }
+        if (pageTmp != null && !pageTmp.trim().isEmpty()) {
             try {
                 page = Integer.valueOf(pageTmp);
             } catch (NumberFormatException ex) {
@@ -385,7 +387,7 @@ public abstract class ServletEntry {
             }
         }
         String operatorTmp = getRequestParameters().get(Constants.OPERATOR_KEY);
-        if (operatorTmp == null) {
+        if (operatorTmp == null || operatorTmp.trim().isEmpty()) {
             operatorTmp = "0";
         }
         int operator = 0;
