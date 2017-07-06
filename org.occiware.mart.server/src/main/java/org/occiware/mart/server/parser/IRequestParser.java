@@ -18,8 +18,6 @@
  */
 package org.occiware.mart.server.parser;
 
-// import org.occiware.clouddesigner.occi.Entity;
-
 import org.eclipse.cmf.occi.core.Entity;
 import org.occiware.mart.server.exception.ParseOCCIException;
 

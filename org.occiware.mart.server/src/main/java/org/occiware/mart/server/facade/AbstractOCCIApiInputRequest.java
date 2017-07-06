@@ -369,6 +369,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
 
     /**
      * Partial update of an entity. if will add mixins, update specified attributes and ensure that entity has all its attributes set.
+     *
      * @param title
      * @param summary
      * @param mixins     a list of mixins to associate with entity.
@@ -1468,5 +1469,12 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         return filter;
     }
 
+    public OCCIApiResponse getOcciApiResponse() {
+        return occiApiResponse;
+    }
+
+    public String getUsername() {
+        return username;
+    }
 
 }

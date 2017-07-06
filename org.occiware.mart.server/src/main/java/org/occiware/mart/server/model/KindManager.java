@@ -192,6 +192,7 @@ public class KindManager {
 
     /**
      * Return all attributes for an entity kind (main attributes).
+     *
      * @param kind
      * @return
      */

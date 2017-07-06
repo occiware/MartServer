@@ -49,6 +49,11 @@ public class PutWorker extends ServletEntry {
 
         HttpServletResponse resp = buildInputDatas();
 
+        if (occiResponse.hasExceptions()) {
+            // Authentication failed.
+            return occiResponse.getHttpResponse();
+        }
+
         String requestPath = occiRequest.getRequestPath();
 
         // Root request are not allowed by PUT method ==> 405 http error.
@@ -119,7 +124,9 @@ public class PutWorker extends ServletEntry {
             }
             // This is an entity creation query.
             occiRequest.createEntity(data.getEntityTitle(), data.getEntitySummary(), data.getKind(), data.getMixins(), data.getAttrsValStr(), data.getLocation());
-            resp.setStatus(HttpServletResponse.SC_CREATED);
+            if (!occiResponse.hasExceptions()) {
+                resp.setStatus(HttpServletResponse.SC_CREATED);
+            }
             String locationRender = data.getLocation().substring(0, data.getLocation().length() - 1); // This is an entity remove ending slash.
             resp.addHeader("Location", getServerURI().toString() + locationRender);
             return resp;

@@ -24,9 +24,6 @@ import org.eclipse.cmf.occi.core.Mixin;
 import java.util.ArrayList;
 import java.util.List;
 
-// import org.occiware.clouddesigner.occi.Kind;
-// import org.occiware.clouddesigner.occi.Mixin;
-
 /**
  * Created by cgourdin on 11/04/2017.
  * This object is the base to render query interface.

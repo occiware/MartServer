@@ -1,17 +1,34 @@
+/**
+ * Copyright (c) 2015-2017 Inria
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * <p>
+ * Contributors:
+ * - Christophe Gourdin <christophe.gourdin@inria.fr>
+ */
 package org.occiware.mart.server.facade;
 
-
-import java.io.File;
-import java.util.*;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.*;
 
 /**
  * Created by cgourdin on 04/07/2017.
@@ -19,8 +36,33 @@ import org.slf4j.LoggerFactory;
 public class OSGILoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OSGILoader.class);
+
     private OSGILoader() {
 
+    }
+
+    //    public void uninstallPlugin(File file) throws Exception {
+//        context = FrameworkUtil.getBundle( OSGILoader.class ).getBundleContext();
+//        Bundle b = context.getBundle( file.toURI().toString() );
+//        b.uninstall();
+//    }
+    private static Map<String, String> initConfig() {
+        Map<String, String> config = new HashMap<>();
+
+        // Allow OSGi bundles to import this package from the standard java classpath classloader
+        config.put(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "org.occiware.mart.server.facade");
+
+        // See the org.osgi.framework.Constants class for other useful things that can be put
+        // into the OSGi configuration map.
+
+        return config;
+    }
+
+    /**
+     * @return the instance of an AppParameters singleton object.
+     */
+    public static OSGILoader getInstance() {
+        return OSGILoaderHolder.instance;
     }
 
     public void installPlugins(List<File> files) throws Exception {
@@ -58,30 +100,6 @@ public class OSGILoader {
         // context = FrameworkUtil.getBundle( OSGILoader.class ).getBundleContext();
         // Bundle b = context.installBundle( file.toURI().toString() );
         // b.start();
-    }
-
-//    public void uninstallPlugin(File file) throws Exception {
-//        context = FrameworkUtil.getBundle( OSGILoader.class ).getBundleContext();
-//        Bundle b = context.getBundle( file.toURI().toString() );
-//        b.uninstall();
-//    }
-    private static Map<String, String> initConfig() {
-        Map<String, String> config = new HashMap<>();
-
-        // Allow OSGi bundles to import this package from the standard java classpath classloader
-        config.put(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "org.occiware.mart.server.facade");
-
-        // See the org.osgi.framework.Constants class for other useful things that can be put
-        // into the OSGi configuration map.
-
-        return config;
-    }
-
-    /**
-     * @return the instance of an AppParameters singleton object.
-     */
-    public static OSGILoader getInstance() {
-        return OSGILoaderHolder.instance;
     }
 
     /**

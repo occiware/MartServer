@@ -696,7 +696,6 @@ public class ConfigurationManager {
         // reset all.
 
 
-
         String tmpExt;
 
         for (String modelFile : modelFiles) {

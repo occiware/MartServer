@@ -48,9 +48,9 @@ public class GetWorker extends ServletEntry {
             return resp;
         }
 
-       // if (!occiRequest.getContentDatas().isEmpty() && !occiRequest.isInterfQuery()) {
-       //      return occiResponse.parseMessage("Input content are not accepted with GET method if the query is not an interface query /-/ ", HttpServletResponse.SC_BAD_REQUEST);
-       // }
+        // if (!occiRequest.getContentDatas().isEmpty() && !occiRequest.isInterfQuery()) {
+        //      return occiResponse.parseMessage("Input content are not accepted with GET method if the query is not an interface query /-/ ", HttpServletResponse.SC_BAD_REQUEST);
+        // }
 
         if (occiRequest.isActionInvocationQuery()) {
             LOGGER.warn("Querying action invocation on GET method.");

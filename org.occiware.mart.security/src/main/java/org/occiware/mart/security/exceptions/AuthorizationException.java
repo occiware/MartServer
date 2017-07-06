@@ -16,25 +16,25 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.server.exception;
+package org.occiware.mart.security.exceptions;
 
 /**
- * Created by cgourdin on 26/06/2017.
+ * Created by cgourdin on 06/07/2017.
  */
-public class ApplicationConfigurationException extends Exception {
-
-    public ApplicationConfigurationException() {
+public class AuthorizationException extends Exception {
+    public AuthorizationException() {
+        super();
     }
 
-    public ApplicationConfigurationException(String message) {
+    public AuthorizationException(String message) {
         super(message);
     }
 
-    public ApplicationConfigurationException(String message, Throwable cause) {
+    public AuthorizationException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public ApplicationConfigurationException(Throwable cause) {
+    public AuthorizationException(Throwable cause) {
         super(cause);
     }
 }

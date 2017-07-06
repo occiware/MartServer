@@ -19,14 +19,12 @@
 package org.occiware.mart.server.facade;
 
 import org.occiware.mart.server.exception.ApplicationConfigurationException;
+import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
@@ -55,10 +53,41 @@ public class AppParameters {
     public static final String KEY_SAVE_ON_TERMINATE = "server.save.onterminate";
     public static final String KEY_LOAD_ON_START = "server.load.onstart";
     public static final String KEY_PLUGINS_DIRECTORY = "server.plugins.directory";
+
+    /**
+     * To manage users, application need to store somewhere the users. This property define how to get a stored user.
+     */
+    public static final String KEY_USERS_MODE = "server.users.mode";
+    /**
+     * For users management by file, application need to known where is stored users.
+     */
+    public static final String KEY_USERS_DIRECTORY = "server.users.directory";
+    /**
+     * Filename of the users file.
+     */
+    public static final String KEY_USERS_FILENAME = "server.users.file";
+
+    /**
+     * Used only for reading users file authorization and authentication in users file mode.
+     */
+    public static final String KEY_USERS_FILE_PATH = "usersFilePath";
+
+    /**
+     * With no user's authentication, validation of a user is always true.
+     */
+    public static final String USERS_NONE_MODE = "none";
+
+    public static final String USERS_FILE_MODE = "file";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(AppParameters.class);
     private static final String DEFAULT_LOG_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "logs" + FILE_SEPARATOR;
     private static final String DEFAULT_MODEL_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "models" + FILE_SEPARATOR;
     private static final String DEFAULT_PLUGINS_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "martserver-plugins" + FILE_SEPARATOR;
+    private static final String DEFAULT_USERS_DIRECTORY = System.getProperty("user.home") + FILE_SEPARATOR + "martserver-users" + FILE_SEPARATOR;
+
+    private static final String USERS_DEFAULT_MODE = USERS_FILE_MODE;
+
+    private static final String DEFAULT_USERS_FILENAME = "users.properties";
 
     private HashMap<String, String> config = new HashMap<>();
     private boolean configLoaded = false;
@@ -74,6 +103,26 @@ public class AppParameters {
      */
     public static AppParameters getInstance() {
         return AppParametersHolder.instance;
+    }
+
+    /**
+     * List files on a local directory (use java nio).
+     *
+     * @param directory
+     * @return
+     * @throws Exception
+     */
+    public static List<String> fileList(String directory) throws Exception {
+        List<String> fileNames = new ArrayList<>();
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(directory))) {
+            for (Path path : directoryStream) {
+                fileNames.add(path.toString());
+            }
+        } catch (IOException ex) {
+            System.out.println("Exception thrown : " + ex.getClass().getName() + " , message: " + ex.getMessage());
+            throw ex;
+        }
+        return fileNames;
     }
 
     /**
@@ -331,17 +380,93 @@ public class AppParameters {
             }
             LOGGER.info("Plugin directory is : " + config.get(KEY_PLUGINS_DIRECTORY));
 
+            // Users management.
+            String userMode = prop.getProperty(KEY_USERS_MODE);
+            if (userMode == null || userMode.trim().isEmpty()) {
+                // Set default userMode.
+                userMode = USERS_DEFAULT_MODE;
+            }
+            String userFileDirectory = prop.getProperty(KEY_USERS_DIRECTORY);
+            if (userFileDirectory == null || userFileDirectory.trim().isEmpty()) {
+                userFileDirectory = DEFAULT_USERS_DIRECTORY;
+            }
+            if (!userFileDirectory.endsWith(FILE_SEPARATOR)) {
+                userFileDirectory = userFileDirectory + FILE_SEPARATOR;
+            }
+            config.put(KEY_USERS_MODE, userMode);
+            switch (userMode) {
+                case USERS_NONE_MODE:
+                    break;
+
+                case USERS_FILE_MODE:
+
+                    Path usersDir = new File(userFileDirectory).toPath();
+                    if (Files.exists(usersDir) && Files.isDirectory(usersDir)) {
+                        config.put(KEY_USERS_DIRECTORY, userFileDirectory);
+
+                    } else {
+                        LOGGER.warn("Creating directory for users : " + userFileDirectory);
+                        try {
+                            Files.createDirectory(usersDir);
+                        } catch (IOException ex) {
+                            LOGGER.error("Error while creating users directory : " + ex.getMessage());
+                            throw new ApplicationConfigurationException(ex.getMessage());
+                        }
+                        config.put(KEY_USERS_DIRECTORY, userFileDirectory);
+                    }
+                    // Check if users file exists, if not we create it.
+                    if (!userFileDirectory.endsWith(FILE_SEPARATOR)) {
+                        userFileDirectory = userFileDirectory + FILE_SEPARATOR;
+                    }
+                    String userFile = prop.getProperty(KEY_USERS_FILENAME);
+                    if (userFile == null || userFile.trim().isEmpty()) {
+                        userFile = DEFAULT_USERS_FILENAME;
+                    }
+                    String userFilePath = userFileDirectory + userFile;
+                    config.put(KEY_USERS_FILE_PATH, userFilePath);
+                    Path usersFileProperties = new File(userFileDirectory + userFile).toPath();
+                    if (Files.exists(usersFileProperties) && Files.isReadable(usersFileProperties)) {
+                        config.put(KEY_USERS_FILENAME, userFilePath);
+                    } else {
+
+                        LOGGER.warn("Creating file for users mamagement : " + userFilePath);
+                        String content = "user1=anonymous" + Constants.CRLF +
+                                "password1=" + Constants.CRLF +
+                                "## crud create, retrieve, update, delete, a for all actions authorized, if action defined separated by comma, users is authorized only on these actions like start,stop,suspend" + Constants.CRLF +
+                                "profile1=c,r,u,d,a" + Constants.CRLF +
+                                "user2=test" + Constants.CRLF +
+                                "password2=1234" + Constants.CRLF +
+                                "## read only user authorization" + Constants.CRLF +
+                                "profile2=r" + Constants.CRLF;
+
+                        byte data[] = content.getBytes();
+                        try (OutputStream out = new BufferedOutputStream(
+                                Files.newOutputStream(usersFileProperties, StandardOpenOption.CREATE_NEW))) {
+                            out.write(data, 0, data.length);
+                        } catch (IOException ex) {
+                            LOGGER.error("Error while creating the file for users management : " + ex.getMessage(), ex);
+                            throw new ApplicationConfigurationException(ex.getMessage());
+                        }
+                    }
+
+                    break;
+                default:
+                    throw new ApplicationConfigurationException("Bad property for key : " + KEY_USERS_MODE);
+            }
+
+
         } catch (IOException ex) {
             LOGGER.warn("Cannot find configuration file for Mart server, setting default values.");
             LOGGER.error("Error while reading configuration file :--> Exception : " + ex.getClass().getName() + " --> " + ex.getMessage());
-            config.put(KEY_PORT, "8080");
-            config.put(KEY_HTTPS_PORT, "8181");
-            config.put(KEY_PROTOCOL, "http");
-            config.put(KEY_LOG_DIRECTORY, DEFAULT_LOG_DIRECTORY);
-            config.put(KEY_MODEL_DIRECTORY, DEFAULT_MODEL_DIRECTORY);
-            config.put(KEY_PLUGINS_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY);
-            config.put(KEY_LOAD_ON_START, "false");
-            config.put(KEY_SAVE_ON_TERMINATE, "false");
+            throw new ApplicationConfigurationException("Error while reading configuration file :--> Exception : " + ex.getClass().getName() + " --> " + ex.getMessage());
+            // config.put(KEY_PORT, "8080");
+            // config.put(KEY_HTTPS_PORT, "8181");
+            // config.put(KEY_PROTOCOL, "http");
+            // config.put(KEY_LOG_DIRECTORY, DEFAULT_LOG_DIRECTORY);
+            // config.put(KEY_MODEL_DIRECTORY, DEFAULT_MODEL_DIRECTORY);
+            // config.put(KEY_PLUGINS_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY);
+            // config.put(KEY_LOAD_ON_START, "false");
+            // config.put(KEY_SAVE_ON_TERMINATE, "false");
         } finally {
             Utils.closeQuietly(in);
         }
@@ -361,6 +486,7 @@ public class AppParameters {
 
     /**
      * Add plugins directory on classpath. This is not using OSGI.
+     *
      * @throws Exception any exception thrown on reading plugins directory and java exception from jars loaded on classpath.
      */
     public void addPluginsToClasspath() throws Exception {
@@ -384,9 +510,9 @@ public class AppParameters {
         }
     }
 
-
     /**
      * Add plugins using OSGI bundle.
+     *
      * @throws Exception
      */
     public void addPluginsUsingOSGI() throws Exception {
@@ -409,25 +535,6 @@ public class AppParameters {
         if (!files.isEmpty()) {
             osgiLoader.installPlugins(files);
         }
-    }
-
-    /**
-     * List files on a local directory (use java nio).
-     * @param directory
-     * @return
-     * @throws Exception
-     */
-    public static List<String> fileList(String directory) throws Exception {
-        List<String> fileNames = new ArrayList<>();
-        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(directory))) {
-            for (Path path : directoryStream) {
-                fileNames.add(path.toString());
-            }
-        } catch (IOException ex) {
-            System.out.println("Exception thrown : " + ex.getClass().getName() + " , message: " + ex.getMessage());
-            throw ex;
-        }
-        return fileNames;
     }
 
     /**

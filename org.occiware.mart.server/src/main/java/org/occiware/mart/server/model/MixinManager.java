@@ -20,7 +20,6 @@ package org.occiware.mart.server.model;
 
 import org.eclipse.cmf.occi.core.*;
 import org.eclipse.cmf.occi.core.util.Occi2Ecore;
-import org.eclipse.cmf.occi.core.util.OcciHelper;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
@@ -728,8 +727,8 @@ public class MixinManager {
     /**
      * Get The datatype of an attribute from a list of mixins.
      *
-     * @param mixinBase   a mixin base object.
-     * @param attrName the name of the attribute
+     * @param mixinBase a mixin base object.
+     * @param attrName  the name of the attribute
      * @return a dataType or an optional empty ==> NEVER null values.
      */
     public static Optional<EDataType> getEAttributeType(final MixinBase mixinBase, final String attrName) {
@@ -747,7 +746,6 @@ public class MixinManager {
     }
 
     /**
-     *
      * @param mixinBase
      * @return
      */

@@ -159,6 +159,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
     public URI getServerURI() {
         return serverURI;
     }
+
     @Override
     public void setServerURI(URI serverURI) {
         this.serverURI = serverURI;
