@@ -166,6 +166,7 @@ public class ServerTest {
             File myFile = getResourceInputFile(filePath);
             response = httpClient.newRequest(uri)
                     .method(httpMethod)
+                    .header("Authorization", "Basic dGVzdDoxMjM0") // test default user.
                     .file(myFile.toPath(), contentType)
                     .accept(acceptType)
                     .agent("martclient")
@@ -173,6 +174,7 @@ public class ServerTest {
         } else {
             response = httpClient.newRequest(uri)
                     .method(httpMethod)
+                    .header("Authorization", "Basic dGVzdDoxMjM0") // test default user.
                     .accept(acceptType)
                     .agent("martclient")
                     .send();

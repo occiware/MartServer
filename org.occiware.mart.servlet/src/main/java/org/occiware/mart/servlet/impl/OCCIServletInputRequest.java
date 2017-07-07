@@ -18,10 +18,14 @@
  */
 package org.occiware.mart.servlet.impl;
 
+import org.occiware.mart.security.UserJsonParser;
 import org.occiware.mart.security.UserManagement;
 import org.occiware.mart.security.UserProfile;
+import org.occiware.mart.security.UsersCollection;
 import org.occiware.mart.security.exceptions.AuthorizationException;
+import org.occiware.mart.security.exceptions.ParseUserException;
 import org.occiware.mart.server.exception.ParseOCCIException;
+import org.occiware.mart.server.exception.ResourceNotFoundException;
 import org.occiware.mart.server.facade.AbstractOCCIApiInputRequest;
 import org.occiware.mart.server.facade.OCCIApiInputRequest;
 import org.occiware.mart.server.facade.OCCIApiResponse;
@@ -54,6 +58,7 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
     private String requestPath;
     private Map<String, String> requestParameters;
     private boolean onEntityLocation = false;
+    private UsersCollection usersData = null;
 
 
     /**
@@ -146,6 +151,49 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
             this.contentCollection = true;
         }
     }
+
+    /**
+     * Parse json user input to define a new user or update a user.
+     */
+    public void parseUserInput() throws ParseUserException {
+        String content;
+        // For all media type that have content occi build like json, xml, text plain, yml etc..
+        if (request == null) {
+            throw new ParseUserException("No request to parse.");
+        }
+
+        // Parse the content body if any.
+        switch (contentType) {
+            case Constants.MEDIA_TYPE_JSON:
+                InputStream in = null;
+                LOGGER.info("Parsing input uploaded datas...");
+                try {
+                    in = request.getInputStream();
+                    if (in != null) {
+                        content = Utils.convertInputStreamToString(in);
+                        UserJsonParser userJsonParser = new UserJsonParser();
+                        UsersCollection users = userJsonParser.parseInput(content);
+                        setUsersData(users);
+                    }
+                } catch (IOException ex) {
+                    throw new ParseUserException("The server cant read the content input --> " + ex.getMessage());
+                } finally {
+                    Utils.closeQuietly(in);
+                }
+                break;
+            default:
+                throw new ParseUserException("The Content-Type: " + contentType + " is not supported, only : " + contentType + " is supported.");
+        }
+
+        if (getContentDatas().size() > 1) {
+            this.contentCollection = true;
+        }
+    }
+
+    private void setUsersData(UsersCollection users) {
+        this.usersData = users;
+    }
+
 
     /**
      * Parse the path to a data object. a path may have /category/myresource/
@@ -549,12 +597,158 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
     private void parseAuthorizationFailed(final String message) {
         // get response object.
         OCCIServletOutputResponse responseObj = (OCCIServletOutputResponse) getOcciApiResponse();
-
         responseObj.setExceptionMessage(message);
         responseObj.setExceptionThrown(new AuthorizationException(message));
         responseObj.parseResponseMessage(message);
-        // responseObj.getHttpResponse().setHeader(Constants.HEADER_WWW_AUTHENTICATE, authenticationMethod + " realm=\"" + getServerURI() + "\"");
         responseObj.getHttpResponse().setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         LOGGER.warn(message);
     }
+
+    // User management api part.
+
+    /**
+     * Add or update new users.
+     * @return
+     */
+    public OCCIApiResponse addUsers() {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isCreateUser()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to create new users.");
+            return getOcciApiResponse();
+        }
+
+        if (usersData != null) {
+            UserManagement.addUsers(usersData);
+            UserJsonParser userJsonParser = new UserJsonParser();
+            try {
+                getOcciApiResponse().setResponseMessage(userJsonParser.parseOutput(usersData));
+                ((OCCIServletOutputResponse)getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_CREATED);
+                return getOcciApiResponse();
+            } catch (ParseUserException ex) {
+                String message = ex.getMessage();
+                getOcciApiResponse().setExceptionThrown(ex);
+                getOcciApiResponse().setExceptionMessage(message);
+                getOcciApiResponse().parseResponseMessage(message);
+                ((OCCIServletOutputResponse)getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return getOcciApiResponse();
+            }
+        }
+
+        return getOcciApiResponse();
+    }
+
+    public OCCIApiResponse deleteUsers() {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+
+        if (!userProfile.isDeleteUser()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to delete users.");
+            return getOcciApiResponse();
+        }
+        String message;
+        // Check the address.
+        if (getRequestPath().equals(Constants.RESERVED_URI_LIST_USERS)) {
+            message = "Cannot delete all users !";
+            LOGGER.warn(message);
+            getOcciApiResponse().setExceptionThrown(new ResourceNotFoundException(message));
+            getOcciApiResponse().setExceptionMessage(message);
+            getOcciApiResponse().parseResponseMessage(message);
+            ((OCCIServletOutputResponse) getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+        } else {
+            // Delete a user.
+            String userPath = getRequestPath();
+            if (userPath.endsWith("/")) {
+                userPath = userPath.substring(0, userPath.length() - 1);
+            }
+            // Get username from path.
+            String username = userPath.replace(Constants.RESERVED_URI_LIST_USERS,"");
+            UserManagement.deleteUser(username);
+            getOcciApiResponse().parseResponseMessage("ok");
+            ((OCCIServletOutputResponse) getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_OK);
+        }
+
+
+        return getOcciApiResponse();
+    }
+
+
+    /**
+     * List users available on this server in a json formatted way.
+     * Use a filter if any set in request like : http://localhost:8080/mart/users/?username=test
+     * @return
+     */
+    public OCCIApiResponse listUsers() {
+
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isListUser()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to read users information");
+            return getOcciApiResponse();
+        }
+
+        // Read request parameters if a username fragment filter is set.
+        String usernameFilterFrag = requestParameters.get(Constants.FILTER_USERNAME);
+
+        // UserProfile part address.
+        if (getRequestPath().equals(Constants.RESERVED_URI_LIST_USERS)) {
+
+            // Collection part.
+            // list all users with filter support.
+            try {
+                UsersCollection collection = UserManagement.listAllUsers(usernameFilterFrag);
+                UserJsonParser userJsonParser = new UserJsonParser();
+                getOcciApiResponse().setResponseMessage(userJsonParser.parseOutput(collection));
+                ((OCCIServletOutputResponse) getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_OK);
+
+            } catch (ParseUserException ex) {
+                String message = ex.getMessage();
+                getOcciApiResponse().setExceptionThrown(ex);
+                getOcciApiResponse().setExceptionMessage(message);
+                getOcciApiResponse().parseResponseMessage(message);
+                ((OCCIServletOutputResponse) getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+            }
+        } else {
+            // This is an address with a username.
+            String userPath = getRequestPath();
+            if (userPath.endsWith("/")) {
+                userPath = userPath.substring(0, userPath.length() - 1);
+            }
+            // Get username from path.
+            String username = userPath.replace(Constants.RESERVED_URI_LIST_USERS,"");
+            // Get the user profile object.
+            UserProfile userProfileTmp = UserManagement.getUserProfile(username);
+
+            if (userProfileTmp == null) {
+                String message = "User profile : " + username + " doesnt exist.";
+                LOGGER.info("User profile : " + username + " doesnt exist.");
+                getOcciApiResponse().setExceptionThrown(new ResourceNotFoundException(message));
+                getOcciApiResponse().setExceptionMessage(message);
+                getOcciApiResponse().parseResponseMessage(message);
+                ((OCCIServletOutputResponse) getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return getOcciApiResponse();
+            }
+
+            // render output.
+            UsersCollection collection = new UsersCollection();
+            List<UserProfile> profiles = collection.getUsers();
+            profiles.add(userProfileTmp);
+            collection.setUsers(profiles);
+            UserJsonParser userJsonParser = new UserJsonParser();
+            try {
+                getOcciApiResponse().setResponseMessage(userJsonParser.parseOutput(collection));
+                ((OCCIServletOutputResponse) getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_OK);
+            } catch (ParseUserException ex) {
+                String message = ex.getMessage();
+                getOcciApiResponse().setExceptionThrown(ex);
+                getOcciApiResponse().setExceptionMessage(message);
+                getOcciApiResponse().parseResponseMessage(message);
+                ((OCCIServletOutputResponse) getOcciApiResponse()).getHttpResponse().setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+        }
+        return getOcciApiResponse();
+
+    }
+
+
+
+
 }

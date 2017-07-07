@@ -430,14 +430,17 @@ public class AppParameters {
                     } else {
 
                         LOGGER.warn("Creating file for users mamagement : " + userFilePath);
-                        String content = "user1=anonymous" + Constants.CRLF +
-                                "password1=" + Constants.CRLF +
+                        String content = "user1=admin" + Constants.CRLF +
+                                "password1=1234" + Constants.CRLF +
                                 "## crud create, retrieve, update, delete, a for all actions authorized, if action defined separated by comma, users is authorized only on these actions like start,stop,suspend" + Constants.CRLF +
-                                "profile1=c,r,u,d,a" + Constants.CRLF +
+                                "profile1=c,r,u,d,a,lu,cu,uu,du" + Constants.CRLF +
+                                "## test users, create, update, retrieve and delete entities, all actions without users management" + Constants.CRLF +
                                 "user2=test" + Constants.CRLF +
                                 "password2=1234" + Constants.CRLF +
-                                "## read only user authorization" + Constants.CRLF +
-                                "profile2=r" + Constants.CRLF;
+                                "profile2=c,r,u,d,a" + Constants.CRLF +
+                                "user3=anonymous" + Constants.CRLF +
+                                "password3=" + Constants.CRLF +
+                                "profile3=c,r,u,d,a" + Constants.CRLF;
 
                         byte data[] = content.getBytes();
                         try (OutputStream out = new BufferedOutputStream(
@@ -448,7 +451,7 @@ public class AppParameters {
                             throw new ApplicationConfigurationException(ex.getMessage());
                         }
                     }
-
+                    LOGGER.info("User file profile path : " + config.get(KEY_USERS_FILE_PATH));
                     break;
                 default:
                     throw new ApplicationConfigurationException("Bad property for key : " + KEY_USERS_MODE);
@@ -456,17 +459,9 @@ public class AppParameters {
 
 
         } catch (IOException ex) {
-            LOGGER.warn("Cannot find configuration file for Mart server, setting default values.");
+            LOGGER.warn("Cannot find configuration file for Mart server.");
             LOGGER.error("Error while reading configuration file :--> Exception : " + ex.getClass().getName() + " --> " + ex.getMessage());
             throw new ApplicationConfigurationException("Error while reading configuration file :--> Exception : " + ex.getClass().getName() + " --> " + ex.getMessage());
-            // config.put(KEY_PORT, "8080");
-            // config.put(KEY_HTTPS_PORT, "8181");
-            // config.put(KEY_PROTOCOL, "http");
-            // config.put(KEY_LOG_DIRECTORY, DEFAULT_LOG_DIRECTORY);
-            // config.put(KEY_MODEL_DIRECTORY, DEFAULT_MODEL_DIRECTORY);
-            // config.put(KEY_PLUGINS_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY);
-            // config.put(KEY_LOAD_ON_START, "false");
-            // config.put(KEY_SAVE_ON_TERMINATE, "false");
         } finally {
             Utils.closeQuietly(in);
         }

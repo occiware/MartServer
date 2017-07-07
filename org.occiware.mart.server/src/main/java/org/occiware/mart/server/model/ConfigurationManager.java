@@ -784,4 +784,14 @@ public class ConfigurationManager {
         return sb;
     }
 
+    /**
+     * Remove a configuration for a user.
+     * @param owner
+     */
+    public static void removeConfiguration(final String owner) {
+        EntityManager.clearReferences(owner);
+        MixinManager.clearMixinTagsReferences(owner);
+        configurations.remove(owner);
+
+    }
 }

@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.occiware.mart.server.facade.AppParameters;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.servlet.MainServlet;
 
@@ -134,6 +135,9 @@ public class MainServletIT {
         ContentResponse response;
         String result;
         HttpMethod httpMethod;
+        AppParameters parameters = AppParameters.getInstance();
+        parameters.loadParametersFromConfigFile(null);
+
         // First query the interface with GET method.
         response = executeQuery(HttpMethod.GET, "http://localhost:9090/-/", HttpServletResponse.SC_OK,
                 null,
@@ -588,6 +592,7 @@ public class MainServletIT {
             File myFile = getResourceInputFile(filePath);
             response = httpClient.newRequest(uri)
                     .method(httpMethod)
+                    .header("Authorization", "Basic dGVzdDoxMjM0") // test default user.
                     .file(myFile.toPath(), contentType)
                     .header("Content-Type", contentType)
                     .accept(acceptType)
@@ -596,6 +601,7 @@ public class MainServletIT {
         } else {
             response = httpClient.newRequest(uri)
                     .method(httpMethod)
+                    .header("Authorization", "Basic dGVzdDoxMjM0") // test default user.
                     .accept(acceptType)
                     .header("Content-Type", contentType)
                     .agent("martclient")

@@ -56,6 +56,11 @@ public class PutWorker extends ServletEntry {
 
         String requestPath = occiRequest.getRequestPath();
 
+        if (isUserRequest()) {
+            occiRequest.addUsers();
+            return occiResponse.getHttpResponse();
+        }
+
         // Root request are not allowed by PUT method ==> 405 http error.
         if (requestPath.trim().isEmpty() || requestPath.equals("/")) {
             return occiResponse.parseMessage("This uri : " + occiRequest.getRequestPath() + " is not supported by HTTP PUT method.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);

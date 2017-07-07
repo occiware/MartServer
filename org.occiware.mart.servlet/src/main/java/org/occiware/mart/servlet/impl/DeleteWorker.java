@@ -43,6 +43,11 @@ public class DeleteWorker extends ServletEntry {
             return resp;
         }
 
+        if (isUserRequest()) {
+            occiRequest.deleteUsers();
+            return occiResponse.getHttpResponse();
+        }
+
         // if there is content so check it.
         occiRequest.validateInputDataRequest();
         if (occiResponse.hasExceptions()) {

@@ -134,19 +134,13 @@ For now there are some parameters :
  
  The directory where are located the application logs.
 
- - server.protocol=http
+ - server.protocol=https
  
- The protocol, <b>http</b> and <b>https</b> support will be plan in a near future.
+ The protocol, <b>https</b> is set by default.
 
  - server.https.port=8181
-
- - admin.username=admin
  
- Temporary username for default administrator.
- 
- - admin.password=1234
- 
- Temporary password for default administrator.
+ Https protocol port.
 
  - <b>server.model.directory</b>=/yourmodelfolder/
  
@@ -168,11 +162,29 @@ This parameter give the extension model jar and connector jar plugins to use wit
   those libraries will be loaded at runtime (only tested with jetty module).
   By default the server will use the directory : <b>/homedir/martserver-plugins</b>
 
+ - <b>server.users.mode</b>=file
+ 
+ Users storage mode.
+ 
+ By default, users are stored in a file. You can replace this value to <b>"none"</b>, this will disengage users validation process.
+
+ - <b>server.users.directory</b>=/yourusersfolder/
+ 
+ This parameter give a directory where to store the users properties configuration file.
+ 
+ By default, this parameter is the home directory/martserver-users/ 
+
+ - <b>server.users.file</b>=users.properties
+ 
+ This parameter give a filename to the users configuration file. 
+ 
+By default, users.properties is used. 
+
 ## Using the server
 
 If you have launch the server in localhost, you can check that the server is started correctly with this curl command:
 <pre>
-<code>curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/ -H "accept: application/json"</code>
+<code>curl -v -X GET http://localhost:8080/.well-known/org/ogf/occi/-/ -H "accept: application/json" -u admin:1234 </code>
 </pre>
 
 In content result, you will have a json string with the full interface supported by this server.
@@ -240,6 +252,156 @@ The subdirectory logs/ contains all output logs level (rolling mode with a maxim
 - mart_server_error.log (ERROR level)
 - mart_server_fatal.log (FATAL level)
 
+## Users management and user profiling
+You can manage your users directly with the users configuration file (refer to section configuration above), the authentication uses http basic authentication only but more will be available (oauth2, ldap mode).
+On users configuration file (users.properties), the users are defined as properties like this one :
+<pre>
+<code>user1=admin
+password1=1234
+## crud create, retrieve, update, delete, a for all actions authorized, if action defined separated by comma, users is authorized only on these actions like start,stop,suspend
+profile1=c,r,u,d,a,lu,cu,uu,du
+## test users, create, update, retrieve and delete entities, all actions without users management
+user2=test
+password2=1234
+profile2=c,r,u,d,a
+user3=anonymous
+password3=
+profile3=c,r,u,d,start,stop</code>
+</pre>
+
+- user + number is the key for the username
+- password + number is the key for the password
+- profile + number is the key for the profile array
+
+Profile values are set as a table :
+ - c : create entity (resource or link)
+ - r : Retrieve entity
+ - u : update entity
+ - d : delete entity
+ - a : all actions on entity are authorized to be launched
+ - cu : create user
+ - uu : update user
+ - lu : list user
+ - du : delete user
+ - other words : occi action term authorized, in our sample, anonymous has access for start and stop a compute 
+
+### User management with http REST 
+Some REST operations are available too, you must use a user that have the rights to create, update, delete and list users.
+Only json is used for these operations.
+
+The following sample show how it works :
+- List all users :
+<pre><code>
+curl -v -X GET http://localhost:8080/mart/users/ -H 'accept: application/json' -u admin:1234</code>
+</pre>
+This query use <i>admin</i> user and give the following result :
+<pre><code>{
+  "users" : [ {
+    "username" : "test",
+    "createEntity" : true,
+    "deleteEntity" : true,
+    "updateEntity" : true,
+    "retrieveEntity" : true,
+    "allActions" : true,
+    "updateUser" : false,
+    "createUser" : false,
+    "listUser" : false,
+    "deleteUser" : false,
+    "authorizedActions" : [ ]
+  }, {
+    "username" : "anonymous",
+    "createEntity" : true,
+    "deleteEntity" : true,
+    "updateEntity" : true,
+    "retrieveEntity" : true,
+    "allActions" : true,
+    "updateUser" : false,
+    "createUser" : false,
+    "listUser" : false,
+    "deleteUser" : false,
+    "authorizedActions" : [ ]
+  }, {
+    "username" : "admin",
+    "createEntity" : true,
+    "deleteEntity" : true,
+    "updateEntity" : true,
+    "retrieveEntity" : true,
+    "allActions" : true,
+    "updateUser" : true,
+    "createUser" : true,
+    "listUser" : true,
+    "deleteUser" : true,
+    "authorizedActions" : [ ]
+  } ]
+}</code></pre>
+
+- List one user :
+<pre><code>curl -v -X GET http://localhost:8080/mart/users/test -H 'accept: application/json' -u admin:1234</code></pre>
+<pre><code>{
+  "username" : "test",
+  "createEntity" : true,
+  "deleteEntity" : true,
+  "updateEntity" : true,
+  "retrieveEntity" : true,
+  "allActions" : true,
+  "updateUser" : false,
+  "createUser" : false,
+  "listUser" : false,
+  "deleteUser" : false,
+  "authorizedActions" : [ ]
+}</code></pre>
+
+- Add a new user : test2
+<pre><code>curl -v -X PUT http://localhost:8080/mart/users/test2 -d '
+{
+"username" : "test2",
+"password" : "12345",
+"createEntity" : true,
+"deleteEntity" : false,
+"updateEntity" : false,
+"retrieveEntity" : true,
+"allActions" : false,
+"updateUser" : false,
+"createUser" : false,
+"listUser" : false,
+"deleteUser" : false,
+"authorizedActions" : [ "stop", "suspend" ]
+}' -H 'Content-Type: application/json' -H 'accept: application/json' -u admin:1234
+</pre></code>
+
+- Add a new collection of users (user1 and user2)
+<pre><code>curl -v -X POST http://localhost:8080/mart/users/ -d '{
+ "users" : [ 
+ {
+   "username" : "user1",
+   "password" : "1234",
+   "createEntity" : true,
+   "deleteEntity" : true,
+   "updateEntity" : true,
+   "retrieveEntity" : true,
+   "allActions" : false,
+   "updateUser" : false,
+   "createUser" : false,
+   "listUser" : false,
+   "deleteUser" : false,
+   "authorizedActions" : [ ]
+  }, {
+   "username" : "user2",
+   "password" : "1234",
+   "createEntity" : true,
+   "deleteEntity" : false,
+   "updateEntity" : true,
+   "retrieveEntity" : true,
+   "allActions" : false,
+   "updateUser" : false,
+   "createUser" : false,
+   "listUser" : true,
+   "deleteUser" : false,
+   "authorizedActions" : [ "start","suspend", "restart" ]
+ } ]
+}' -H 'Content-Type: application/json' -H 'accept: application/json' -u admin:1234</code></pre>
+
+To update existing users, you must provide the same request as we show in POST example (full update only).
 
 ## Special features
 We have added the feature to save or load model for current user (using basic auth).
@@ -248,6 +410,26 @@ There is special uri for that : /mart/save/ and /mart/load/
 
 To validate the model : /mart/validate/
 
+Example for saving the model : 
+<pre><code>curl -v -X POST http://localhost:8080/mart/save/ -u admin:1234</code></pre>
+
+To fully reload a model on demand :
+<pre><code>curl -v -X POST http://localhost:8080/mart/load/ -u admin:1234</code></pre>
+
+If it's done, the info log will give : 
+<pre><code>2017-07-07 16:38:20.937 INFO  Saving model to : homedir/models/model-admin.occic
+2017-07-07 16:38:20.938 INFO  Model for owner : admin is saved !
+2017-07-07 16:38:20.938 INFO  Model saved to disk on : homedir/models/
+2017-07-07 16:39:38.038 INFO  Input parser implement: text/plain
+2017-07-07 16:39:38.038 INFO  Output parser implement : application/json
+2017-07-07 16:39:38.038 INFO  Parser request: JsonOcciParser
+2017-07-07 16:39:38.038 INFO  HTTP Authentication method : Basic
+2017-07-07 16:39:38.038 INFO  Checking user accreditation
+2017-07-07 16:39:38.038 INFO  Parser request: TextPlainParser
+2017-07-07 16:39:38.038 INFO  Parsing input uploaded datas...
+2017-07-07 16:39:38.040 INFO  Collection: [http://schemas.ogf.org/occi/infrastructure#, http://schemas.ogf.org/occi/core#] --> owner : admin
+2017-07-07 16:39:38.051 INFO  Configuration models loaded from disk.</code></pre>
 
 ## Issues
 Do not hesitate to create new issues if you find a bug or if you have suggestion to make it better.
+

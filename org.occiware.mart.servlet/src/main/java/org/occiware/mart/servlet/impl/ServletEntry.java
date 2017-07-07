@@ -22,6 +22,7 @@ import org.apache.commons.io.IOUtils;
 import org.occiware.mart.security.UserManagement;
 import org.occiware.mart.security.constants.SecurityConstants;
 import org.occiware.mart.security.exceptions.AuthenticationException;
+import org.occiware.mart.security.exceptions.ParseUserException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.parser.DefaultParser;
 import org.occiware.mart.server.parser.HeaderPojo;
@@ -57,6 +58,11 @@ public abstract class ServletEntry {
     private String path;
     private String contentType = Constants.MEDIA_TYPE_JSON;
     private String acceptType = Constants.MEDIA_TYPE_JSON;
+    /**
+     * User request is for creating / updating / deleting / listing users via /mart/users/.
+     */
+    private boolean userRequest = false;
+
     /**
      * If parameters are in inputquery, it must declared here. Key: name of the
      * parameter Value: Value of the parameter (if url ==> decode before set the
@@ -168,7 +174,6 @@ public abstract class ServletEntry {
             acceptType = Constants.MEDIA_TYPE_JSON;
         }
 
-
         String username = "anonymous";
         LOGGER.info("Input parser implement: " + contentType);
         LOGGER.info("Output parser implement : " + acceptType);
@@ -217,17 +222,35 @@ public abstract class ServletEntry {
 
         parseRequestParameters();
 
-        // Parse worker datas content.
-        try {
-            // Parse input query to data objects.
-            occiRequest.parseInput();
+        // Define if the request is a users CRUD management request.
+        userRequest = occiRequest.getRequestPath().startsWith(Constants.RESERVED_URI_LIST_USERS);
+        if (userRequest && contentType.equals(Constants.MEDIA_TYPE_JSON)) {
+            // if there is content, parse user profile in json format.
+            try {
+                occiRequest.parseUserInput();
+            } catch (ParseUserException ex) {
+                String msg = "Error while parsing input request: " + ex.getMessage();
+                LOGGER.error(msg);
 
+                return occiResponse.parseMessage(msg, HttpServletResponse.SC_BAD_REQUEST);
+            }
+        }
+
+        // Parse OCCI worker datas content.
+        try {
+
+            if (!userRequest) {
+                // Parse input query to data objects.
+                occiRequest.parseInput();
+            }
         } catch (ParseOCCIException ex) {
             String msg = "Error while parsing input request: " + ex.getMessage();
             LOGGER.error(msg);
 
             return occiResponse.parseMessage(msg, HttpServletResponse.SC_BAD_REQUEST);
         }
+
+
 
         return httpResponse;
     }
@@ -499,4 +522,11 @@ public abstract class ServletEntry {
         this.acceptType = acceptType;
     }
 
+    public boolean isUserRequest() {
+        return userRequest;
+    }
+
+    public void setUserRequest(boolean userRequest) {
+        this.userRequest = userRequest;
+    }
 }

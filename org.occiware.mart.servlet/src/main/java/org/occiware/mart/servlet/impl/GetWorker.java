@@ -52,6 +52,11 @@ public class GetWorker extends ServletEntry {
         //      return occiResponse.parseMessage("Input content are not accepted with GET method if the query is not an interface query /-/ ", HttpServletResponse.SC_BAD_REQUEST);
         // }
 
+        if (isUserRequest()) {
+            occiRequest.listUsers();
+            return occiResponse.getHttpResponse();
+        }
+
         if (occiRequest.isActionInvocationQuery()) {
             LOGGER.warn("Querying action invocation on GET method.");
             return occiResponse.parseMessage("You cannot use an action with GET method", HttpServletResponse.SC_BAD_REQUEST);

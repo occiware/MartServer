@@ -81,6 +81,7 @@ public class Constants {
     public static final String RESERVED_URI_SAVE_MODEL = "/mart/save/";
     public static final String RESERVED_URI_LOAD_MODEL = "/mart/load/";
     public static final String RESERVED_URI_VALIDATE_MODEL = "/mart/validate/";
+    public static final String RESERVED_URI_LIST_USERS = "/mart/users/";
     private static final String OCCI_SERVER_NAME = "OCCIWare MART Server v1.0";
     public static final String OCCI_SERVER_HEADER = OCCI_SERVER_NAME + " " + OCCI_SERVER_VERSION;
     private static final String GROUP_TITLE = "title";
@@ -138,4 +139,5 @@ public class Constants {
     public static final Pattern PATTERN_LINK = Pattern.compile(REGEXP_LINK);
     private static final String JSON_SCHEMA_IDENTIFIER_ELEMENT = "$schema";
 
+    public static final String FILTER_USERNAME = "username";
 }
