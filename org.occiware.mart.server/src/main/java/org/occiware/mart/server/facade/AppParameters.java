@@ -187,7 +187,11 @@ public class AppParameters {
                 } else {
                     config.put(KEY_PROTOCOL, protocol);
                 }
-            }
+            } else {
+	        	LOGGER.warn(KEY_PROTOCOL + " is not provided in file, assume default protocol : " + "http");
+	            config.put(KEY_PROTOCOL, "http");
+	        }
+            
             int httpsPort = 8181;
             if (prop.containsKey(KEY_HTTPS_PORT)) {
                 try {

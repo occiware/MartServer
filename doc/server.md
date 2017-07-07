@@ -117,12 +117,18 @@ By default, the server use the packaged configuration file located in module sec
 You can add a property file with the name as you want, and located in a directory of your choice.
 You could create for example a file server.config and set it to my_folder_config.
 You can also launch the server with this command line :
+
 <pre>
 <code>
-mvn compile exec:exec -Dexec.args="/my_folder_config/server.config"
+mvn exec:java -Dexec.args="/my_folder_config/server.config"
 </code>
 </pre>
+
 This feature is only available for standalone mode (using jetty module).
+
+> WARNING :
+Your config file must at least have the following properties properly set :
+server.http.port, server.log.directory, server.protocol .
 
 For now there are some parameters :
 
