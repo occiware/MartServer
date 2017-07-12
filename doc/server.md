@@ -124,6 +124,10 @@ mvn compile exec:exec -Dexec.args="/my_folder_config/server.config"
 </pre>
 This feature is only available for standalone mode (using jetty module).
 
+> WARNING : 
+Your config file must at least have the following properties properly set :
+server.http.port, server.log.directory, server.protocol .
+
 For now there are some parameters :
 
  - server.http.port=8080
@@ -162,11 +166,11 @@ This parameter give the extension model jar and connector jar plugins to use wit
   those libraries will be loaded at runtime (only tested with jetty module).
   By default the server will use the directory : <b>/homedir/martserver-plugins</b>
 
- - <b>server.users.mode</b>=file
+ - <b>server.users.mode</b>=none
  
  Users storage mode.
  
- By default, users are stored in a file. You can replace this value to <b>"none"</b>, this will disengage users validation process.
+ By default, no users management (<b>none<b>), if you want user management feature, you must set this option to "file", users will be stored in a file. You can replace this value to <b>"none"</b>, this will disengage users validation process.
 
  - <b>server.users.directory</b>=/yourusersfolder/
  
