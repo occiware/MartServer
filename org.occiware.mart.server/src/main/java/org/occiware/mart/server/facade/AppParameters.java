@@ -48,8 +48,6 @@ public class AppParameters {
     // Paths.get("logs").toAbsolutePath().toString() + FileSystems.getDefault().getSeparator();
     public static final String KEY_MODEL_DIRECTORY = "server.model.directory";
     //Paths.get("models").toAbsolutePath().toString() + FileSystems.getDefault().getSeparator();
-    public static final String KEY_ADMIN_USERNAME = "admin.username";
-    public static final String KEY_ADMIN_PASSWORD = "admin.password";
     public static final String KEY_SAVE_ON_TERMINATE = "server.save.onterminate";
     public static final String KEY_LOAD_ON_START = "server.load.onstart";
     public static final String KEY_PLUGINS_DIRECTORY = "server.plugins.directory";
@@ -261,21 +259,6 @@ public class AppParameters {
                 LOGGER.warn("Back to default port : " + httpsPort);
             }
             config.put(KEY_HTTPS_PORT, "" + httpsPort);
-
-            // Main administrator to remove after when usermanager will be ready or when the administrator(s) will be set.
-            if (prop.containsKey(KEY_ADMIN_USERNAME)) {
-                String adminuser = prop.getProperty(KEY_ADMIN_USERNAME);
-                if (adminuser == null || adminuser.trim().isEmpty()) {
-                    throw new ApplicationConfigurationException(KEY_ADMIN_USERNAME + "is not set, please set a default admin.");
-                }
-                config.put(KEY_ADMIN_USERNAME, adminuser);
-            }
-            if (prop.containsKey(KEY_ADMIN_PASSWORD)) {
-                String adminpassword = prop.getProperty(KEY_ADMIN_PASSWORD);
-                if (adminpassword == null || adminpassword.trim().isEmpty()) {
-                    throw new ApplicationConfigurationException(KEY_ADMIN_PASSWORD + " is not set, please set a password for admin.");
-                }
-            }
 
             // Model directory for load and save models.
             if (prop.containsKey(KEY_MODEL_DIRECTORY)) {
