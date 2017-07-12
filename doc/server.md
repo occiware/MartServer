@@ -107,7 +107,7 @@ The martserver config file is only useable with org.occiware.mart.jetty package 
 The server port is by default on 8080.
 Https server port is by default on 8181.
 
-By default, the server use the packaged configuration file located in module security : 
+By default, the server use the packaged configuration file located in module security :
 <b>./org.occiware.mart.security/src/main/resources/config.properties</b>, if you use the packaged war, you must update and use this file.
 
 /user_home_directory/martserver.config
@@ -115,25 +115,31 @@ By default, the server use the packaged configuration file located in module sec
 You can add a property file with the name as you want, and located in a directory of your choice.
 You could create for example a file server.config and set it to my_folder_config.
 You can also launch the server with this command line :
+
 <pre>
 <code>
 mvn exec:java -Dexec.args="/my_folder_config/server.config"
 </code>
 </pre>
+
 This feature is only available for standalone mode (using jetty module).
 
- For now there are some parameters :
- 
+> WARNING :
+Your config file must at least have the following properties properly set :
+server.http.port, server.log.directory, server.protocol .
+
+All parameters are described here:
+
  - server.http.port=8080
- 
+
  Where the port is between 1 and 9999 a good pratice to set the port is to assume that all port before 1000 are not ok. So you can choose a port like 1001.
 
  - server.log.directory=/logging/application/logs
- 
+
  The directory where are located the application logs.
 
  - server.protocol=http
- 
+
  The protocol, <b>http</b> and <b>https</b> support will be plan in a near future.
 
  - server.https.port=8181
@@ -147,13 +153,13 @@ Temporary username for default administrator.
 Temporary password for default administrator.
 
  - server.model.directory=/yourmodelfolder/
- 
+
 Path of your model directory. By default, if not set, the application will use: <b>/homedir/models/</b>
 
 This is used by save and load model api feature.
 
  - server.save.onterminate=true
- 
+
 This parameter give the ability to save model when stopping the server.
 
  - server.load.onstart=true
