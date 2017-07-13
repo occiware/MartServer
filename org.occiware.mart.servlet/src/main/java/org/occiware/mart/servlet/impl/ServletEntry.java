@@ -167,7 +167,7 @@ public abstract class ServletEntry {
 
         // Default values.
         if (contentType == null || contentType.isEmpty()) {
-            contentType = Constants.MEDIA_TYPE_TEXT_PLAIN;
+            contentType = Constants.MEDIA_TYPE_JSON;
         }
         if (acceptType == null || acceptType.isEmpty() || acceptType.equals("*/*")) {
             // Default to MEDIA_TYPE_JSON.
