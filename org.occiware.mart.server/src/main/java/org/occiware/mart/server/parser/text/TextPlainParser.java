@@ -62,9 +62,9 @@ public class TextPlainParser extends AbstractRequestParser implements IRequestPa
             try {
                 category = parseInputCategories(line);
                 if (category instanceof Kind) {
-                    kind = (Kind)category;
+                    kind = (Kind) category;
                 } else {
-                    action = (Action)category;
+                    action = (Action) category;
                 }
             } catch (ParseOCCIException ex) {
                 LOGGER.warn("No kind / no action declared on input request data content.");

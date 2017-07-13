@@ -18,58 +18,44 @@
  */
 package org.occiware.mart.security;
 
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.occiware.mart.security.exceptions.ApplicationSecurityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.*;
+import javax.security.auth.x500.X500Principal;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.SignatureException;
+import java.security.*;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateNotYetValidException;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.X509TrustManager;
-import javax.security.auth.x500.X500Principal;
-import org.bouncycastle.asn1.x500.RDN;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.style.BCStyle;
 
 /**
  * Created by cgourdin on 24/05/2017.
  */
 public class CertificateManagement {
+    public static final String KEYSTORE_PASSWORD = "martserver";
+    public static final String KEYSTORE_TYPE = "JKS";
     private static final Logger LOGGER = LoggerFactory.getLogger(CertificateManagement.class);
     // Default jks path.
     public static String KEYSTORE_PATH = System.getProperty("user.home") + System.getProperty("file.separator") + "keystore.jks";
-    public static final String KEYSTORE_PASSWORD = "martserver";
-    public static final String KEYSTORE_TYPE = "JKS";
-
 
     /**
      * Check if server certificate is already in the jkstore
-     * @param host hostname to check
-     * @param port the port number
-     * @param urlPath the url in string format.
+     *
+     * @param host       hostname to check
+     * @param port       the port number
+     * @param urlPath    the url in string format.
      * @param verifyCert , if true, certificates are checked.
      * @throws ApplicationSecurityException thrown when certificate are invalid.
      */
@@ -137,7 +123,6 @@ public class CertificateManagement {
     }
 
     /**
-     *
      * @param addressHost
      * @param port
      * @param verifyCerts
@@ -260,8 +245,6 @@ public class CertificateManagement {
     }
 
     /**
-     *
-     *
      * @return
      * @throws ApplicationSecurityException
      */
@@ -284,7 +267,6 @@ public class CertificateManagement {
     }
 
     /**
-     *
      * @param cert
      * @return
      */
@@ -312,7 +294,6 @@ public class CertificateManagement {
     }
 
     /**
-     *
      * @param vCompCerts
      * @param cert
      * @return
@@ -349,7 +330,6 @@ public class CertificateManagement {
     }
 
     /**
-     *
      * @param signedCert
      * @param signingCert
      * @return
@@ -370,7 +350,6 @@ public class CertificateManagement {
 
 
     /**
-     *
      * @param name
      * @return
      */
@@ -388,7 +367,6 @@ public class CertificateManagement {
     }
 
     /**
-     *
      * @param name
      * @return
      */

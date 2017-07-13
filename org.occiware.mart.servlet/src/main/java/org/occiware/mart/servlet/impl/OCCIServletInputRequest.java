@@ -18,6 +18,9 @@
  */
 package org.occiware.mart.servlet.impl;
 
+import org.occiware.mart.security.UserManagement;
+import org.occiware.mart.security.UserProfile;
+import org.occiware.mart.security.exceptions.AuthorizationException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.facade.AbstractOCCIApiInputRequest;
 import org.occiware.mart.server.facade.OCCIApiInputRequest;
@@ -25,12 +28,14 @@ import org.occiware.mart.server.facade.OCCIApiResponse;
 import org.occiware.mart.server.parser.HeaderPojo;
 import org.occiware.mart.server.parser.IRequestParser;
 import org.occiware.mart.server.parser.OCCIRequestData;
+import org.occiware.mart.server.utils.CollectionFilter;
 import org.occiware.mart.server.utils.Constants;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -354,5 +359,202 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
             }
         }
         return result;
+    }
+
+    // Section override api method for user authorization decorator.
+    @Override
+    public OCCIApiResponse getModelsInterface(String categoryFilter, String extensionFilter) {
+
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isRetrieveEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to read and retrieve informations");
+            return getOcciApiResponse();
+        }
+
+        return super.getModelsInterface(categoryFilter, extensionFilter);
+    }
+
+    @Override
+    public OCCIApiResponse createEntity(String title, String summary, String kind, List<String> mixins, Map<String, String> attributes, String location) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isCreateEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to create entities");
+            return getOcciApiResponse();
+        }
+        return super.createEntity(title, summary, kind, mixins, attributes, location);
+    }
+
+    @Override
+    public OCCIApiResponse createEntities(List<OCCIRequestData> datas) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isCreateEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to create entities");
+            return getOcciApiResponse();
+        }
+        return super.createEntities(datas);
+    }
+
+    @Override
+    public OCCIApiResponse updateEntity(String title, String summary, List<String> mixins, Map<String, String> attributes, String location) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isUpdateEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to update entities");
+            return getOcciApiResponse();
+        }
+        return super.updateEntity(title, summary, mixins, attributes, location);
+    }
+
+    @Override
+    public OCCIApiResponse deleteEntity(String location) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isDeleteEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to delete entities");
+            return getOcciApiResponse();
+        }
+        return super.deleteEntity(location);
+    }
+
+    @Override
+    public OCCIApiResponse deleteEntities(String location, CollectionFilter filter) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isDeleteEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to delete entities");
+            return getOcciApiResponse();
+        }
+        return super.deleteEntities(location, filter);
+    }
+
+    @Override
+    public OCCIApiResponse findEntity(String location) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isRetrieveEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to read entities");
+            return getOcciApiResponse();
+        }
+        return super.findEntity(location);
+    }
+
+    @Override
+    public OCCIApiResponse findEntities(String location, CollectionFilter filter) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isRetrieveEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to read entities");
+            return getOcciApiResponse();
+        }
+        return super.findEntities(location, filter);
+    }
+
+    @Override
+    public OCCIApiResponse findEntitiesLocations(String location, CollectionFilter filter) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isRetrieveEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to read entities");
+            return getOcciApiResponse();
+        }
+        return super.findEntitiesLocations(location, filter);
+    }
+
+    @Override
+    public OCCIApiResponse createMixinTag(String title, String mixinTag, String location, List<String> locations) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isCreateEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to create mixin tags");
+            return getOcciApiResponse();
+        }
+        return super.createMixinTag(title, mixinTag, location, locations);
+    }
+
+    @Override
+    public OCCIApiResponse replaceMixinTagCollection(String mixinTag, List<String> locations) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isUpdateEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to create or replace mixin tag association");
+            return getOcciApiResponse();
+        }
+        return super.replaceMixinTagCollection(mixinTag, locations);
+    }
+
+    @Override
+    public OCCIApiResponse associateMixinToEntities(String mixin, String mixinTagLocation, List<String> xlocations) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isUpdateEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to update entities with mixin association");
+            return getOcciApiResponse();
+        }
+        return super.associateMixinToEntities(mixin, mixinTagLocation, xlocations);
+    }
+
+    @Override
+    public OCCIApiResponse deleteMixinTag(String mixinTag) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isDeleteEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to delete mixin tags");
+            return getOcciApiResponse();
+        }
+        return super.deleteMixinTag(mixinTag);
+    }
+
+    @Override
+    public OCCIApiResponse removeMixinAssociations(String mixin, List<String> locations) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        if (!userProfile.isCreateEntity()) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to remove mixin association");
+            return getOcciApiResponse();
+        }
+        return super.removeMixinAssociations(mixin, locations);
+    }
+
+    @Override
+    public OCCIApiResponse executeActionOnEntities(String action, Map<String, String> actionAttributes, List<String> locations) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        String actionTerm = action;
+        if (action.contains("#")) {
+            actionTerm = action.split("#")[1];
+        }
+        if (!userProfile.isActionAuthorized(actionTerm)) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to execute action : " + actionTerm);
+            return getOcciApiResponse();
+        }
+        return super.executeActionOnEntities(action, actionAttributes, locations);
+    }
+
+    @Override
+    public OCCIApiResponse executeActionOnCategory(String action, Map<String, String> actionAttrs, String categoryTerm) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        String actionTerm = action;
+        if (action.contains("#")) {
+            actionTerm = action.split("#")[1];
+        }
+        if (!userProfile.isActionAuthorized(actionTerm)) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to execute action : " + actionTerm);
+            return getOcciApiResponse();
+        }
+        return super.executeActionOnCategory(action, actionAttrs, categoryTerm);
+    }
+
+    @Override
+    public OCCIApiResponse executeActionOnMixinTag(String action, Map<String, String> actionAttrs, String mixinTag) {
+        UserProfile userProfile = UserManagement.getUserProfile(getUsername());
+        String actionTerm = action;
+        if (action.contains("#")) {
+            actionTerm = action.split("#")[1];
+        }
+        if (!userProfile.isActionAuthorized(actionTerm)) {
+            parseAuthorizationFailed(getUsername() + " has not the permission to execute action : " + actionTerm);
+            return getOcciApiResponse();
+        }
+        return super.executeActionOnMixinTag(action, actionAttrs, mixinTag);
+    }
+
+    private void parseAuthorizationFailed(final String message) {
+        // get response object.
+        OCCIServletOutputResponse responseObj = (OCCIServletOutputResponse) getOcciApiResponse();
+
+        responseObj.setExceptionMessage(message);
+        responseObj.setExceptionThrown(new AuthorizationException(message));
+        responseObj.parseResponseMessage(message);
+        // responseObj.getHttpResponse().setHeader(Constants.HEADER_WWW_AUTHENTICATE, authenticationMethod + " realm=\"" + getServerURI() + "\"");
+        responseObj.getHttpResponse().setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        LOGGER.warn(message);
     }
 }

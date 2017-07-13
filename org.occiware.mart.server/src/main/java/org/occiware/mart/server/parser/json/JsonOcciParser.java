@@ -24,9 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
-
 import org.occiware.clouddesigner.occi.*;
-
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.model.ConfigurationManager;

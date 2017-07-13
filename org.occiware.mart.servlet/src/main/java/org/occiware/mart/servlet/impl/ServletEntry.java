@@ -161,7 +161,7 @@ public abstract class ServletEntry {
 
         // Default values.
         if (contentType == null || contentType.isEmpty()) {
-            contentType = Constants.MEDIA_TYPE_TEXT_PLAIN;
+            contentType = Constants.MEDIA_TYPE_JSON;
         }
         if (acceptType == null || acceptType.isEmpty() || acceptType.equals("*/*")) {
             // Default to MEDIA_TYPE_JSON.
@@ -182,7 +182,7 @@ public abstract class ServletEntry {
 
             LOGGER.error(ex.getMessage());
             if (!occiResponse.hasExceptions()) {
-                parseResponseNotAuthorized();
+                parseResponseAuthenticationFailed();
                 occiResponse.setExceptionThrown(ex);
             }
             return occiResponse.getHttpResponse();
@@ -245,19 +245,22 @@ public abstract class ServletEntry {
 
         // Read the authorization header values.
         String headerAuth = headers.getFirst(Constants.HEADER_AUTHORIZATION);
+
         if (headerAuth == null || headerAuth.trim().isEmpty()) {
             // No header found
-            LOGGER.warn("Authorization header not found, assume that the user is anonymous.");
-            return "anonymous";
-            // TODO : when usermanagement will totally finished, replace anonymous return by the following lines.
-            // parseResponseNotAuthorized();
-            // throw (AuthenticationException) occiResponse.getExceptionThrown();
+            // if the application parameter user mode is set to none, the validation will pass through. if not the user validation will failed.
+            if (UserManagement.checkBasicUserAuthorisation("anonymous", "")) {
+                return "anonymous";
+            } else {
+                parseResponseAuthenticationFailed();
+                throw (AuthenticationException) occiResponse.getExceptionThrown();
+            }
         }
 
         // parse the header to determine on which authentication method this is based (Basic, Bearer or Digest?)
         String valuesSpaceDelimit[] = headerAuth.split("\\s+");
         if (valuesSpaceDelimit.length <= 0) {
-            parseResponseNotAuthorized();
+            parseResponseAuthenticationFailed();
             throw (AuthenticationException) occiResponse.getExceptionThrown();
         }
 
@@ -268,7 +271,7 @@ public abstract class ServletEntry {
 
         if (authenticationMethod == null || authenticationMethod.trim().isEmpty()) {
             LOGGER.warn("please set a value for authentication like: Basic, Bearer, Digest ");
-            parseResponseNotAuthorized();
+            parseResponseAuthenticationFailed();
             throw (AuthenticationException) occiResponse.getExceptionThrown();
         }
 
@@ -304,7 +307,7 @@ public abstract class ServletEntry {
     private String parseAuthBasicUsernamePassword(final String values) throws AuthenticationException {
 
         if (values == null || values.trim().isEmpty()) {
-            parseResponseNotAuthorized();
+            parseResponseAuthenticationFailed();
             throw (AuthenticationException) occiResponse.getExceptionThrown();
         }
 
@@ -319,26 +322,30 @@ public abstract class ServletEntry {
             String username;
             String password;
             username = vals[0];
-            password = vals[1];
+            if (vals.length <= 1) {
+                password = "";
+            } else {
+                password = vals[1];
+            }
 
             // Check user authorization.
             if (UserManagement.checkBasicUserAuthorisation(username, password)) {
                 return username;
 
             } else {
-                parseResponseNotAuthorized();
+                parseResponseAuthenticationFailed();
                 throw (AuthenticationException) occiResponse.getExceptionThrown();
             }
 
         } catch (IOException ex) {
-            parseResponseNotAuthorized();
+            parseResponseAuthenticationFailed();
             throw (AuthenticationException) occiResponse.getExceptionThrown();
         }
     }
 
-    private void parseResponseNotAuthorized() {
+    private void parseResponseAuthenticationFailed() {
         occiResponse.getHttpResponse().setHeader(Constants.HEADER_WWW_AUTHENTICATE, Constants.HEADER_WWW_AUTHENTICATE_BASIC_PARTIAL + getServerURI() + "\"");
-        String message = "Failed to authenticate, you must provide Authorization header.";
+        String message = "Failed to authenticate";
         occiResponse.parseMessage(message, HttpServletResponse.SC_UNAUTHORIZED);
         occiResponse.setExceptionThrown(new AuthenticationException(message));
     }
@@ -368,7 +375,7 @@ public abstract class ServletEntry {
         String itemsNumber = getRequestParameters().get(Constants.NUMBER_ITEMS_PER_PAGE_KEY);
         int items = Constants.DEFAULT_NUMBER_ITEMS_PER_PAGE;
         int page = Constants.DEFAULT_CURRENT_PAGE;
-        if (pageTmp != null && !pageTmp.isEmpty()) {
+        if (itemsNumber != null && !itemsNumber.trim().isEmpty()) {
             // Set the value from request only if this is a number.
             try {
                 items = Integer.valueOf(itemsNumber);
@@ -377,6 +384,8 @@ public abstract class ServletEntry {
                 LOGGER.error("The parameter \"number\" is not set correctly, please check the parameter, this must be a number.");
                 LOGGER.error("Default to " + items);
             }
+        }
+        if (pageTmp != null && !pageTmp.trim().isEmpty()) {
             try {
                 page = Integer.valueOf(pageTmp);
             } catch (NumberFormatException ex) {
@@ -385,7 +394,7 @@ public abstract class ServletEntry {
             }
         }
         String operatorTmp = getRequestParameters().get(Constants.OPERATOR_KEY);
-        if (operatorTmp == null) {
+        if (operatorTmp == null || operatorTmp.trim().isEmpty()) {
             operatorTmp = "0";
         }
         int operator = 0;
@@ -489,4 +498,5 @@ public abstract class ServletEntry {
     public void setAcceptType(String acceptType) {
         this.acceptType = acceptType;
     }
+
 }

@@ -20,7 +20,6 @@ package org.occiware.mart.server.integration;
 
 import org.junit.Test;
 import org.occiware.mart.server.exception.ApplicationConfigurationException;
-import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.facade.*;
 import org.occiware.mart.server.model.ConfigurationManager;
 import org.occiware.mart.server.parser.DefaultParser;

@@ -65,7 +65,16 @@ public class HeaderPojo {
      */
     public String getFirst(final String key) {
         String val = null;
+        if (key == null || key.trim().isEmpty()) {
+            return null;
+        }
         List<String> values = headerMap.get(key);
+
+        // Try with lower case.
+        if (values == null) {
+            headerMap.get(key.toLowerCase());
+        }
+
         if (values != null && !values.isEmpty()) {
             val = values.get(0);
         }

@@ -18,11 +18,9 @@
  */
 package org.occiware.mart.server.model;
 
-import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.eclipse.emf.common.util.EList;
-
 import org.occiware.clouddesigner.occi.*;
-
+import org.occiware.clouddesigner.occi.util.OcciHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,6 +190,7 @@ public class KindManager {
 
     /**
      * Return all attributes for an entity kind (main attributes).
+     *
      * @param kind
      * @return a collection of attributes.
      */

@@ -289,11 +289,10 @@ public class Utils {
     /**
      * Parse a string to a number without knowning its type output.
      *
-     * @param str value to convert.
+     * @param str           value to convert.
      * @param instanceClass can be null, represent the class type of the value to convert (like Integer etc.)
-     * @throws NumberFormatException if the value cannot be converted.
      * @return a non null number object.
-     *
+     * @throws NumberFormatException if the value cannot be converted.
      */
     public static Number parseNumber(String str, Class<?> instanceClass) throws NumberFormatException {
         Number number;
@@ -340,9 +339,6 @@ public class Utils {
 
         return number;
     }
-
-
-
 
 
 }

@@ -23,8 +23,6 @@ import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.occiware.clouddesigner.occi.*;
-
-
 import org.occiware.clouddesigner.occi.util.Occi2Ecore;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.Utils;
@@ -222,6 +220,7 @@ public class MixinManager {
 
     /**
      * Used by load configuration only. Update all the mixin location map with mixins tag only.
+     *
      * @param owner
      */
     public static void updateAllMixinTagReferences(final String owner) {
@@ -231,13 +230,12 @@ public class MixinManager {
         for (Mixin mixin : mixinsTags) {
             // TODO : Save mixin location map in a file when saving xmi occic document.
             location = mixin.getTerm();
-            userMixinLocationMap.put(mixin.getTerm(), location);
+            userMixinLocationMap.put(mixin.getScheme() + mixin.getTerm(), location);
         }
 
     }
 
     /**
-     *
      * @param owner
      * @return
      */
@@ -666,14 +664,20 @@ public class MixinManager {
         return mixinsStr;
     }
 
-    public static void clearMixinTagsReferences() {
-        userMixinLocationMap.clear();
+    public static void clearMixinTagsReferences(final String owner) {
+        if (!userMixinLocationMap.isEmpty()) {
+            List<Mixin> mixins = getAllMixinTagsForOwner(owner);
+
+            for (Mixin mixin : mixins) {
+                userMixinLocationMap.remove(mixin.getScheme() + mixin.getTerm());
+            }
+        }
     }
 
     /**
      * Get The datatype of an attribute from a list of mixins.
      *
-     * @param mixin   a mixin base object.
+     * @param mixin    a mixin object.
      * @param attrName the name of the attribute
      * @return a dataType or an optional empty ==> NEVER null values.
      */
@@ -692,7 +696,6 @@ public class MixinManager {
     }
 
     /**
-     *
      * @param mixin
      * @return
      */

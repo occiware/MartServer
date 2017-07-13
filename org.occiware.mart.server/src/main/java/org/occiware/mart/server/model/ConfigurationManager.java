@@ -18,15 +18,15 @@
  */
 package org.occiware.mart.server.model;
 
-import org.occiware.clouddesigner.occi.*;
-import org.occiware.clouddesigner.occi.util.OcciHelper;
-import org.occiware.mart.MART;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.common.util.WrappedException;
-import org.eclipse.emf.ecore.resource.*;
+import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.Diagnostician;
+import org.occiware.clouddesigner.occi.*;
+import org.occiware.clouddesigner.occi.util.OcciHelper;
+import org.occiware.mart.MART;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.exception.ModelValidatorException;
 import org.occiware.mart.server.parser.QueryInterfaceData;
@@ -667,6 +667,7 @@ public class ConfigurationManager {
 
     /**
      * Load all models from files.
+     *
      * @param modelDirectory
      * @throws ConfigurationException
      */
@@ -676,9 +677,12 @@ public class ConfigurationManager {
 
 
         // reset all.
-        configurations.clear();
-        EntityManager.clearReferences();
-        MixinManager.clearMixinTagsReferences();
+        // configurations.clear();
+        // EntityManager.clearReferences();
+        // MixinManager.clearMixinTagsReferences();
+        if (modelDirectory == null || modelDirectory.trim().isEmpty()) {
+            return;
+        }
         List<String> modelFiles;
         // List all files from the directory model.
         try {
@@ -686,6 +690,10 @@ public class ConfigurationManager {
         } catch (IOException ex) {
             LOGGER.error("Error while listing directory : " + modelDirectory + " --> " + ex.getMessage());
             throw new ConfigurationException("Error while listing directory : " + modelDirectory + " --> " + ex.getMessage(), ex);
+        }
+        if (modelFiles.isEmpty()) {
+            LOGGER.info("No models to load.");
+            return;
         }
         String tmpExt;
         for (String modelFile : modelFiles) {
@@ -695,6 +703,9 @@ public class ConfigurationManager {
                 // Load configurations for each files from modelDirectory and get username from filename.
                 tmpExt = modelFile.replace(".occic", "");
                 currentOwner = tmpExt.split("-")[1];
+                configurations.remove(currentOwner);
+                EntityManager.clearReferences(currentOwner);
+                MixinManager.clearMixinTagsReferences(currentOwner);
                 // Update for each configuration references (entities and mixins tags).
                 loadModelFromDisk(modelDirectory, currentOwner);
             }
@@ -707,10 +718,14 @@ public class ConfigurationManager {
 
     /**
      * Save all models to files in a directory provided.
+     *
      * @param modelDirectory
      * @throws ConfigurationException
      */
     public static void saveAllModelsToDisk(final String modelDirectory) throws ConfigurationException {
+        if (modelDirectory == null || modelDirectory.trim().isEmpty()) {
+            return;
+        }
         // Get all owner.
         Set<String> owners = configurations.keySet();
         for (String currentOwner : owners) {
@@ -720,6 +735,7 @@ public class ConfigurationManager {
 
     /**
      * Utility method to list a directory filenames.
+     *
      * @param directory
      * @return
      * @throws IOException
@@ -746,6 +762,7 @@ public class ConfigurationManager {
 
     /**
      * Print to a StringBuilder object the model validation diagnostic.
+     *
      * @param diagnostic
      * @param indent
      * @param sb
@@ -757,7 +774,7 @@ public class ConfigurationManager {
         sb.append("\n");
         Iterator diagChild = diagnostic.getChildren().iterator();
 
-        while(diagChild.hasNext()) {
+        while (diagChild.hasNext()) {
             Diagnostic child = (Diagnostic) diagChild.next();
             printDiagnostic(child, indent + "  ", sb);
         }

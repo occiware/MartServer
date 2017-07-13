@@ -75,8 +75,11 @@ public interface IRequestParser {
 
     public void convertLocationsToOutputDatas(List<String> locations);
 
-    public void setUsername(final String username);
     public String getUsername();
+
+    public void setUsername(final String username);
+
     URI getServerURI();
+
     void setServerURI(URI serverURI);
 }

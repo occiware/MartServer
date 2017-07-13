@@ -63,7 +63,7 @@ public class IniteServletContextListener implements ServletContextListener {
             String saveOnTerminateStr = appParameters.getConfig().get(AppParameters.KEY_SAVE_ON_TERMINATE);
             boolean saveOnTerminate = Boolean.valueOf(saveOnTerminateStr);
             if (saveOnTerminate) {
-                LOGGER.info("saving models..");
+                LOGGER.info("Saving models...");
                 occiApiInputRequest.saveAllModelsToDisk();
             }
         }

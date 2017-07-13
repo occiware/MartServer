@@ -22,7 +22,6 @@ package org.occiware.mart.server.parser;
 import org.occiware.clouddesigner.occi.Entity;
 import org.occiware.clouddesigner.occi.Mixin;
 import org.occiware.clouddesigner.occi.Resource;
-
 import org.occiware.mart.server.exception.ParseOCCIException;
 import org.occiware.mart.server.model.EntityManager;
 
@@ -40,6 +39,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
     private String username;
     private QueryInterfaceData interfaceData;
     private URI serverURI;
+
     public AbstractRequestParser(String username) {
         this.username = username;
     }
@@ -159,6 +159,7 @@ public abstract class AbstractRequestParser implements IRequestParser {
     public URI getServerURI() {
         return serverURI;
     }
+
     @Override
     public void setServerURI(URI serverURI) {
         this.serverURI = serverURI;

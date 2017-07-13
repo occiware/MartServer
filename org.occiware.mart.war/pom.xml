@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
         <artifactId>org.occiware.mart</artifactId>
@@ -111,10 +111,13 @@
                                 </goals>
                                 <configuration>
                                     <overwrite>false</overwrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/occinterface/</outputDirectory>
+                                    <outputDirectory>
+                                        ${project.build.directory}/${project.build.finalName}/occinterface/
+                                    </outputDirectory>
                                     <resources>
                                         <resource>
-                                            <directory>../org.occiware.mart.occinterface/src/main/webapp/occinterface</directory>
+                                            <directory>../org.occiware.mart.occinterface/src/main/webapp/occinterface
+                                            </directory>
                                         </resource>
                                     </resources>
                                 </configuration>

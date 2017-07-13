@@ -16,15 +16,25 @@
  * Contributors:
  * - Christophe Gourdin <christophe.gourdin@inria.fr>
  */
-package org.occiware.mart.security;
+package org.occiware.mart.security.exceptions;
 
 /**
- * @author Christophe Gourdin
+ * Created by cgourdin on 06/07/2017.
  */
-public class MartSecurity {
-
-    public static void main(String[] args) {
-        // TODO : add methods to regenerate a jks file and useable on all other modules.
+public class AuthorizationException extends Exception {
+    public AuthorizationException() {
+        super();
     }
 
+    public AuthorizationException(String message) {
+        super(message);
+    }
+
+    public AuthorizationException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public AuthorizationException(Throwable cause) {
+        super(cause);
+    }
 }

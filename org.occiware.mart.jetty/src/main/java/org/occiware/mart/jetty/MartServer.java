@@ -21,16 +21,11 @@ package org.occiware.mart.jetty;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.occiware.mart.server.facade.*;
 import org.occiware.mart.server.exception.ApplicationConfigurationException;
-import org.occiware.mart.server.parser.json.JsonOcciParser;
+import org.occiware.mart.server.facade.AppParameters;
 import org.occiware.mart.server.utils.logging.LoggerConfig;
 import org.occiware.mart.servlet.MainServlet;
-import org.occiware.mart.servlet.impl.IniteServletContextListener;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 import java.net.URISyntaxException;
 
 
@@ -111,6 +106,16 @@ public class MartServer {
 
         try {
             System.out.println("Starting OCCI REST MartServer...");
+            // appParameters.addPluginsToClasspath();
+//            AppParameters appParameters = AppParameters.getInstance();
+//            try {
+//                LOGGER.info("plugins loader invoked");
+//                // appParameters.addPluginsUsingOSGI();
+//                appParameters.addPluginsToClasspath();
+//            } catch (Exception ex) {
+//                LOGGER.error("Plugins not installed : " + ex.getClass().getName() + " --> " + ex.getMessage());
+//                ex.printStackTrace();
+//            }
             server.start();
             serverStarted = true;
             server.join();
@@ -125,6 +130,7 @@ public class MartServer {
 
     /**
      * Read the config parameters and set values to this server.
+     *
      * @param parameters
      */
     public static void readConfigParameters(AppParameters parameters) {

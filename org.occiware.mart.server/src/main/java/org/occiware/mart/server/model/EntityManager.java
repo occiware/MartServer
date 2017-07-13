@@ -1075,9 +1075,9 @@ public class EntityManager {
     /**
      * Update / add attributes to entity.
      *
-     * @param entity     entity to update.
-     * @param attributes Attributes to update.
-     * @param owner      owner of the entity to update.
+     * @param entity         entity to update.
+     * @param attributes     Attributes to update.
+     * @param owner          owner of the entity to update.
      * @param fullUpdateMode true if this method is called by addResourceToConfiguration when creating a new entity or full update it.
      * @return Updated entity object, never null.
      */
@@ -1710,9 +1710,9 @@ public class EntityManager {
     }
 
 
-    public static void clearReferences() {
-        entitiesOwnerMap.clear();
-        versionObjectMap.clear();
+    public static void clearReferences(final String owner) {
+        entitiesOwnerMap.remove(owner);
+        versionObjectMap.remove(owner);
     }
 
 }

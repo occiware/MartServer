@@ -19,14 +19,8 @@
 package org.occiware.mart.security.integration;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.occiware.mart.security.MartSecurity;
-import java.io.File;
-import java.nio.charset.Charset;
-
-import static org.junit.Assert.*;
 
 /**
  * Global occi server tests.
@@ -42,6 +36,7 @@ public class SecurityIT {
     @AfterClass
     public static void after() {
     }
+
     @Test
     public void todo() throws Exception {
     }
