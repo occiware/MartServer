@@ -170,7 +170,7 @@ This parameter give the extension model jar and connector jar plugins to use wit
  
  Users storage mode.
  
- By default, no users management (<b>none<b>), if you want user management feature, you must set this option to "file", users will be stored in a file. You can replace this value to <b>"none"</b>, this will disengage users validation process.
+ By default, no users management (<b>none</b>), if you want user management feature, you must set this option to "file", users will be stored in a file. You can replace this value to <b>"none"</b>, this will disengage users validation process.
 
  - <b>server.users.directory</b>=/yourusersfolder/
  
