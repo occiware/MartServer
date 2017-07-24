@@ -1144,11 +1144,33 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                                 }
                             }
                             if (!found) {
-                                // TODO : Control attribute in parent kind recursively before adding the other attributes..
+                                // Check parent kinds.
+                                Kind kindParent = kindModel.getParent();
+                                while (kindParent != null) {
+                                    if (kindParent.getTerm().equals("resource") || kindParent.getTerm().equals("link")) {
+                                        // Parent kind is from core extension.
+                                        break;
+                                    } else {
+                                        // Parent kind is defined search the attributes.
+                                        for(Attribute attribModel : kindParent.getAttributes()) {
+                                            if (attribModel.getName().equals(attrKey)) {
+                                                LOGGER.info("Attribute : " + attrKey + " found on parent kind : " + kindParent.getScheme() + kindParent.getTerm());
+                                                found = true;
+                                                break;
+                                            }
+                                        }
+                                        if (found) {
+                                            break;
+                                        }
 
-                                // Add the attribute to control on mixins and action (if one on request).
-                                attrsToControlOnActions.put(attrKey, attrValue);
-                                attrsToControlOnMixins.put(attrKey, attrValue);
+                                    }
+                                    kindParent = kindParent.getParent();
+                                }
+                                if (!found) {
+                                    // Add the attribute to control on mixins and action (if one on request).
+                                    attrsToControlOnActions.put(attrKey, attrValue);
+                                    attrsToControlOnMixins.put(attrKey, attrValue);
+                                }
                             }
                         }
                     }
@@ -1215,8 +1237,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                     // mixins exists ?
                     // Are there applyable to this kind ?
                     List<Mixin> mixinModels = new LinkedList<>();
-                    // Global mixins attributes.
-                    List<Attribute> mixinAttrs = new LinkedList<>();
+                    List<Mixin> depends = new LinkedList<>();
                     // Prepare a list of known mixins if not known ==> error.
                     for (String mixin : mixins) {
                         optMixin = MixinManager.findMixinOnExtension(mixin, username);
@@ -1230,9 +1251,25 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                             parseModelValidatorExceptionMessageOutput(message);
                             return occiApiResponse;
                         } else {
-                            mixinModels.add(optMixin.get());
+                            Mixin current = optMixin.get();
+                            mixinModels.add(current);
+                            // If mixin has depends, we add the depends recursively.
+                            depends = current.getDepends();
+                            mixinModels.addAll(depends);
+
+                            for (Mixin mixinSubDep : depends) {
+                                mixinModels.addAll(mixinSubDep.getDepends());
+                            }
+
+                            // TODO : Add recursive method to add all mixins in perimeters (depends subdepends , subsubdepends etc.)
+
+
                         }
                     }
+
+                    // Global mixins attributes.
+                    List<Attribute> mixinAttrs = new LinkedList<>();
+
                     if (!attrsToControlOnMixins.isEmpty()) {
                         // For each mixin model, we add all known attributes to a list.
                         for (Mixin mixinModel : mixinModels) {
