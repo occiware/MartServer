@@ -20,6 +20,7 @@ package org.occiware.mart.server.model;
 
 import org.eclipse.cmf.occi.core.*;
 import org.eclipse.cmf.occi.core.util.Occi2Ecore;
+import org.eclipse.cmf.occi.core.util.OcciHelper;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
@@ -753,6 +754,56 @@ public class MixinManager {
         List<Attribute> attributes = new ArrayList<>();
         ConfigurationManager.addAllAttributes(attributes, mixinBase.getMixin());
         return attributes;
+    }
+
+    /**
+     * Search MixinBase owner of the attribute name parameter from a list of mixinBases.
+     * @param mixinBases
+     * @param attrName
+     * @return a MixinBase object that had this attribute (the first it found), may return null if no mixin owns this attribute.
+     */
+    public static MixinBase getMixinBaseWithAttribute(List<MixinBase> mixinBases, String attrName) {
+        MixinBase mixinB = null;
+        for (MixinBase mixinBase : mixinBases) {
+            Collection<Attribute> attrs = getAllMixinAttribute(mixinBase);
+            if (!attrs.isEmpty()) {
+                for (Attribute attr : attrs) {
+                    if (attr.getName().equals(attrName)) {
+                        mixinB = mixinBase;
+                        break;
+                    }
+                }
+            }
+            if (mixinB != null) {
+                break;
+            }
+
+        }
+        return mixinB;
+    }
+
+    /**
+     * Get an attribute state object for key parameter.
+     *
+     * @param mixinBase
+     * @param key ex: occi.core.title.
+     * @return an AttributeState object, if attribute doesnt exist, empty optional object value
+     * is returned.
+     */
+    public static Optional<AttributeState> getAttributeStateObject(MixinBase mixinBase, final String key) {
+        AttributeState attr = null;
+        if (key == null) {
+            return null;
+        }
+        // Load the corresponding attribute state.
+        for (AttributeState attrState : mixinBase.getAttributes()) {
+            if (attrState.getName().equals(key)) {
+                attr = attrState;
+                break;
+            }
+        }
+
+        return Optional.ofNullable(attr);
     }
 
 }

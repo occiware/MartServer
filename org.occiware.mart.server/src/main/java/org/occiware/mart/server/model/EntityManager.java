@@ -604,7 +604,7 @@ public class EntityManager {
         Kind kind = entity.getKind();
         Kind currentKind = kind;
         while (currentKind != null && !found) {
-            actions = kind.getActions();
+            actions = currentKind.getActions();
             for (Action actionModel : actions) {
                 if ((actionModel.getScheme() + actionModel.getTerm()).equals(actionId)) {
                     // The action is referenced on this kind.
@@ -1061,11 +1061,14 @@ public class EntityManager {
 
         }
 
+        // Mixins.
+        List<AttributeState> mixinStates;
         // Iterate on each mixins attributes and update Entity AND mixin base.
         for (MixinBase mixinBase : entity.getParts()) {
-
             // Update attribute names reference.
-            for (AttributeState attributeState : mixinBase.getAttributes()) {
+            attributeNames.clear();
+            mixinStates = mixinBase.getAttributes();
+            for (AttributeState attributeState : mixinStates) {
                 if (!attributeNames.contains(attributeState.getName())) {
                     attributeNames.add(attributeState.getName());
                 }
@@ -1097,10 +1100,8 @@ public class EntityManager {
                     }
 
                     // Add it to attribute states of the mixin base.
-                    mixinBase.getAttributes().add(attributeState);
-
-                    // Add it to attribute states (same reference as mixin base) on this entity.
-                    attributeStates.add(attributeState);
+                    mixinStates.add(attributeState);
+                    // mixinBase.getAttributes().add(attributeState);
                 }
 
             }
@@ -1180,6 +1181,8 @@ public class EntityManager {
             return entity;
         }
 
+        List<MixinBase> mixinBases = entity.getParts();
+
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
             attrName = entry.getKey();
             attrValue = entry.getValue();
@@ -1187,21 +1190,45 @@ public class EntityManager {
                     && !attrName.equals(Constants.OCCI_CORE_ID) && !attrName.equals(Constants.OCCI_CORE_TARGET) && !attrName.equals(Constants.OCCI_CORE_SOURCE)) {
                 LOGGER.debug("Attribute set value : " + attrValue);
 
-                OcciHelper.setAttribute(entity, attrName, attrValue);
-                Optional<AttributeState> optAttrState = getAttributeStateObject(entity, attrName);
+                MixinBase mixinB = MixinManager.getMixinBaseWithAttribute(mixinBases, attrName);
                 AttributeState attrState;
-                if (optAttrState.isPresent()) {
-                    attrState = optAttrState.get();
-                    String attrStateValue = attrState.getValue();
-                    if (attrStateValue != null && !attrStateValue.equals(attrValue)) {
-                        // update the attribute value.
-                        attrState.setValue(attrValue);
+                if (mixinB == null) {
+                    // Entity attribute.
+                    OcciHelper.setAttribute(entity, attrName, attrValue);
+                    Optional<AttributeState> optAttrState = getAttributeStateObject(entity, attrName);
 
-                    } else if (attrValue != null) {
-                        attrState.setValue(attrValue);
+                    if (optAttrState.isPresent()) {
+                        attrState = optAttrState.get();
+                        String attrStateValue = attrState.getValue();
+                        if (attrStateValue != null && !attrStateValue.equals(attrValue)) {
+                            // update the attribute value.
+                            attrState.setValue(attrValue);
+
+                        } else if (attrValue != null) {
+                            attrState.setValue(attrValue);
+                        }
+
+                        LOGGER.debug("Attribute : " + attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
                     }
+                } else {
+                    // MixinBase attribute.
+                    OcciHelper.setAttribute(mixinB, attrName, attrValue);
 
-                    LOGGER.debug("Attribute : " + attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
+                    Optional<AttributeState> optAttrState = MixinManager.getAttributeStateObject(mixinB, attrName);
+
+                    if (optAttrState.isPresent()) {
+                        attrState = optAttrState.get();
+                        String attrStateValue = attrState.getValue();
+                        if (attrStateValue != null && !attrStateValue.equals(attrValue)) {
+                            // update the attribute value.
+                            attrState.setValue(attrValue);
+
+                        } else if (attrValue != null) {
+                            attrState.setValue(attrValue);
+                        }
+
+                        LOGGER.info("Mixin : " + mixinB.getMixin().getTerm() + " , attribute : " + attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
+                    }
                 }
             }
         }

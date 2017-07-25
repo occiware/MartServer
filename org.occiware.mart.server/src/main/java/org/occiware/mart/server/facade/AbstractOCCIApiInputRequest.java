@@ -216,11 +216,21 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         if (optEntity.isPresent()) {
             entity = optEntity.get();
             if (overwrite) {
-                entity.occiUpdate();
-                LOGGER.info("Update entity done returning location : " + location + " with id: " + entityId);
+                try {
+                    entity.occiUpdate();
+                    LOGGER.info("Update entity done returning location : " + location + " with id: " + entityId);
+                } catch (Exception ex) {
+                    throw new ConfigurationException(ex.getMessage(), ex);
+                }
+
             } else {
-                entity.occiCreate();
-                LOGGER.info("Create entity done returning location : " + location + " with id: " + entityId);
+                try {
+                    entity.occiCreate();
+                    LOGGER.info("Create entity done returning location : " + location + " with id: " + entityId);
+                } catch (Exception ex) {
+                    EntityManager.removeOrDissociateFromConfiguration(entityId, username);
+                    throw new ConfigurationException(ex.getMessage(), ex);
+                }
             }
         } else {
             message = "Entity " + entityId + " was not created on object model, please check your query.";
