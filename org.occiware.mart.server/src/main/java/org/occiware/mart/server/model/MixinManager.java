@@ -361,7 +361,7 @@ public class MixinManager {
                 // Check if this mixin exist in realm extensions.
 
                 if (!optMixin.isPresent()) {
-                    LOGGER.info("Mixin not found on extensions, searching on referenced entities: --> Term : " + mixinStr);
+                    LOGGER.debug("Mixin not found on extensions, searching on referenced entities: --> Term : " + mixinStr);
                     // Search the mixin on entities.
                     optMixin = findMixinOnEntities(mixinStr, owner);
 
@@ -373,31 +373,28 @@ public class MixinManager {
                         }
                     }
                     mixin = optMixin.get();
-                    LOGGER.info("Mixin found on configuration : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                    LOGGER.debug("Mixin found on configuration : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
 
                 } else {
                     mixin = optMixin.get();
-                    LOGGER.info("Mixin found on used extensions : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                    LOGGER.debug("Mixin found on used extensions : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
                 }
 
-                LOGGER.info("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-                LOGGER.info("Mixin attributes : ");
+                LOGGER.debug("Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                LOGGER.debug("Mixin attributes : ");
 
                 Collection<Attribute> attrs = mixin.getAttributes();
                 if (attrs != null && !attrs.isEmpty()) {
-                    LOGGER.info("Attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                    LOGGER.debug("Attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
                     for (Attribute attr : attrs) {
-                        LOGGER.info("Attribute : " + attr.getName() + " --> " + attr.getDescription());
+                        LOGGER.debug("Attribute : " + attr.getName() + " --> " + attr.getDescription());
                     }
                 } else {
-                    LOGGER.warn("No attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                    LOGGER.debug("No attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
                 }
 
                 // Mixin to add.
-                MixinBase mixinBase = OCCIFactory.eINSTANCE.createMixinBase();
-                mixinBase.setMixin(mixin);
-                mixinBase.setEntity(entity);
-                entity.getParts().add(mixinBase);
+                MixinBase mixinBase = OcciHelper.createMixinBase(entity, mixin);
                 mixinBase.getAttributes();
             }
         }
@@ -472,11 +469,7 @@ public class MixinManager {
 
         for (Entity entity : entities) {
             if (!entity.getMixins().contains(mixin)) {
-                MixinBase mixinBase = OCCIFactory.eINSTANCE.createMixinBase();
-                mixinBase.setMixin(mixin);
-                mixinBase.setEntity(entity);
-                entity.getParts().add(mixinBase);
-                // entity.getMixins().add(mixin);
+                MixinBase mixinBase = OcciHelper.createMixinBase(entity, mixin);
                 EntityManager.updateVersion(owner, entity.getId());
             }
         }

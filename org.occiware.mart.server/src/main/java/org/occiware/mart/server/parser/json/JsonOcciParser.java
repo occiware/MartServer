@@ -1003,6 +1003,14 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         Map<String, Object> attributes = new LinkedHashMap<>();
         // Attributes.
         List<AttributeState> attrsState = res.getAttributes();
+
+        List<MixinBase> mixinBases = res.getParts();
+
+        for (MixinBase mixinB : mixinBases) {
+            LOGGER.debug("JsonOCCIParser : Render mixin base : " + mixinB.getMixin().getTerm());
+            attrsState.addAll(mixinB.getAttributes());
+        }
+
         for (AttributeState attr : attrsState) {
             String key = attr.getName();
             String val = attr.getValue();
@@ -1088,6 +1096,13 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
 
         // Attributes.
         List<AttributeState> attrsState = link.getAttributes();
+
+        List<MixinBase> mixinBases = link.getParts();
+
+        for (MixinBase mixinB : mixinBases) {
+            attrsState.addAll(mixinB.getAttributes());
+        }
+
         for (AttributeState attr : attrsState) {
             String key = attr.getName();
             String val = attr.getValue();
