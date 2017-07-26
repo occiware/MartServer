@@ -1062,12 +1062,12 @@ public class EntityManager {
         }
 
         // Mixins.
-        List<AttributeState> mixinStates;
+
         // Iterate on each mixins attributes and update Entity AND mixin base.
         for (MixinBase mixinBase : entity.getParts()) {
             // Update attribute names reference.
             attributeNames.clear();
-            mixinStates = mixinBase.getAttributes();
+            List<AttributeState> mixinStates = mixinBase.getAttributes();
             for (AttributeState attributeState : mixinStates) {
                 if (!attributeNames.contains(attributeState.getName())) {
                     attributeNames.add(attributeState.getName());
@@ -1105,6 +1105,8 @@ public class EntityManager {
                 }
 
             }
+            // mixinBase.getAttributes().addAll(mixinStates);
+            LOGGER.warn("MixinBase AttributesStates : " + mixinStates.toString());
         }
     }
 
@@ -1211,6 +1213,9 @@ public class EntityManager {
                         LOGGER.debug("Attribute : " + attrState.getName() + " --> " + attrState.getValue() + " ==> OK");
                     }
                 } else {
+
+                    LOGGER.warn("MixinBase instance on MartServer: " + mixinB.toString());
+
                     // MixinBase attribute.
                     OcciHelper.setAttribute(mixinB, attrName, attrValue);
 

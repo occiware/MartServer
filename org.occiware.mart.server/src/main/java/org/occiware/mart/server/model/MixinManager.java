@@ -24,12 +24,14 @@ import org.eclipse.cmf.occi.core.util.OcciHelper;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EDataType;
+import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.occiware.mart.server.exception.ConfigurationException;
 import org.occiware.mart.server.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -395,6 +397,7 @@ public class MixinManager {
 
                 // Mixin to add.
                 MixinBase mixinBase = OcciHelper.createMixinBase(entity, mixin);
+                LOGGER.warn("created mixinbase: " + mixinBase.toString());
                 mixinBase.getAttributes();
             }
         }
@@ -798,5 +801,92 @@ public class MixinManager {
 
         return Optional.ofNullable(attr);
     }
+
+    /**
+     * Get an attribute value from mixinbase with attribute name given.
+     *
+     * @param mixinBase   MixinBase object model
+     * @param attrName Attribute name
+     * @return an attribute value, String, may return empty optional if no value found.
+     */
+    public static Optional<String> getAttrValueStr(MixinBase mixinBase, String attrName) {
+        String result = null;
+        Optional<EDataType> optEdataType = getEAttributeType(mixinBase, attrName);
+        if (optEdataType.isPresent()) {
+            EDataType eAttrType = optEdataType.get();
+
+            if (eAttrType.getInstanceClass() == String.class || eAttrType instanceof EEnum) {
+                Optional<Object> optEValue = getEMFValueObject(mixinBase, attrName);
+                if (optEValue.isPresent()) {
+                    Object eValue = optEValue.get();
+                    result = eValue.toString();
+                }
+            }
+        }
+        return Optional.ofNullable(result);
+    }
+    /**
+     * @param mixinBase
+     * @param attrName
+     * @return
+     */
+    public static Optional<Number> getAttrValueNumber(MixinBase mixinBase, String attrName) {
+        Number result = null;
+        Optional<EDataType> optEAttrType = getEAttributeType(mixinBase, attrName);
+        if (optEAttrType.isPresent()) {
+            EDataType eAttrType = optEAttrType.get();
+            if ((eAttrType.getInstanceClass() == Float.class
+                    || eAttrType.getInstanceClass() == Integer.class
+                    || eAttrType.getInstanceClass() == BigDecimal.class
+                    || eAttrType.getInstanceClass() == Number.class
+                    || eAttrType.getInstanceClass() == Double.class
+                    || eAttrType.getInstanceClass() == Short.class)) {
+
+                Optional<Object> optEValue = getEMFValueObject(mixinBase, attrName);
+                if (optEValue.isPresent()) {
+                    Object eValue = optEValue.get();
+                    result = (Number) eValue;
+                }
+            }
+            if (result == null) {
+                if (eAttrType.getInstanceClassName() != null) {
+                    String instanceClassName = eAttrType.getInstanceClassName();
+                    if (instanceClassName.equals("float")
+                            || instanceClassName.equals("int")
+                            || instanceClassName.equals("double")
+                            || instanceClassName.equals("short")) {
+
+                        Optional<Object> optEValue = getEMFValueObject(mixinBase, attrName);
+                        if (optEValue.isPresent()) {
+                            Object eValue = optEValue.get();
+                            result = (Number) eValue;
+                        }
+                    }
+                }
+            }
+        }
+        return Optional.ofNullable(result);
+    }
+
+    /**
+     * @param mixinBase
+     * @param attrName
+     * @return an object container value from EMF attribute object.
+     */
+    private static Optional<Object> getEMFValueObject(MixinBase mixinBase, String attrName) {
+        EAttribute eAttr;
+        Object result = null;
+        String eAttributeName = Occi2Ecore.convertOcciAttributeName2EcoreAttributeName(attrName);
+        final EStructuralFeature eStructuralFeature = mixinBase.eClass().getEStructuralFeature(eAttributeName);
+        if (eStructuralFeature != null) {
+            if ((eStructuralFeature instanceof EAttribute)) {
+                eAttr = (EAttribute) eStructuralFeature;
+                result = mixinBase.eGet(eAttr);
+            }
+        }
+        return Optional.ofNullable(result);
+    }
+
+
 
 }

@@ -229,6 +229,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
                     LOGGER.info("Create entity done returning location : " + location + " with id: " + entityId);
                 } catch (Exception ex) {
                     EntityManager.removeOrDissociateFromConfiguration(entityId, username);
+                    ex.printStackTrace();
                     throw new ConfigurationException(ex.getMessage(), ex);
                 }
             }
@@ -537,6 +538,12 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
         if (optEntity.isPresent()) {
             entity = optEntity.get();
             entity.occiRetrieve();
+            // For debug only, to delete after.
+            List<MixinBase> mixinBases = entity.getParts();
+            for (MixinBase mixinBase : mixinBases) {
+                List<AttributeState> attributeStates = mixinBase.getAttributes();
+                LOGGER.warn("Attributes retrieves on mixin : " + mixinBase + " --> " + attributeStates.toString());
+            }
             this.renderEntityOutput(entity);
             LOGGER.info("Entity found on location : " + location);
         } else {

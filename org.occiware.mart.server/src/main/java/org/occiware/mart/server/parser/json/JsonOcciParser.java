@@ -1004,14 +1004,15 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
         // Attributes.
         List<AttributeState> attrsState = res.getAttributes();
 
+        List<AttributeState> readAttrs = new LinkedList<>();
+
         List<MixinBase> mixinBases = res.getParts();
 
-        for (MixinBase mixinB : mixinBases) {
-            LOGGER.debug("JsonOCCIParser : Render mixin base : " + mixinB.getMixin().getTerm());
-            attrsState.addAll(mixinB.getAttributes());
-        }
+        readAttrs.addAll(attrsState);
 
-        for (AttributeState attr : attrsState) {
+
+
+        for (AttributeState attr : readAttrs) {
             String key = attr.getName();
             String val = attr.getValue();
             // We must not include occi.core.title, occi.core.summary and occi.core.id as these attributes are already defined in the json output content (title, id, summary attributes).
@@ -1038,6 +1039,30 @@ public class JsonOcciParser extends AbstractRequestParser implements IRequestPar
 //                attributes.put(key, val);
 //            }
         }
+
+
+        for (MixinBase mixinB : mixinBases) {
+            LOGGER.debug("JsonOCCIParser : Render mixin base : " + mixinB.getMixin().getTerm());
+            List<AttributeState> mixinStates = mixinB.getAttributes();
+            for (AttributeState attr : mixinStates) {
+                String key = attr.getName();
+                String val = attr.getValue();
+                Optional<String> optValStr = MixinManager.getAttrValueStr(mixinB, key);
+                Optional<Number> optValNumber = MixinManager.getAttrValueNumber(mixinB, key);
+
+                if (optValStr.isPresent()) {
+                    attributes.put(key, optValStr.get());
+                } else if (optValNumber.isPresent()) {
+                    attributes.put(key, optValNumber.get());
+                } else {
+                    if (val != null) {
+                        attributes.put(key, val);
+                    }
+                }
+            }
+        }
+
+
 
         resJson.setAttributes(attributes);
 
