@@ -523,13 +523,13 @@ public class OCCIServletInputRequest extends AbstractOCCIApiInputRequest impleme
     }
 
     @Override
-    public OCCIApiResponse associateMixinToEntities(String mixin, String mixinTagLocation, List<String> xlocations) {
+    public OCCIApiResponse associateMixinTagToEntities(String mixin, String mixinTagLocation, List<String> xlocations) {
         UserProfile userProfile = UserManagement.getUserProfile(getUsername());
         if (!userProfile.isUpdateEntity()) {
             parseAuthorizationFailed(getUsername() + " has not the permission to update entities with mixin association");
             return getOcciApiResponse();
         }
-        return super.associateMixinToEntities(mixin, mixinTagLocation, xlocations);
+        return super.associateMixinTagToEntities(mixin, mixinTagLocation, xlocations);
     }
 
     @Override

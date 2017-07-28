@@ -111,7 +111,7 @@ public interface OCCIApiInputRequest {
 
     OCCIApiResponse replaceMixinTagCollection(String mixinTag, List<String> locations);
 
-    OCCIApiResponse associateMixinToEntities(String mixin, String mixinTagLocation, List<String> xlocations);
+    OCCIApiResponse associateMixinTagToEntities(String mixin, String mixinTagLocation, List<String> xlocations);
 
     /**
      * Remove definitively the mixin tag and remove all its association.

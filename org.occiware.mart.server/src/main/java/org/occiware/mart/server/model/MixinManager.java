@@ -417,6 +417,42 @@ public class MixinManager {
     }
 
     /**
+     * Add mixins to an existing entity (resources or links). Ex of mixin string
+     * format : http://schemas.ogf.org/occi/infrastructure/network#ipnetwork
+     *
+     * @param entity     (OCCI Entity).
+     * @param mixins     (List of mixins).
+     * @param owner
+     * @param updateMode (if updateMode is true, reset existing and replace with
+     *                   new ones)
+     * @throws ConfigurationException
+     */
+    public static void addMixinsTagToEntity(Entity entity, final List<String> mixins, final String owner, final boolean updateMode) throws ConfigurationException {
+
+        Optional<Mixin> optMixin;
+        Mixin mixin;
+        if (updateMode) {
+            entity.getMixins().clear();
+        }
+        if (mixins != null && !mixins.isEmpty()) {
+
+            for (String mixinStr : mixins) {
+                // Search on the mixin tag.
+                optMixin = findUserMixinOnConfiguration(mixinStr, owner);
+                if (!optMixin.isPresent()) {
+                    throw new ConfigurationException("Mixin " + mixinStr + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
+                }
+
+                mixin = optMixin.get();
+                LOGGER.info("Mixin tag found on configuration : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
+                entity.getMixins().add(mixin);
+            }
+        }
+
+    }
+
+
+    /**
      * Associate a list of entities with a mixin, replacing existing list if
      * any. if mixin doest exist, this will throw a new exception.
      *

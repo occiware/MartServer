@@ -756,7 +756,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
     }
 
     @Override
-    public OCCIApiResponse associateMixinToEntities(String mixin, final String mixinTagLocation, final List<String> xlocations) {
+    public OCCIApiResponse associateMixinTagToEntities(String mixin, final String mixinTagLocation, final List<String> xlocations) {
         Entity entity;
         String message;
         List<Entity> entities = new LinkedList<>();
@@ -795,7 +795,7 @@ public class AbstractOCCIApiInputRequest implements OCCIApiInputRequest {
             }
             entity = optEntity.get();
             try {
-                MixinManager.addMixinsToEntity(entity, mixinTags, username, false);
+                MixinManager.addMixinsTagToEntity(entity, mixinTags, username, false);
                 entities.add(entity);
             } catch (ConfigurationException ex) {
                 message = ex.getMessage();

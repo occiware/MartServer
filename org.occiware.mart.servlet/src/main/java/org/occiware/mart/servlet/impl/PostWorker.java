@@ -138,9 +138,9 @@ public class PostWorker extends ServletEntry {
             for (OCCIRequestData data : datas) {
                 xOcciLocations = data.getXocciLocations();
                 if (data.getMixinTag() != null) {
-                    occiRequest.associateMixinToEntities(data.getMixinTag(), data.getLocation(), xOcciLocations);
+                    occiRequest.associateMixinTagToEntities(data.getMixinTag(), data.getLocation(), xOcciLocations);
                 } else {
-                    occiRequest.associateMixinToEntities(null, occiRequest.getRequestPath(), xOcciLocations);
+                    occiRequest.associateMixinTagToEntities(null, occiRequest.getRequestPath(), xOcciLocations);
                 }
             }
             return resp;
