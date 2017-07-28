@@ -355,6 +355,7 @@ public class MixinManager {
             mixinBases.clear();
             // entity.getMixins().clear();
         }
+        boolean mixinExistOnEntity = false;
         if (mixins != null && !mixins.isEmpty()) {
 
             for (String mixinStr : mixins) {
@@ -394,11 +395,23 @@ public class MixinManager {
                 } else {
                     LOGGER.debug("No attributes found for mixin : " + "Mixin --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
                 }
-
-                // Mixin to add.
-                MixinBase mixinBase = OcciHelper.createMixinBase(entity, mixin);
-                LOGGER.warn("created mixinbase: " + mixinBase.toString());
-                mixinBase.getAttributes();
+                mixinExistOnEntity = false;
+                // Check if mixin is already declared on entity.
+                List<Mixin> entityMixins = entity.getMixins();
+                for (Mixin mixinEntity : entityMixins) {
+                    String mixinId = mixinEntity.getScheme() + mixin.getTerm();
+                    if (mixinId.equals(mixinStr)) {
+                        // Don't add this mixin.
+                        mixinExistOnEntity = true;
+                        break;
+                    }
+                }
+                if (!mixinExistOnEntity) {
+                    // Mixin to add.
+                    MixinBase mixinBase = OcciHelper.createMixinBase(entity, mixin);
+                    LOGGER.warn("created mixinbase: " + mixinBase.toString());
+                    mixinBase.getAttributes();
+                }
             }
         }
     }
