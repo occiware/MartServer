@@ -19,5 +19,8 @@ RUN apt-get update \
 EXPOSE 8080
 EXPOSE 8180
 
+# Activate remote debugging
+ENV MAVEN_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,address=9000,server=y,suspend=n"
+
 # Start the MartServer
-CMD cd org.occiware.mart.war && mvn jetty:run-war
+CMD cd org.occiware.mart.war && mvn jetty:run-war -Dorg.eclipse.jetty.annotations.maxWait=120
