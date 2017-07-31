@@ -164,18 +164,17 @@ public abstract class ServletEntry {
         if (acceptType == null) {
             acceptType = contentType;
         }
-        
-        // Make it so that web browsers can get the json even when they don't have the proper header
-        if (acceptType == Constants.MEDIA_TYPE_HTML) {
-        	acceptType = Constants.MEDIA_TYPE_JSON;
-        }
-
         // Default values.
         if (contentType == null || contentType.isEmpty()) {
             contentType = Constants.MEDIA_TYPE_JSON;
         }
         if (acceptType == null || acceptType.isEmpty() || acceptType.equals("*/*")) {
             // Default to MEDIA_TYPE_JSON.
+            acceptType = Constants.MEDIA_TYPE_JSON;
+        }
+
+        // Make it so that web browsers can get the json even when they don't have the proper header
+        if (acceptType.equals(Constants.MEDIA_TYPE_HTML)) {
             acceptType = Constants.MEDIA_TYPE_JSON;
         }
 
