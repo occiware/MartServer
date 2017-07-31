@@ -158,7 +158,6 @@ public abstract class ServletEntry {
         if (acceptType == null) {
             acceptType = contentType;
         }
-
         // Default values.
         if (contentType == null || contentType.isEmpty()) {
             contentType = Constants.MEDIA_TYPE_JSON;
@@ -168,6 +167,10 @@ public abstract class ServletEntry {
             acceptType = Constants.MEDIA_TYPE_JSON;
         }
 
+        // Make it so that web browsers can get the json even when they don't have the proper header
+        if (acceptType.equals(Constants.MEDIA_TYPE_HTML)) {
+            acceptType = Constants.MEDIA_TYPE_JSON;
+        }
 
         String username = "anonymous";
         LOGGER.info("Input parser implement: " + contentType);

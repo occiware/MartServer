@@ -48,6 +48,7 @@ public class Constants {
     public static final String MEDIA_TYPE_JSON_OCCI = "application/occi+json";
     public static final String MEDIA_TYPE_TEXT_PLAIN = "text/plain";
     public static final String MEDIA_TYPE_TEXT_PLAIN_OCCI = "text/occi+plain";
+    public static final String MEDIA_TYPE_HTML = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
 
     public static final String CATEGORY = "Category";
     public static final String LINK = "Link";
