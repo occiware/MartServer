@@ -1657,6 +1657,7 @@ public class EntityManager {
             } else {
                 message = "Internal error while executing action : " + actionTerm;
             }
+            ex.printStackTrace();
             throw new ConfigurationException(message, ex);
         }
 
@@ -1723,6 +1724,7 @@ public class EntityManager {
                 }
 
             }
+            ex.printStackTrace();
             throw new ConfigurationException(message, ex);
         }
 
