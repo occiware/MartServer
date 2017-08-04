@@ -380,6 +380,8 @@ public class ConfigurationManager {
         Action action = null;
         List<Kind> kinds = KindManager.getAllConfigurationKind(owner);
         List<Mixin> mixins = MixinManager.getAllConfigurationMixins(owner);
+        List<Mixin> depends;
+
         if (actionId == null) {
             return Optional.empty();
         }
@@ -396,12 +398,29 @@ public class ConfigurationManager {
         }
         if (action == null) {
             // Search on mixins actions.
+            LOGGER.info("Action is not found on any kinds, searching referenced actions on mixins...");
             for (Mixin mixin : mixins) {
                 for (Action actionModel : mixin.getActions()) {
                     if ((actionModel.getScheme() + actionModel.getTerm()).equals(actionId)) {
                         action = actionModel;
                         break;
                     }
+                    // Search on depends
+                    depends = mixin.getDepends();
+                    for (Mixin mixinDep : depends) {
+                        for (Action actionDep : mixinDep.getActions()) {
+                            if ((actionDep.getScheme() + actionDep.getTerm()).equals(actionId)) {
+                                action = actionDep;
+                                break;
+                            }
+                        }
+                    }
+                    if (action != null) {
+                        break;
+                    }
+                }
+                if (action != null) {
+                    break;
                 }
             }
         }

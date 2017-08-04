@@ -251,12 +251,13 @@ public class EntityManager {
         Extension extRet = null;
         // Ext kinds.
         EList<Kind> kinds;
-        EList<Action> actionKinds;
+        EList<Action> actions;
+        EList<Mixin> mixins;
         for (Extension ext : exts) {
             kinds = ext.getKinds();
             for (Kind kind : kinds) {
-                actionKinds = kind.getActions();
-                for (Action action : actionKinds) {
+                actions = kind.getActions();
+                for (Action action : actions) {
                     if ((action.getScheme() + action.getTerm()).equals(actionId)) {
                         extRet = ext;
                         break;
@@ -266,6 +267,22 @@ public class EntityManager {
                     break;
                 }
 
+            }
+            if (extRet != null) {
+                break;
+            }
+            mixins = ext.getMixins();
+            for (Mixin mixin : mixins) {
+                actions = mixin.getActions();
+                for (Action action : actions) {
+                    if ((action.getScheme() + action.getTerm()).equals(actionId)) {
+                        extRet = ext;
+                        break;
+                    }
+                }
+                if (extRet != null) {
+                    break;
+                }
             }
             if (extRet != null) {
                 break;
