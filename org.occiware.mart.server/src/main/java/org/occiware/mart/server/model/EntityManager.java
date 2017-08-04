@@ -637,12 +637,31 @@ public class EntityManager {
         if (!found) {
             // Search on mixins.
             List<Mixin> mixins = entity.getMixins();
+            List<Mixin> mixinsDep;
             for (Mixin mixin : mixins) {
                 actions = mixin.getActions();
                 for (Action actionMixin : actions) {
                     if ((actionMixin.getScheme() + actionMixin.getTerm()).equals(actionId)) {
                         action = actionMixin;
                         found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    break;
+                }
+                // Search on depends.
+                mixinsDep = mixin.getDepends();
+                for (Mixin mixinDep : mixinsDep) {
+                    actions = mixinDep.getActions();
+                    for (Action actionMixin : actions) {
+                        if ((actionMixin.getScheme() + actionMixin.getTerm()).equals(actionId)) {
+                            action = actionMixin;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) {
                         break;
                     }
                 }
