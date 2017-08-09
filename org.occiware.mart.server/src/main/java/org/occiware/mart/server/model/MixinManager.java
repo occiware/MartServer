@@ -399,7 +399,7 @@ public class MixinManager {
                 // Check if mixin is already declared on entity.
                 List<Mixin> entityMixins = entity.getMixins();
                 for (Mixin mixinEntity : entityMixins) {
-                    String mixinId = mixinEntity.getScheme() + mixin.getTerm();
+                    String mixinId = mixinEntity.getScheme() + mixinEntity.getTerm();
                     if (mixinId.equals(mixinStr)) {
                         // Don't add this mixin.
                         mixinExistOnEntity = true;
