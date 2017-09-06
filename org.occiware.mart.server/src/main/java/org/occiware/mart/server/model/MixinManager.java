@@ -63,8 +63,10 @@ public class MixinManager {
         EList<Mixin> mixins;
         config = ConfigurationManager.getConfigurationForOwner(owner);
         mixins = config.getMixins();
+        String mixinConfId;
         for (Mixin mixin : mixins) {
-            if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
+            mixinConfId = mixin.getScheme() + mixin.getTerm();
+            if (mixinConfId.equals(mixinId)) {
                 mixinToReturn = mixin;
                 break;
             }
@@ -130,9 +132,11 @@ public class MixinManager {
     public static Optional<Mixin> findMixinOnExtension(final String mixinId, final String owner) {
         Configuration config = ConfigurationManager.getConfigurationForOwner(owner);
         Mixin mixinToReturn = null;
+        String mixinExtId;
         for (Extension ext : config.getUse()) {
             for (Mixin mixin : ext.getMixins()) {
-                if ((mixin.getScheme() + mixin.getTerm()).equals(mixinId)) {
+                mixinExtId = mixin.getScheme() + mixin.getTerm();
+                if (mixinExtId.equals(mixinId)) {
                     mixinToReturn = mixin;
                     break;
                 }
@@ -434,6 +438,7 @@ public class MixinManager {
         if (updateMode) {
             entity.getMixins().clear();
         }
+        boolean mixinFoundOnEntity;
         if (mixins != null && !mixins.isEmpty()) {
 
             for (String mixinStr : mixins) {
@@ -442,10 +447,28 @@ public class MixinManager {
                 if (!optMixin.isPresent()) {
                     throw new ConfigurationException("Mixin " + mixinStr + " not found on extension nor on entities, this is maybe a mixin tag to define before.");
                 }
-
+                mixinFoundOnEntity = false;
                 mixin = optMixin.get();
                 LOGGER.info("Mixin tag found on configuration : --> Term : " + mixin.getTerm() + " --< Scheme : " + mixin.getScheme());
-                entity.getMixins().add(mixin);
+                // create a mixin base for the entity if this mixin has no mixin base set for this entity.
+                List<MixinBase> mixinBases = entity.getParts();
+                String mixinTmpId;
+                String mixinTagToApplyId = mixin.getScheme() + mixin.getTerm();
+                for (MixinBase mixinTag : mixinBases) {
+                    mixinTmpId = mixinTag.getMixin().getScheme() + mixinTag.getMixin().getTerm();
+                    if (mixinTmpId.equals(mixinTagToApplyId)) {
+                        mixinFoundOnEntity = true;
+                        break;
+                    }
+                }
+                if (!mixinFoundOnEntity) {
+                    // Mixin to add.
+                    MixinBase mixinBase = OcciHelper.createMixinBase(entity, mixin);
+                    LOGGER.warn("created mixinbase: " + mixinBase.toString() + " for mixin tag: " + mixinTagToApplyId);
+                    mixinBase.getAttributes();
+                }
+
+                // entity.getMixins().add(mixin);
             }
         }
 
@@ -596,7 +619,6 @@ public class MixinManager {
         LOGGER.info("Adding mixin on configuration : " + id);
         // We add the mixin location to the userMixin map.
         userMixinLocationMap.put(id, location);
-        // TODO : check with metamodelv2 how to add a new mixin tag.
         configuration.getMixins().add(mixin);
 
     }

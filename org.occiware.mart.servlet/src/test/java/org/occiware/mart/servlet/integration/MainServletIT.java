@@ -118,7 +118,7 @@ public class MainServletIT {
             testsOnKindCollection();
 
             // Test operations on collection mixin tag location (/my_stuff/).
-            // testsOnMixinTagsAssociation();
+            testsOnMixinTagsAssociation();
 
             // Test operations on custom location /myresources/*...
 
