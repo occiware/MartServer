@@ -154,4 +154,11 @@ public class EntitiesOwner {
         return loc;
     }
 
+    /**
+     *
+     * @return
+     */
+    public int getEntitiesSize() {
+        return entitiesByUuid.size();
+    }
 }

@@ -176,6 +176,23 @@ public class EntityManager {
             return entities;
         }
         EntitiesOwner entitiesOwner = entitiesOwnerMap.get(owner);
+
+        Configuration conf = ConfigurationManager.getConfigurationForOwner(owner);
+
+        // if configuration object has different size, rebuild entitiesOwnerMap entities cache.
+        int resourceSize = conf.getResources().size();
+        int linkSize = 0;
+        int entitiesConfSize = 0;
+        for (Resource resource : conf.getResources()) {
+            linkSize = linkSize + resource.getLinks().size();
+        }
+
+        entitiesConfSize = resourceSize + linkSize;
+        if (entitiesOwner.getEntitiesSize() != entitiesConfSize) {
+            LOGGER.info("Update all entities reference cache (map)");
+            updateAllReferencesOnEntitiesOwner(owner);
+        }
+
         Map<String, Entity> entitiesMap = entitiesOwner.getEntitiesByUuid();
         for (Map.Entry<String, Entity> entry : entitiesMap.entrySet()) {
             entities.add(entry.getValue());
