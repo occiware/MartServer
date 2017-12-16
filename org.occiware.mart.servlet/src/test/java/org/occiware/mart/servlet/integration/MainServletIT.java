@@ -332,6 +332,20 @@ public class MainServletIT {
         response = executeQuery(HttpMethod.PUT, "http://localhost:9090/myresources/compute3/", HttpServletResponse.SC_CREATED,
                 "/testjson/integration/creation/resource_without_uuid.json",
                 "Create a resource without uuid", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // Links part.
+        // Link networkinterface from source /myresources/compute2 to target : /mynetworks/mainnetwork/ on /mynetworks/networkint2/
+        response = executeQuery(HttpMethod.PUT, "http://localhost:9090/mynetworks/networkint2", HttpServletResponse.SC_CREATED,
+                "/testjson/integration/creation/links.json",
+                "Create a link without uuid on /mynetworks/networkint2 and source is : /myresources/compute2 and target is : /mynetworks/mainnetwork", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+
+        // Describe the /myresources/compute2, this must contains the link on location : /mynetworks/networkint2/
+        response = executeQuery(HttpMethod.GET, "http://localhost:9090/mynetworks/networkint2", HttpServletResponse.SC_OK,
+                null,
+                "GET a link on /mynetworks/networkint2 and source is : /myresources/compute2 and target is : /mynetworks/mainnetwork", Constants.MEDIA_TYPE_JSON, Constants.MEDIA_TYPE_JSON);
+        assertTrue(response.getContentAsString().contains("http://schemas.ogf.org/occi/infrastructure#networkinterface"));
+        assertTrue(response.getContentAsString().contains("\"location\" : \"/mynetworks/mainnetwork\","));
+        assertTrue(response.getContentAsString().contains("\"location\" : \"/myresources/compute2\","));
     }
 
 

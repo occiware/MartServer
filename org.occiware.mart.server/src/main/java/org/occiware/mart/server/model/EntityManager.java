@@ -549,22 +549,26 @@ public class EntityManager {
 
             // Check on title.
             if (attributeFilter.equals(Constants.OCCI_CORE_TITLE) || attributeFilter.equalsIgnoreCase("title")) {
-                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && entity.getTitle().equalsIgnoreCase(attributeValue)) {
-                    control = true;
-                }
-                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && entity.getTitle().contains(attributeValue)) {
-                    control = true;
+                if (entity.getTitle() != null) {
+                    if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && entity.getTitle().equalsIgnoreCase(attributeValue)) {
+                        control = true;
+                    }
+                    if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && entity.getTitle().contains(attributeValue)) {
+                        control = true;
+                    }
                 }
             }
 
             // Check on summary.
             if (attributeFilter.equals(Constants.OCCI_CORE_SUMMARY) || attributeFilter.equalsIgnoreCase("summary") && entity instanceof Resource) {
                 Resource resource = (Resource) entity;
-                if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && resource.getSummary().equalsIgnoreCase(attributeValue)) {
-                    control = true;
-                }
-                if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && resource.getSummary().contains(attributeValue)) {
-                    control = true;
+                if (resource.getSummary() != null) {
+                    if (filter.getOperator() == CollectionFilter.OPERATOR_EQUAL && resource.getSummary().equalsIgnoreCase(attributeValue)) {
+                        control = true;
+                    }
+                    if (filter.getOperator() == CollectionFilter.OPERATOR_LIKE && resource.getSummary().contains(attributeValue)) {
+                        control = true;
+                    }
                 }
             }
 
